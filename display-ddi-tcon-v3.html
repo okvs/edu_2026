@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DDI · TCON 디스플레이 구동 IC</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=DM+Mono:wght@400;500&family=Archivo+Black&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --bg:#F4F2EE; --panel:#FFFFFF; --line:#DEDAD2; --line2:#C9C4BA;
+  --dim:#6B7382; --soft:#4A515E; --text:#1C2027; --amber:#E4572E;
+  --fd:"Archivo Black","Arial Black",sans-serif;
+  --fm:"DM Mono",ui-monospace,Consolas,monospace;
+  --fb:"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+[hidden]{display:none!important}
+body{font-family:var(--fb);font-size:15px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px;display:grid;gap:20px}
+.hd{display:grid;grid-template-columns:auto 1fr;gap:10px 48px;align-items:end}
+.eyebrow{font:500 11px/1.4 var(--fm);letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin:0 0 12px}
+h1{font:400 clamp(24px,4vw,38px)/1.1 var(--fd);letter-spacing:.12em;margin:0}
+h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft);margin-top:10px}
+.lede{margin:0;max-width:60ch;color:var(--soft);justify-self:end;text-wrap:pretty}
+.screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
+.screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
+canvas{display:block;width:100%;height:100%;object-fit:contain}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(228,87,46,.55);background:rgba(244,242,238,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay:hover{border-color:var(--amber)}
+.bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
+.bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
+.btn:hover{border-color:var(--line2)}
+.btn[aria-pressed="true"]{border-color:rgba(228,87,46,.55);color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:16px;height:16px;fill:currentColor}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
+.seg{position:relative;background:#E9E5DD;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(228,87,46,.2);width:0}
+.seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
+.seg.on span{color:var(--amber)}
+.head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
+.tc{font:500 13px var(--fm);font-variant-numeric:tabular-nums;min-width:112px;text-align:right;color:var(--soft)}
+.tc b{color:var(--text);font-weight:500}
+.note{font:400 12px var(--fm);color:var(--dim);margin:8px 0 0}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:18px}
+.sh h2{font:500 12px var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0}
+.sh p{margin:0;font:400 12px var(--fm);color:var(--dim)}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.shot{border-bottom:1px solid var(--line)}
+.shot button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:52px 1fr auto;gap:2px 14px;padding:14px 4px;width:100%;cursor:pointer}
+.shot button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.shot button:hover .t{color:var(--amber)}
+.shot .n{font:400 14px/1.9 var(--fd);color:var(--dim);grid-row:1/3}
+.shot.on .n,.shot.on .t{color:var(--amber)}
+.shot .t{font:600 15px/1.6 var(--fb)}
+.shot .r{font:400 12px/1.9 var(--fm);color:var(--dim);font-variant-numeric:tabular-nums}
+.shot .d{grid-column:2/4;color:var(--soft);font-size:14px;line-height:1.65}
+.foot{display:flex;flex-wrap:wrap;gap:8px 22px;color:var(--dim);font:400 12px var(--fm);margin-top:6px}
+kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--soft)}
+@media (max-width:760px){
+  .hd{grid-template-columns:1fr}.lede{justify-self:start}
+  .seg span{display:none}.track{flex-basis:100%;order:5}
+  .shots{grid-template-columns:1fr}
+  .bigplay{padding:8px 16px 8px 8px;font-size:13px}.bigplay .ic{width:34px;height:34px}
+}
+/* before first play: dim the poster so the centre play button stands out */
+.screen canvas{transition:filter .5s ease}
+.screen:has(#bigplay:not([hidden])) canvas{filter:brightness(.85) saturate(.4) blur(3px) opacity(.45)}
+.bigplay{padding:16px 30px 16px 16px;font-size:17px;box-shadow:0 10px 40px rgba(0,0,0,.55)}
+.bigplay .ic{width:54px;height:54px}
+/* playback speed */
+.spd{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.spd button{height:32px;min-width:44px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dim);font:500 12px var(--fm);cursor:pointer;font-variant-numeric:tabular-nums}
+.spd button:hover{color:var(--text)}
+.spd button[aria-pressed="true"]{background:var(--amber);color:var(--bg)}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hd">
+    <div>
+      <p class="eyebrow">Explainer video · Display ICs · 1920×1080</p>
+      <h1>DDI · TCON<small>디스플레이 구동 IC — DDI와 TCON</small></h1>
+    </div>
+  </header>
+
+  <section aria-label="강의 영상 플레이어">
+    <div class="screen" id="screen">
+      <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
+      <button class="bigplay" id="bigplay" type="button">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#35312B"/></svg></span>
+        <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="play" type="button" aria-label="재생"><svg viewBox="0 0 16 16" id="playic"><path d="M4 2l10 6-10 6z"/></svg></button>
+      <button class="btn" id="voice" type="button" aria-pressed="false">음성 해설 꺼짐</button>
+      <button class="btn" id="music" type="button" aria-pressed="false">배경음 꺼짐</button><div class="spd" id="spd" role="group" aria-label="재생 속도"><button type="button" data-r="1" aria-pressed="true">1×</button><button type="button" data-r="1.2" aria-pressed="false">1.2×</button><button type="button" data-r="1.5" aria-pressed="false">1.5×</button></div>
+      <div class="track" id="track" role="slider" tabindex="0" aria-label="타임라인" aria-valuemin="0" aria-valuenow="0"><div class="head" id="head"></div></div>
+      <span class="tc" id="tc"></span>
+      <button class="btn" id="fs" type="button" aria-label="전체 화면"><svg viewBox="0 0 16 16"><path d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg></button>
+    </div>
+    <p class="note" id="vnote"></p>
+  </section>
+
+  <section aria-label="장면과 대본">
+    <div class="sh"><h2>장면 · 대본</h2><p id="meta"></p></div>
+    <ol class="shots" id="shots"></ol>
+    <div class="foot">
+      <span><kbd>Space</kbd> 재생/일시정지</span><span><kbd>←</kbd><kbd>→</kbd> 자막 단위 이동</span><span><kbd>V</kbd> 음성 해설</span><span><kbd>F</kbd> 전체 화면</span>
+      <span>타이밍 수치(1080p60 · 4K120)는 CTA-861 표준값입니다. 신호 이름 · 채널 수 · 인터페이스 이름은 대표 예시이며 벤더와 제품마다 다릅니다. 도식은 개념도입니다.</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+'use strict';
+/* ================= core ================= */
+const W=1920,H=1080;
+const cv=document.getElementById('stage');cv.width=W;cv.height=H;
+const ctx=cv.getContext('2d');
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const scratch=mk(W,H),sctx=scratch.getContext('2d');
+const C={bg:'#F4F2EE',grid:'#F1F0EE',line:'#E8E7E3',dim:'#6B7382',mid:'#4F5866',text:'#1C2027',amber:'#E4572E',
+  m1:'#2F6FDB',m2:'#C2338A',m3:'#0E9F8A',m4:'#7A4FD6',m5:'#D9730D',ok:'#1E9E5A',bad:'#D1373D',card:'#F5F4F2'};
+const FD='"Archivo Black","Arial Black",sans-serif',FM='"DM Mono",ui-monospace,Consolas,monospace',FK='"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const _ha=new Map();
+function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
+const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
+const eO3=t=>1-Math.pow(1-t,3),eIO3=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,eOB=t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+const pad2=n=>String(n).padStart(2,'0');
+
+/* ================= drawing kit ================= */
+function line(g,x0,y0,x1,y1){g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()}
+function rrect(g,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function panel(g,x,y,w,h,o={}){rrect(g,x,y,w,h,o.r??14);g.fillStyle=o.fill??C.card;g.fill();if(o.stroke!==null){g.strokeStyle=o.stroke??C.line;g.lineWidth=o.lw??1.5;if(o.dash)g.setLineDash(o.dash);g.stroke();g.setLineDash([])}}
+function T(g,s,x,y,o={}){g.font=`${o.w??500} ${o.sz??24}px ${o.f??FK}`;g.fillStyle=o.c??C.text;g.textAlign=o.al??'left';g.textBaseline=o.bl??'alphabetic';g.fillText(s,x,y);return g.measureText(s).width}
+function wrapLines(g,s,max){const out=[];let cur='';for(const w of s.split(' ')){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}if(cur)out.push(cur);return out}
+function chip(g,x,y,s,col,o={}){const sz=o.sz??18;g.font=`${o.w??600} ${sz}px ${o.f??FK}`;const w=g.measureText(s).width+sz*1.4,h=sz*1.9;const x0=o.al==='center'?x-w/2:o.al==='right'?x-w:x;
+  rrect(g,x0,y-h/2,w,h,h/2);g.fillStyle=o.fill??hexA(col,.14);g.fill();g.strokeStyle=hexA(col,.75);g.lineWidth=1.3;g.stroke();g.fillStyle=o.tc??col;g.textAlign='center';g.textBaseline='middle';g.fillText(s,x0+w/2,y+1);return w}
+function polyLen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L}
+function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length&&rem>0;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],d=Math.hypot(dx,dy);if(rem>=d){g.lineTo(p[i][0],p[i][1]);rem-=d}else{const k=rem/d;g.lineTo(p[i-1][0]+dx*k,p[i-1][1]+dy*k);rem=0}}}
+function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
+function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
+function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#F1F0EE';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
+  const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
+  if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
+  if(o.head){T(g,o.head,x0+w*.14,y0+f*.8,{sz:Math.max(11,w*.1),f:FM,w:600,c:col})}
+  if(o.title)T(g,o.title,x,y0+h+(o.tsz??18)+8,{sz:o.tsz??18,w:600,al:'center',c:o.tc??C.text});
+  if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
+function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
+  if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
+  g.fillStyle='#F6F5F4';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
+  const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
+  g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
+  if(o.name){const sz=o.nsz??20;if(o.side)T(g,o.name,x+r+16,y+(o.role?-2:7),{sz,w:600,f:o.nf??FM});else T(g,o.name,x,y+r+sz+12,{sz,w:600,al:'center',f:o.nf??FM})}
+  if(o.role){const sz=o.nsz??20;if(o.side)T(g,o.role,x+r+16,y+22,{sz:16,c:C.dim});else T(g,o.role,x,y+r+sz+38,{sz:16,al:'center',c:C.dim})}
+  g.restore()}
+function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,s*.3,0,7);g.fill();g.beginPath();g.moveTo(x-s*.6,y+s*.62);g.quadraticCurveTo(x-s*.6,y,x,y);g.quadraticCurveTo(x+s*.6,y,x+s*.6,y+s*.62);g.closePath();g.fill();
+  if(o.name)T(g,o.name,x,y+s*.62+30,{sz:20,w:600,al:'center'})}
+function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
+function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
+  if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#F6F5F4'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#F0EFED';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+  T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
+function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
+function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
+function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const xx=x+r.d*34,yy=y+i*lh;
+  if(r.hi){rrect(g,x-14,yy-lh/2+4,o.w??680,lh-8,8);g.fillStyle=hexA(r.hc??C.amber,.12*r.hi);g.fill();g.strokeStyle=hexA(r.hc??C.amber,.6*r.hi);g.lineWidth=1.3;g.stroke()}
+  if(r.d>0){g.strokeStyle=hexA(C.text,.15);g.lineWidth=1;line(g,xx-20,yy-lh/2,xx-20,yy);line(g,xx-20,yy,xx-6,yy)}
+  (r.dir?folder:fileIc)(g,xx,yy,r.c??(r.dir?C.mid:C.text));
+  T(g,r.n,xx+32,yy+8,{sz:o.sz??22,f:FM,w:r.dir?600:500,c:r.tc??C.text});
+  if(r.tag){g.font=`500 ${o.sz??22}px ${FM}`;const w=g.measureText(r.n).width;chip(g,xx+48+w,yy,r.tag,r.hc??C.amber,{sz:15})}
+  g.restore()})}
+function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
+  if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#2E343E';
+  const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
+  if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
+  else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#F7F7F6',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#F4F3F2';g.fill();g.fillRect(x,y+30,w,14);
+  T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
+
+/* ================= scenes ================= */
+// Display ICs: DDI & TCON explainer (18 scenes). Content written from domain knowledge; drawings are concept diagrams.
+const SC=[];
+const POSTER=[9,3,.62]; // scene 9 = 4-3 timing diagram (climax)
+const S=o=>SC.push(o);
+// role colours (kept for the whole video)
+const CS=C.m1,CT=C.amber,CD=C.m3,CG=C.m4,CP=C.m2,CO=C.m5;
+
+/* ---------- helpers ---------- */
+function tagc(g,s){g.save();g.globalAlpha=1;chip(g,1812,196,s,C.dim,{sz:15,al:'right'});g.restore()}
+function TR(g,s,x,y,o){g.save();g.translate(x,y);g.rotate(-Math.PI/2);T(g,s,0,0,o);g.restore()}
+function ic(g,x,y,w,h,col,name,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
+ const pn=o.pins??'tb',n=o.np??Math.max(3,Math.floor(w/24)),m=o.npv??Math.max(2,Math.floor(h/24));g.fillStyle=hexA(col,.5);
+ if(pn.includes('t'))for(let i=0;i<n;i++)g.fillRect(x+(i+.5)*w/n-3,y-9,6,9);
+ if(pn.includes('b'))for(let i=0;i<n;i++)g.fillRect(x+(i+.5)*w/n-3,y+h,6,9);
+ if(pn.includes('l'))for(let i=0;i<m;i++)g.fillRect(x-9,y+(i+.5)*h/m-3,9,6);
+ if(pn.includes('r'))for(let i=0;i<m;i++)g.fillRect(x+w,y+(i+.5)*h/m-3,9,6);
+ if(o.glow>0){g.strokeStyle=hexA(col,.3*o.glow);g.lineWidth=10;rrect(g,x-5,y-5,w+10,h+10,(o.r??10)+5);g.stroke()}
+ panel(g,x,y,w,h,{r:o.r??10,fill:o.fill??'#F2F1F0',stroke:hexA(col,.85),lw:o.lw??2,dash:o.dash});
+ g.fillStyle=hexA(col,.8);g.beginPath();g.arc(x+12,y+12,3.5,0,7);g.fill();
+ const sz=o.sz??22;if(name)T(g,name,x+w/2,y+h/2+(o.sub?-6:sz*.36),{sz,f:o.f??FM,w:700,al:'center',c:col});
+ if(o.sub)T(g,o.sub,x+w/2,y+h/2+(o.ssz??16)+8,{sz:o.ssz??16,al:'center',c:C.mid});g.restore()}
+function img(r,c,R,Cc,ph=0){const u=c/Math.max(1,Cc-1),v=r/Math.max(1,R-1),sx=.72-ph*.18,d=Math.hypot((u-sx)*1.7,v-.3);
+ if(d<.17)return[255,200,95];if(d<.24)return[235,150,90];
+ if(v>.66){const k=.5+.5*Math.sin(u*9+v*5);return[25+30*k,110+60*k,105+35*k]}
+ return[35+70*v,60+90*v,150+70*(1-v)]}
+const pc=(q,a)=>`rgba(${q[0]|0},${q[1]|0},${q[2]|0},${a})`;
+function grid(g,x,y,w,h,R,Cc,lit,o={}){const cw=w/Cc,ch=h/R;if(o.frame!==false)panel(g,x-10,y-10,w+20,h+20,{r:10,fill:'#FBFAFA',stroke:hexA(o.fc??CP,.6),lw:2});
+ for(let r=0;r<R;r++)for(let c=0;c<Cc;c++){const px=x+c*cw+1.5,py=y+r*ch+1.5,L=lit(r,c);g.fillStyle='#F4F4F2';g.fillRect(px,py,cw-3,ch-3);
+  if(L>0){g.fillStyle=pc(o.col?o.col(r,c):img(r,c,R,Cc,o.ph?o.ph(r):0),L);g.fillRect(px,py,cw-3,ch-3)}}return[cw,ch]}
+function wave(g,x,y,w,h,hi,span,col,cur,o={}){const X=t=>x+clamp(t/span)*w,pts=[[x,y]];
+ hi.forEach(([a,b])=>{pts.push([X(a),y],[X(a),y-h],[X(b),y-h],[X(b),y])});pts.push([x+w,y]);
+ const path=()=>{g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]))};
+ g.lineWidth=2;g.strokeStyle=hexA(col,.2);path();g.stroke();const cx=X(cur);if(cx<=x)return;
+ g.save();g.beginPath();g.rect(x-3,y-h-12,cx-x+3,h+24);g.clip();hi.forEach(([a,b])=>{g.fillStyle=hexA(col,o.fa??.13);g.fillRect(X(a),y-h,X(b)-X(a),h)});
+ g.strokeStyle=col;g.lineWidth=2.8;path();g.stroke();g.restore()}
+function polyPt(p,f){let rem=clamp(f)*polyLen(p);for(let i=1;i<p.length;i++){const d=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);if(rem<=d||i===p.length-1){const k=d?clamp(rem/d):0;return[lerp(p[i-1][0],p[i][0],k),lerp(p[i-1][1],p[i][1],k)]}rem-=d}return p[p.length-1]}
+function dot(g,x,y,col,r=7){g.fillStyle=hexA(col,.25);g.beginPath();g.arc(x,y,r*2.3,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,r,0,7);g.fill()}
+function pl(g,p,col,lw=2.5,f=1,dash){g.strokeStyle=col;g.lineWidth=lw;if(dash)g.setLineDash(dash);g.beginPath();polyPartial(g,p,f);g.stroke();g.setLineDash([])}
+// fraction of the time from caption k0 (+d0 s) to the end of the scene, finishing at fraction m of that span
+function sweep(P,k0,d0=0,m=.9){const st=P.ls-P.sec(k0)+d0,en=P.dur-.35;return clamp((P.ls-st)/Math.max(.1,(en-st)*m))}
+function capv(g,x,y,col,w=46){g.strokeStyle=col;g.lineWidth=3;line(g,x-w/2,y,x+w/2,y);line(g,x-w/2,y+14,x+w/2,y+14)}
+function tbox(g,x,y,w,h,col,name,on){panel(g,x-w/2,y-h/2,w,h,{r:10,fill:on>0?hexA(col,.12+.2*on):'#F2F1F0',stroke:hexA(col,.5+.5*on),lw:2+on});T(g,name,x,y+7,{sz:19,f:FM,w:700,al:'center',c:on>0?C.text:col})}
+
+/* ---------- 0 TITLE ---------- */
+const LEARN=['신호 경로','픽셀과 스캔','타이밍 계산','TCON의 일','소스 드라이버','모바일 · OLED'];
+S({code:'00',title:'디스플레이 구동 IC — DDI와 TCON',group:'DISPLAY IC',hideHead:1,
+ caps:[{t:'디스플레이 구동 IC — DDI와 TCON이 화면에 그림을 그리는 방식을 알아봅니다.',say:'디스플레이 구동 아이씨. 디디아이와 티콘이 화면에 그림을 그리는 방식을 알아봅니다.'},
+  {t:'신호 경로, 픽셀과 스캔, 타이밍, TCON, 소스 드라이버, 모바일·OLED 구동까지.',say:'신호 경로, 픽셀과 스캔, 타이밍, 티콘, 소스 드라이버, 모바일과 오엘이디 구동까지 봅니다.'}],
+ draw(g,P){const t=P.ls,R=14,Cc=40,x0=160,y0=190,w=1600,h=640,cw=w/Cc,ch=h/R,row=Math.floor(t*4.5)%R,fa=P.at(0,0,1.2);
+  g.globalAlpha=fa*.6;for(let r=0;r<R;r++)for(let c=0;c<Cc;c++){g.fillStyle=r<=row?pc(img(r,c,R,Cc),r===row?.95:.4):'#F6F5F4';g.fillRect(x0+c*cw+1,y0+r*ch+1,cw-2,ch-2)}
+  g.fillStyle=CG;g.fillRect(x0-16,y0+row*ch+2,8,ch-4);g.globalAlpha=1;
+  const cx=960,cy=480,rg=g.createRadialGradient(cx,cy,60,cx,cy,720);rg.addColorStop(0,'rgba(244,242,238,0.95)');rg.addColorStop(.7,'rgba(244,242,238,0.75)');rg.addColorStop(1,'rgba(244,242,238,0.2)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8);
+  g.globalAlpha=a1;T(g,'DISPLAY DRIVER IC',cx,360,{sz:24,f:FM,w:600,al:'center',c:CT});
+  g.globalAlpha=a2;T(g,'DDI · TCON',cx,500+(1-a2)*30,{sz:120,f:FD,w:400,al:'center'});
+  g.globalAlpha=a3;T(g,'디스플레이 구동 IC가 화면을 그리는 방법',cx,590,{sz:44,w:600,al:'center'});g.globalAlpha=1;
+  LEARN.forEach((s,k)=>{const a=P.at(1,.2+k*.35,.5);if(a<=0)return;g.globalAlpha=a;chip(g,cx+(k-2.5)*255,700+(1-a)*16,`${pad2(k+1)}  ${s}`,[CS,CP,C.mid,CT,CD,CO][k],{sz:20,al:'center'});g.globalAlpha=1})}});
+
+/* ---------- 1 SIGNAL CHAIN ---------- */
+S({code:'1-1',title:'신호 경로 — SoC에서 픽셀까지',group:'1 · 디스플레이 IC는 어디에 있나',
+ caps:[{t:'SoC나 GPU가 만든 프레임은 링크를 타고 패널 쪽 TCON으로 들어갑니다.',say:'에스오씨나 지피유가 만든 프레임은, 링크를 타고 패널 쪽 티콘으로 들어갑니다.'},
+  {t:'TCON은 소스 드라이버에 데이터를, 게이트 드라이버에 타이밍을 보냅니다. 각각 세로·가로 라인을 구동합니다.',say:'티콘은 소스 드라이버에 데이터를, 게이트 드라이버에 타이밍을 보냅니다. 각각 세로, 가로 라인을 구동합니다.'},
+  {t:'게이트 드라이버는 유리 위에 직접 만드는 GIP·GOA가 흔합니다. 구성은 제품마다 다릅니다.',say:'게이트 드라이버는 유리 위에 직접 만드는 지아이피, 지오에이 방식이 흔합니다. 구성은 제품마다 다릅니다.'}],
+ draw(g,P){tagc(g,'개념도');const PX=980,PY=380,PW=780,PHh=440,R=9,Cc=16,cw=PW/Cc,ch=PHh/R;
+  const aS=P.at(0,0,.5),aT=P.at(0,.5,.5),aP=P.at(0,.9,.6),aD=P.at(1,0,.6),aG=P.at(1,.6,.6),on2=P.at(1,3.2,.5),g3=P.at(2,0,.6);
+  const pr=P.sec(1)>=3.2?sweep(P,1,3.4,.85):0,rf=pr*R;
+  // panel
+  if(aP>0){g.globalAlpha=aP;grid(g,PX,PY,PW,PHh,R,Cc,(r)=>r<Math.floor(rf)?1:r===Math.floor(rf)&&pr<1?.25+.6*(rf%1):0);
+   g.lineWidth=1;for(let c=0;c<=Cc;c++){g.strokeStyle=hexA(CD,.1+.25*on2);line(g,PX+c*cw,PY,PX+c*cw,PY+PHh)}for(let r=0;r<=R;r++){g.strokeStyle=hexA(CG,.1+.25*on2);line(g,PX,PY+r*ch,PX+PW,PY+r*ch)}
+   if(on2>0&&pr<1){const ry=PY+Math.floor(rf)*ch;g.strokeStyle=CG;g.lineWidth=3;g.strokeRect(PX,ry,PW,ch)}
+   T(g,'Panel · 1920×1080 (축소 표시)',PX+PW,PY+PHh+36,{sz:16,f:FM,al:'right',c:hexA(CP,.9)});g.globalAlpha=1}
+  // SoC & link
+  ic(g,120,470,200,130,CS,'SoC / GPU',{a:aS,pins:'tblr',sub:'AP · 그래픽'});
+  if(aS>0){g.globalAlpha=aT;arrow(g,330,535,452,535,CS,aT,{lw:4});chip(g,390,430,'eDP · V-by-One · MIPI DSI',CS,{sz:15,al:'center',fill:'#F7F6F5'});g.globalAlpha=1}
+  if(P.sec(0)>1.2){for(let k=0;k<2;k++){const f=((P.ls*.8)+k*.5)%1;packet(g,330,535,452,535,f,CS,null)}}
+  ic(g,470,470,200,130,CT,'TCON',{a:aT,pins:'tblr',sub:'타이밍 컨트롤러',glow:P.at(1,0,.5)*.8});
+  // source drivers + bus
+  const SDX=k=>PX+(k+.5)*PW/4;
+  if(aD>0){g.globalAlpha=aD;const bus=[[680,505],[730,505],[730,212],[PX+PW-40,212]];pl(g,bus,hexA(CT,.8),3,aD);
+   for(let k=0;k<4;k++){pl(g,[[SDX(k),212],[SDX(k),240]],hexA(CT,.8),3,1);ic(g,SDX(k)-70,250,140,62,CD,'SD'+(k+1),{sz:19,np:6});
+    for(let c=0;c<4;c++){const x=PX+(k*4+c+.5)*cw;g.strokeStyle=hexA(CD,.35+.5*on2);g.lineWidth=2;line(g,x,321,x,PY-10)}}
+   chip(g,850,212,'P2P · mini-LVDS 등',CT,{sz:14,al:'center',fill:'#F7F6F5'});chip(g,PX+PW/2,212,'Source Driver IC (좁은 의미의 DDI)',CD,{sz:15,al:'center',fill:'#F7F6F5'});
+   if(P.sec(1)>.4&&P.sec(1)<3.2){for(let k=0;k<4;k++){const f=((P.ls*.6)+k*.13)%1,pt=polyPt([...bus.slice(0,3),[SDX(k),212],[SDX(k),240]],f);dot(g,pt[0],pt[1],CT,6)}}g.globalAlpha=1}
+  // gate driver
+  if(aG>0){g.globalAlpha=aG;const gx=918;panel(g,gx,PY-6,40,PHh+12,{r:8,fill:hexA(CG,.14+.2*g3),stroke:hexA(CG,.9),lw:2+g3*2});
+   for(let r=0;r<R;r++){const y=PY+(r+.5)*ch;g.strokeStyle=hexA(CG,.7);g.lineWidth=2;line(g,gx+40,y,PX-10,y)}
+   pl(g,[[570,609],[570,760],[gx,760]],hexA(CT,.8),3,aG);chip(g,720,760,'STV · CLK',CT,{sz:14,al:'center',fill:'#F7F6F5'});
+   TR(g,'Gate Driver',gx-16,PY+PHh/2,{sz:18,f:FM,w:700,al:'center',c:CG});
+   if(on2>0&&pr<1){g.fillStyle=CG;g.fillRect(gx+4,PY+Math.floor(rf)*ch+4,32,ch-8)}g.globalAlpha=1}
+  if(g3>0){g.globalAlpha=g3;chip(g,938,352,'GIP · GOA (유리 위)',CG,{sz:15,al:'center',fill:'#F7F6F5'});g.globalAlpha=1}
+  if(on2>0){g.globalAlpha=on2;T(g,'↓ 데이터 라인 (열)',PX,PY+PHh+36,{sz:16,c:CD});T(g,'→ 게이트 라인 (행)',PX+170,PY+PHh+36,{sz:16,c:CG});g.globalAlpha=1}}});
+
+/* ---------- 2 INTERFACES ---------- */
+function devIcon(g,k,x,y,col){g.strokeStyle=col;g.lineWidth=2.5;
+ if(k===0){rrect(g,x-38,y-36,76,50,5);g.stroke();g.beginPath();g.moveTo(x-50,y+22);g.lineTo(x+50,y+22);g.lineTo(x+42,y+30);g.lineTo(x-42,y+30);g.closePath();g.stroke()}
+ else if(k===1){rrect(g,x-50,y-36,100,60,4);g.stroke();line(g,x,y+24,x,y+34);line(g,x-22,y+34,x+22,y+34)}
+ else{rrect(g,x-22,y-40,44,80,9);g.stroke();line(g,x-6,y+30,x+6,y+30)}}
+S({code:'1-2',title:'인터페이스 — 밖에서 들어오는 링크, 패널 안의 연결',group:'1 · 디스플레이 IC는 어디에 있나',
+ caps:[{t:'외부 링크는 기기마다 다릅니다. 노트북은 eDP, TV는 V-by-One·LVDS, 모바일은 MIPI DSI.',say:'외부 링크는 기기마다 다릅니다. 노트북은 이디피, 티비는 브이바이원이나 엘브이디에스, 모바일은 미피 디에스아이.'},
+  {t:'패널 안의 TCON–소스 드라이버 연결은 예전엔 mini-LVDS·RSDS 같은 공유 버스였습니다.',say:'패널 안의 티콘과 소스 드라이버 연결은, 예전엔 미니 엘브이디에스, 알에스디에스 같은 공유 버스였습니다.'},
+  {t:'요즘은 드라이버마다 전용 선을 두는 P2P가 주류입니다. EPI, USI-T, CEDS 등 회사별 규격이 있습니다.',say:'요즘은 드라이버마다 전용 선을 두는 피투피가 주류입니다. 이피아이, 유에스아이 티, 씨이디에스 등이 있습니다.'}],
+ draw(g,P){T(g,'외부 링크 · SoC → TCON',140,240,{sz:26,w:700,c:CS});
+  const L=[['노트북 · 모니터','eDP','DisplayPort 기반 · 메인 링크 레인 + AUX 채널'],['TV','V-by-One HS · LVDS','고속 직렬 · 클록 내장 (LVDS는 이전 세대)'],['모바일','MIPI DSI','D-PHY 또는 C-PHY · 비디오 / 커맨드 모드']];
+  L.forEach(([a,b,c],i)=>{const y=275+i*190,al=P.at(0,.3+i*.5,.5);if(al<=0)return;g.save();g.globalAlpha=al;g.translate((1-al)*-30,0);panel(g,140,y,760,165,{r:16,fill:'#F6F5F4',stroke:hexA(CS,.45)});
+   devIcon(g,i,225,y+82,CS);T(g,a,320,y+48,{sz:20,c:C.mid});T(g,b,320,y+98,{sz:34,f:FM,w:700,c:CS});T(g,c,320,y+136,{sz:18,c:C.dim});g.restore()});
+  g.strokeStyle=C.line;g.lineWidth=1.5;line(g,950,210,950,860);
+  T(g,'패널 내부 · TCON → 소스 드라이버',1000,240,{sz:26,w:700});
+  // multi-drop
+  const a1=P.at(1,0,.6);if(a1>0){g.save();g.globalAlpha=a1;panel(g,1000,265,800,270,{r:16,fill:'#F6F5F4',stroke:hexA(CT,.4)});T(g,'공유 버스 (Multi-drop)',1024,306,{sz:22,w:700});T(g,'mini-LVDS · RSDS — 레거시',1024,336,{sz:17,c:C.dim});
+   ic(g,1030,400,120,90,CT,'TCON',{sz:19,pins:'r'});const f=P.at(1,.4,1.2);
+   [456,474,492].forEach((y,j)=>pl(g,[[1159,y],[1780,y]],hexA(j===2?CT:CD,.8),2.5,f,j===2?[6,5]:null));
+   for(let k=0;k<4;k++){const x=1250+k*140;ic(g,x,370,110,50,CD,'SD'+(k+1),{sz:17,pins:'b',np:4});if(f>.2+k*.2){[456,474,492].forEach(y=>{g.fillStyle=CD;g.beginPath();g.arc(x+55,y,3.5,0,7);g.fill()});g.strokeStyle=hexA(CD,.6);g.lineWidth=2;line(g,x+55,429,x+55,492)}}
+   T(g,'여러 드라이버가 같은 선을 공유 · 클록 별도',1780,522,{sz:16,al:'right',c:C.mid});g.restore()}
+  // P2P
+  const a2=P.at(2,0,.6);if(a2>0){g.save();g.globalAlpha=a2;panel(g,1000,560,800,290,{r:16,fill:'#F6F5F4',stroke:hexA(CT,.4)});T(g,'Point-to-Point (P2P)',1024,601,{sz:22,w:700,c:CT});T(g,'예: EPI · USI-T · CEDS 등 — 회사별 규격',1024,631,{sz:17,c:C.dim});
+   ic(g,1030,690,120,90,CT,'TCON',{sz:19,pins:'r'});
+   for(let k=0;k<4;k++){const x=1250+k*140,yy=708+k*16,p=[[1159,yy],[x+55,yy],[x+55,700]];ic(g,x,650,110,40,CD,'SD'+(k+1),{sz:16,pins:'b',np:4});
+    pl(g,[[1159,yy],[x+55,yy],[x+55,699]],hexA(CT,.85),2.5,P.at(2,.3+k*.15,.6));if(P.sec(2)>1.2){const pt=polyPt(p,((P.ls*.7)+k*.21)%1);dot(g,pt[0],pt[1],CT,5)}}
+   chip(g,1780,808,'클록 내장 · 선 수 ↓ · 속도 ↑',CT,{sz:16,al:'right'});g.restore()}}});
+
+/* ---------- 3 PIXEL ---------- */
+S({code:'2-1',title:'픽셀 한 칸 — 스위치와 저장 커패시터',group:'2 · 픽셀과 스캔',
+ caps:[{t:'LCD 픽셀은 스위치 TFT 하나와 커패시터로 이루어집니다. 액정 자체도 커패시터처럼 동작합니다.',say:'엘씨디 픽셀은 스위치 티에프티 하나와 커패시터로 되어 있습니다. 액정도 커패시터처럼 동작합니다.'},
+  {t:'게이트가 열리면 데이터 전압이 픽셀에 충전되고, 닫힌 뒤에도 다음 프레임까지 유지됩니다.'},
+  {t:'OLED는 저장된 전압으로 구동 TFT가 전류를 조절합니다. LCD는 전압, OLED는 전류로 밝기를 정합니다.',say:'오엘이디는 저장된 전압으로 구동 티에프티가 전류를 조절합니다. 엘씨디는 전압, 오엘이디는 전류로 밝기를 정합니다.'}],
+ draw(g,P){tagc(g,'개념도');
+  const s1=P.sec(1),on1=s1>=.3&&s1<2.4?1:0,v1=s1<.3?0:.85*(1-Math.exp(-(Math.min(s1,2.4)-.3)/.45));
+  const la=P.at(0,0,.6);g.globalAlpha=la;T(g,'LCD 픽셀',140,236,{sz:28,w:700});T(g,'TFT 1개 + C_LC + Cst',290,236,{sz:18,f:FM,c:C.dim});
+  g.strokeStyle=hexA(CG,on1?1:.7);g.lineWidth=on1?6:3;line(g,160,330,880,330);T(g,'Gate line (행)',880,316,{sz:17,al:'right',c:CG});
+  g.strokeStyle=hexA(CD,.9);g.lineWidth=3;line(g,260,280,260,830);T(g,'Data line (열)',272,830,{sz:17,c:CD});
+  g.strokeStyle=C.mid;g.lineWidth=2.5;line(g,420,330,420,410);line(g,260,440,380,440);line(g,460,440,780,440);
+  tbox(g,420,440,80,60,CG,'TFT',on1);g.fillStyle=C.text;g.beginPath();g.arc(620,440,6,0,7);g.fill();
+  g.strokeStyle=C.mid;g.lineWidth=2.5;line(g,620,440,620,560);capv(g,620,560,CP);line(g,620,574,620,690);line(g,780,440,780,560);capv(g,780,560,CP);line(g,780,574,780,690);line(g,560,690,860,690);
+  T(g,'C_LC (액정)',650,558,{sz:17,f:FM,c:CP});T(g,'Cst (저장)',810,558,{sz:17,f:FM,c:CP});T(g,'Vcom (공통 전극)',860,720,{sz:17,al:'right',c:C.dim});
+  // voltage bar
+  panel(g,470,530,26,140,{r:6,fill:'#F4F3F2',stroke:C.line});if(v1>0){g.fillStyle=CD;g.fillRect(473,667-134*v1,20,134*v1)}T(g,'V픽셀',483,700,{sz:16,al:'center',c:C.mid});
+  if(on1){for(let k=0;k<3;k++){const f=((s1*1.3)+k/3)%1;dot(g,lerp(262,616,f),440,CD,5)}chip(g,420,372,'ON',CG,{sz:14,al:'center'})}
+  if(s1>=2.4){chip(g,500,790,'게이트 OFF → 전압 유지 (다음 프레임까지)',CD,{sz:17,al:'center'})}g.globalAlpha=1;
+  g.strokeStyle=C.line;g.lineWidth=1.5;line(g,940,210,940,860);
+  // OLED
+  const b=P.at(2,0,.6);if(b<=0)return;g.save();g.globalAlpha=b;const s2=P.sec(2),on2=s2>=.3&&s2<1.8?1:0,v2=s2<.3?0:.85*(1-Math.exp(-(Math.min(s2,1.8)-.3)/.35));
+  T(g,'OLED 픽셀',1000,236,{sz:28,w:700,c:CO});T(g,'2T1C 개념도',1170,236,{sz:18,f:FM,c:C.dim});
+  g.strokeStyle=hexA(CO,.8);g.lineWidth=3;line(g,1300,300,1780,300);T(g,'ELVDD',1780,288,{sz:16,f:FM,al:'right',c:CO});
+  g.strokeStyle=hexA(CG,on2?1:.7);g.lineWidth=on2?6:3;line(g,1000,360,1780,360);T(g,'Scan (게이트)',1010,348,{sz:16,c:CG});
+  g.strokeStyle=hexA(CD,.9);g.lineWidth=3;line(g,1080,380,1080,830);T(g,'Data',1092,830,{sz:16,f:FM,c:CD});
+  g.strokeStyle=C.mid;g.lineWidth=2.5;line(g,1200,360,1200,410);line(g,1080,440,1160,440);line(g,1240,440,1400,440);line(g,1400,440,1400,392);line(g,1400,378,1400,300);capv(g,1400,378,CP,40);
+  line(g,1400,440,1400,520);line(g,1400,520,1500,520);line(g,1540,490,1540,300);line(g,1540,550,1540,640);line(g,1540,690,1540,780);line(g,1440,780,1640,780);
+  tbox(g,1200,440,80,60,CG,'T1',on2);tbox(g,1540,520,80,60,CO,'T2',v2);T(g,'Cst',1420,390,{sz:16,f:FM,c:CP});T(g,'스위치',1200,494,{sz:15,al:'center',c:C.dim});T(g,'구동 TFT',1600,560,{sz:15,c:C.dim});
+  // diode
+  const gl=v2;if(gl>0){const rg=g.createRadialGradient(1540,665,4,1540,665,110);rg.addColorStop(0,hexA(CO,.55*gl));rg.addColorStop(1,hexA(CO,0));g.fillStyle=rg;g.fillRect(1420,550,240,240)}
+  g.beginPath();g.moveTo(1512,640);g.lineTo(1568,640);g.lineTo(1540,688);g.closePath();g.fillStyle=gl>0?hexA(CO,.3+.6*gl):'#F2F1EF';g.fill();g.strokeStyle=CO;g.lineWidth=2.5;g.stroke();line(g,1512,690,1568,690);
+  T(g,'OLED',1585,672,{sz:17,f:FM,w:700,c:CO});T(g,'ELVSS',1650,786,{sz:16,f:FM,c:C.dim});
+  if(on2){for(let k=0;k<3;k++){const f=((s2*1.4)+k/3)%1;dot(g,lerp(1082,1396,f),440,CD,5)}}
+  if(v2>.3){for(let k=0;k<4;k++){const f=((P.ls*.9)+k/4)%1;dot(g,1540,lerp(305,775,f),CO,4)}chip(g,1620,440,'I = f(Vgs) → 밝기',CO,{sz:16})}
+  T(g,'실제 제품은 보상 회로가 더해진 6T·7T 등 다양한 구조',1000,862,{sz:16,c:C.dim});g.restore()}});
+
+/* ---------- 4 ROW SCAN ---------- */
+S({code:'2-2',title:'행 단위 스캔 — 한 번에 한 줄씩',group:'2 · 픽셀과 스캔',
+ caps:[{t:'게이트가 한 행을 열면 소스 드라이버가 모든 열에 동시에 전압을 쓰고, 클록마다 다음 행으로 내려갑니다.'},
+  {t:'게이트 드라이버는 시프트 레지스터입니다. 시작 펄스를 받아 클록마다 다음 단으로 넘깁니다.'},
+  {t:'FHD라면 1080행을 1/60초에 모두 훑습니다. 한 행에 약 14.8 µs.',say:'에프에이치디라면 천팔십 행을 60분의 1초에 모두 훑습니다. 한 행에 약 14.8 마이크로초입니다.'}],
+ draw(g,P){tagc(g,'개념도 · 12행으로 축소');const PX=560,PY=300,PW=1000,PHh=500,R=12,Cc=24,cw=PW/Cc,ch=PHh/R;
+  let rf,ph0=0,fast=P.sec(2)>=0;if(!fast)rf=R*clamp((P.sec(0)-.8)/Math.max(.1,P.sec(0)-P.sec(2)-1.2));else{const q=P.sec(2)*7;rf=q%R;ph0=1+Math.floor(q/R)}
+  const cr=Math.floor(rf),writing=rf<R;
+  grid(g,PX,PY,PW,PHh,R,Cc,(r)=>fast?1:(r<cr?1:r===cr?.2+.7*(rf%1):0),{ph:r=>fast?(r<cr?ph0:ph0-1):0});
+  if(writing){g.strokeStyle=CG;g.lineWidth=3;g.strokeRect(PX-2,PY+cr*ch,PW+4,ch)}
+  // source drivers
+  for(let k=0;k<4;k++){const x=PX+k*250+45;ic(g,x,205,160,48,CD,'SD'+(k+1),{sz:18,pins:'b',np:6})}
+  for(let c=0;c<Cc;c++){const x=PX+(c+.5)*cw;g.strokeStyle=hexA(CD,writing?.85:.3);g.lineWidth=2;line(g,x,262,x,PY-10);if(writing&&!fast){const f=((P.ls*2)+c*.07)%1;g.fillStyle=CD;g.beginPath();g.arc(x,lerp(264,PY+cr*ch+ch/2,f),3,0,7);g.fill()}}
+  // gate shift register
+  const hs=P.at(1,0,.5);for(let r=0;r<R;r++){const y=PY+r*ch,on=writing&&r===cr;panel(g,420,y+4,80,ch-8,{r:6,fill:on?hexA(CG,.45):'#F2F1F0',stroke:hexA(CG,on?1:.55),lw:on?2.5:1.5});
+   if(hs>0){g.globalAlpha=hs;T(g,'SR'+(r+1),460,y+ch/2+6,{sz:15,f:FM,al:'center',c:on?C.text:CG});g.globalAlpha=1}
+   g.strokeStyle=hexA(CG,on?1:.4);g.lineWidth=on?3:1.5;line(g,500,y+ch/2,PX-10,y+ch/2);if(r<R-1&&hs>0){g.strokeStyle=hexA(CG,.5*hs);g.lineWidth=1.5;line(g,440,y+ch-4,440,y+ch+4)}}
+  if(hs>0){g.globalAlpha=hs;arrow(g,460,240,460,PY,CT,1,{lw:2.5,hs:9});T(g,'STV',460,232,{sz:16,f:FM,w:700,al:'center',c:CT});
+   g.strokeStyle=hexA(CT,.7);g.lineWidth=2;g.setLineDash([4,5]);line(g,396,PY,396,PY+PHh);g.setLineDash([]);TR(g,'CLK',384,PY+PHh/2,{sz:16,f:FM,w:700,al:'center',c:CT});g.globalAlpha=1}
+  T(g,writing?`Row ${cr+1} 쓰는 중`:'프레임 완료',PX,PY+PHh+44,{sz:18,f:FM,c:writing?CG:C.mid});
+  const ia=P.at(2,.3,.6);if(ia>0){g.globalAlpha=ia;panel(g,1600,300,210,500,{r:14,fill:'#F6F5F4',stroke:hexA(CG,.4)});
+   [['FHD 기준',16,C.dim,FK],['1080 행',32,C.text,FM],['× 60 Hz',22,C.mid,FM],['1 프레임',16,C.dim,FK],['16.67 ms',28,C.text,FM],['1 라인',16,C.dim,FK],['≈ 14.81 µs',28,CG,FM]].forEach(([s,z,c,f],i)=>T(g,s,1624,350+[0,44,84,150,190,260,300][i],{sz:z,f,w:600,c}));
+   T(g,'블랭킹 포함',1624,346+384,{sz:15,c:C.dim});g.globalAlpha=1}}});
+
+/* ---------- 5 TIMING NUMBERS ---------- */
+const FORM=[['1920 × 1080  @ 60 Hz','화면에 보이는 유효 영역 (Active)',0,0,C.text],['총 2200 × 1125','CTA-861 표준 타이밍 · 블랭킹 포함',0,3.6,C.text],['2200 × 1125 × 60 = 148.5 MHz','픽셀 클록 (정확한 값)',1,.3,CS],['2200 ÷ 148.5 MHz ≈ 14.81 µs','1 라인 시간 · 라인 주파수 67.5 kHz',2,.2,CG],['1125 × 14.81 µs ≈ 16.67 ms','1 프레임 = 1/60 초',2,2.2,CP]];
+S({code:'3-1',title:'타이밍 계산 — FHD 60 Hz',group:'3 · 타이밍 숫자 감각',
+ caps:[{t:'FHD 60 Hz: 보이는 영역은 1920×1080, 블랭킹을 포함한 표준 총 타이밍은 2200×1125입니다.',say:'에프에이치디 60 헤르츠. 보이는 영역은 1920 곱하기 1080, 블랭킹을 포함한 총 타이밍은 2200 곱하기 1125입니다.'},
+  {t:'그래서 픽셀 클록은 2200 × 1125 × 60 = 148.5 MHz.',say:'그래서 픽셀 클록은 2200 곱하기 1125 곱하기 60, 148.5 메가헤르츠입니다.'},
+  {t:'한 라인 = 2200 ÷ 148.5 MHz ≈ 14.81 µs, 한 프레임 ≈ 16.67 ms.',say:'한 라인은 2200 나누기 148.5 메가헤르츠, 약 14.81 마이크로초. 한 프레임은 약 16.67 밀리초입니다.'}],
+ draw(g,P){FORM.forEach(([m,n,k,d,c],i)=>{const a=P.at(k,d,.6);if(a<=0)return;const y=240+i*124;g.save();g.globalAlpha=a;g.translate((1-a)*30,0);
+   panel(g,130,y,990,106,{r:14,fill:'#F6F5F4',stroke:hexA(c===C.text?C.mid:c,.4)});T(g,pad2(i+1),160,y+62,{sz:22,f:FD,c:CT});T(g,m,230,y+54,{sz:36,f:FM,w:600,c});T(g,n,230,y+88,{sz:18,c:C.mid});g.restore()});
+  // zoom bars
+  const x=1200,w=600,a2=P.at(1,.8,.6),a3=P.at(2,.8,.6),a4=P.at(2,2.6,.6);
+  if(a2>0){g.globalAlpha=a2;T(g,'1 프레임 · 1125 라인',x,280,{sz:19,w:600,c:CP});T(g,'16.67 ms',x+w,280,{sz:19,f:FM,al:'right',c:CP});
+   const segs=45;for(let s=0;s<segs;s++){const ln=s/segs*1125,act=ln>=41&&ln<1121;g.fillStyle=act?hexA(CP,.55):'#E6E4E0';g.fillRect(x+s*w/segs+1,296,w/segs-2,40)}
+   g.strokeStyle=CT;g.lineWidth=2.5;g.strokeRect(x+20*w/segs,292,w/segs,48);g.globalAlpha=1}
+  if(a3>0){g.globalAlpha=a3;g.strokeStyle=hexA(CT,.5);g.lineWidth=1.5;line(g,x+20*w/segs,340,x,430);line(g,x+21*w/segs,340,x+w,430);
+   T(g,'1 라인 · 2200 클록',x,420,{sz:19,w:600,c:CG});T(g,'14.81 µs',x+w,420,{sz:19,f:FM,al:'right',c:CG});
+   const parts=[[44,CS,'Hsync'],[148,'#E6E4E0','HBP'],[1920,CP,'Active 1920'],[88,'#E6E4E0','HFP']];let xx=x;parts.forEach(([n,c,l])=>{const ww=n/2200*w;g.fillStyle=c===CP?hexA(CP,.55):c;g.fillRect(xx+1,436,ww-2,44);if(n>1000)T(g,l,xx+ww/2,466,{sz:17,f:FM,w:600,al:'center'});xx+=ww});
+   T(g,'Active 1920 클록 ≈ 12.93 µs',x,510,{sz:16,f:FM,c:C.mid});T(g,'블랭킹 280 클록',x+w,510,{sz:16,f:FM,al:'right',c:C.dim});g.globalAlpha=1}
+  if(a4>0){g.globalAlpha=a4;T(g,'1 픽셀 클록',x,600,{sz:19,w:600,c:CS});T(g,'1 ÷ 148.5 MHz ≈ 6.73 ns',x+w,600,{sz:19,f:FM,al:'right',c:CS});
+   const pts=[];for(let k=0;k<8;k++){const x0=x+k*75;pts.push([x0,700],[x0,640],[x0+37.5,640],[x0+37.5,700])}pts.push([x+w,700]);pl(g,pts,CS,2.5,1);
+   g.fillStyle=hexA(CT,.18);g.fillRect(x+150,630,75,80);g.strokeStyle=CT;g.lineWidth=2;g.strokeRect(x+150,630,75,80);T(g,'1 픽셀',x+187,740,{sz:16,al:'center',c:CT});g.globalAlpha=1}}});
+
+/* ---------- 6 BLANKING & 4K120 ---------- */
+S({code:'3-2',title:'블랭킹과 DE — 그리고 4K 120 Hz',group:'3 · 타이밍 숫자 감각',
+ caps:[{t:'2200 클록 중 실제 픽셀은 1920개. 나머지는 Hsync와 앞뒤 포치로 된 수평 블랭킹입니다.',say:'2200 클록 중 실제 픽셀은 1920개. 나머지는 에이치싱크와 앞뒤 포치로 된 수평 블랭킹입니다.'},
+  {t:'세로도 1125 라인 중 1080 라인만 유효합니다. 유효 데이터 구간은 DE 신호가 알려줍니다.',say:'세로도 1125 라인 중 1080 라인만 유효합니다. 유효 데이터 구간은 디이 신호가 알려줍니다.'},
+  {t:'4K 120 Hz는 총 4400×2250, 픽셀 클록 1188 MHz — FHD 60의 8배입니다.',say:'4케이 120 헤르츠는 총 4400 곱하기 2250, 픽셀 클록 1188 메가헤르츠로 8배입니다.'},
+  {t:'한 행 시간은 약 3.70 µs, 4분의 1입니다. 그만큼 픽셀 충전이 빠듯해집니다.',say:'한 행 시간은 약 3.70 마이크로초, 4분의 1입니다. 그만큼 픽셀 충전이 빠듯해집니다.'}],
+ draw(g,P){const x0=320,y0=262,s=720/2200,H1=[44,148,1920,88],V=[[5,8],[36,44],[1080,380],[4,8]];const a0=P.at(0,0,.6),a1=P.at(1,0,.6);
+  const hx=[x0];H1.forEach(n=>hx.push(hx[hx.length-1]+n*s));const vy=[y0];V.forEach(([n,p])=>vy.push(vy[vy.length-1]+p));
+  g.globalAlpha=a0;for(let i=0;i<4;i++)for(let j=0;j<4;j++){const act=i===2&&j===2,sync=i===0||j===0;g.fillStyle=act?'#F5F4F3':sync?hexA(CS,.28):'#EDECE9';g.fillRect(hx[i]+1,vy[j]+1,hx[i+1]-hx[i]-2,vy[j+1]-vy[j]-2)}
+  // active image
+  const R=12,Cc=24,aw=hx[3]-hx[2],ah=vy[3]-vy[2];for(let r=0;r<R;r++)for(let c=0;c<Cc;c++){g.fillStyle=pc(img(r,c,R,Cc),.75);g.fillRect(hx[2]+c*aw/Cc+1,vy[2]+r*ah/R+1,aw/Cc-2,ah/R-2)}
+  g.strokeStyle=CP;g.lineWidth=2.5;g.strokeRect(hx[2],vy[2],aw,ah);T(g,'Active 1920 × 1080',hx[2]+aw/2,vy[2]+ah/2+10,{sz:26,f:FM,w:700,al:'center'});
+  const lbl=(t,x,y,c,al='center')=>T(g,t,x,y,{sz:16,f:FM,al,c});
+  lbl('Hsync 44',hx[1]-2,244,CS,'right');lbl('HBP 148',hx[1]+26,226,C.mid);lbl('HFP 88',hx[4],244,C.mid,'right');g.strokeStyle=hexA(C.mid,.5);g.lineWidth=1;line(g,hx[1]+26,230,hx[1]+26,y0);
+  T(g,'← 가로 총 2200 클록 →',(hx[0]+hx[4])/2,vy[4]+30,{sz:16,f:FM,al:'center',c:C.dim});g.globalAlpha=1;
+  if(a1>0){g.globalAlpha=a1;lbl('Vsync 5',x0-14,vy[0]+8,CS,'right');lbl('VBP 36',x0-14,vy[1]+28,C.mid,'right');lbl('Active 1080',x0-14,vy[2]+ah/2,CP,'right');lbl('VFP 4',x0-14,vy[4]-1,C.mid,'right');
+   T(g,'(세로 블랭킹은 보기 쉽게 확대)',x0-14,vy[2]+ah/2+26,{sz:14,al:'right',c:C.dim});
+   // DE + Hsync waves under the map, aligned to x
+   const wy=[vy[4]+84,vy[4]+140];T(g,'Hsync',x0-14,wy[0],{sz:17,f:FM,al:'right',c:CS});T(g,'DE',x0-14,wy[1],{sz:17,f:FM,al:'right',c:CP});
+   const cur=2200*clamp(P.sec(1)/2.2);wave(g,x0,wy[0],720,28,[[0,44]],2200,CS,cur);wave(g,x0,wy[1],720,28,[[192,2112]],2200,CP,cur);g.globalAlpha=1}
+  const b=P.at(2,0,.6);if(b>0){g.save();g.globalAlpha=b;g.translate((1-b)*40,0);const x=1140,y=240,w=660;panel(g,x,y,w,610,{r:18,fill:'#F6F5F4',stroke:hexA(CT,.5)});
+   T(g,'4K 120 Hz  (CTA-861)',x+28,y+50,{sz:26,f:FM,w:700,c:CT});
+   [['유효','3840 × 2160'],['총','4400 × 2250'],['픽셀 클록','4400×2250×120 = 1188 MHz'],['1 라인','4400 ÷ 1188 MHz ≈ 3.70 µs'],['1 프레임','≈ 8.33 ms']].forEach(([k,v],i)=>{T(g,k,x+28,y+104+i*44,{sz:18,c:C.dim});T(g,v,x+150,y+104+i*44,{sz:22,f:FM,w:600,c:i===2?CS:C.text})});
+   T(g,'FHD 60 대비 픽셀 클록 × 8.0',x+28,y+340,{sz:19,w:600,c:CS});
+   const c3=P.at(3,0,.8);if(c3>0){g.globalAlpha=b*c3;T(g,'한 행에 주어지는 시간',x+28,y+400,{sz:19,w:600,c:CG});
+    [['FHD 60',14.81],['4K 120',3.70]].forEach(([n,v],i)=>{const yy=y+440+i*66;T(g,n,x+28,yy+22,{sz:18,f:FM,c:C.mid});rrect(g,x+140,yy,480*(v/14.81)*eO3(c3),32,8);g.fillStyle=hexA(CG,i?.9:.45);g.fill();T(g,v.toFixed(2)+' µs',x+140+480*(v/14.81)*eO3(c3)+(i?12:-12),yy+23,{sz:18,f:FM,w:700,al:i?'left':'right',c:i?CG:C.text})});
+    chip(g,x+w-28,y+578,'행 2배 × 주사율 2배 → 1/4',CG,{sz:16,al:'right'})}g.restore()}
+  tagc(g,'CTA-861 표준값 · 패널 내부 타이밍은 제품별')}});
+
+/* ---------- 7 TCON BLOCKS ---------- */
+const TB=[['Rx','수신 · 복원',370,160,CS],['메모리','프레임 / 라인',560,170,CT],['화질 처리','OD · FRC · 감마',760,210,CT],['재배열','드라이버별 분배',1000,200,CT],['Tx','P2P 송신',1230,170,CT]];
+S({code:'4-1',title:'TCON 내부 — 받고, 가공하고, 나눠 보낸다',group:'4 · TCON의 일',
+ caps:[{t:'TCON은 받은 프레임에 화질 처리를 하고, 패널이 원하는 형태와 순서로 바꿉니다.',say:'티콘은 받은 프레임에 화질 처리를 하고, 패널이 원하는 형태와 순서로 바꿉니다.'},
+  {t:'한 줄 데이터는 드라이버별로 나누고 순서를 맞춰 보냅니다. 예: 5760 서브픽셀 → 1440채널 × 4.',say:'한 줄 데이터는 드라이버별로 나누고 순서를 맞춰 보냅니다. 예를 들어 5760 서브픽셀을 1440채널씩 넷으로.'},
+  {t:'타이밍 생성부는 드라이버 제어 신호를 만들고, 설정값은 외부 메모리에서 읽기도 합니다.'}],
+ draw(g,P){tagc(g,'대표 구성 · 제품별 상이');const a0=P.at(0,0,.6);g.globalAlpha=a0;
+  panel(g,330,240,1230,470,{r:22,fill:'#F7F6F5',stroke:hexA(CT,.8),lw:2.5});T(g,'TCON',356,282,{sz:26,f:FM,w:700,c:CT});
+  ic(g,120,355,90,70,CS,'SoC',{sz:18,pins:'l'});arrow(g,220,390,362,390,CS,1,{lw:3});chip(g,262,318,'eDP · V-by-One',CS,{sz:14,al:'center'});
+  TB.forEach(([n,s,x,w,c],i)=>{const a=P.at(0,.3+i*.2,.4);if(a<=0)return;g.globalAlpha=a0*a;const hi=i===2?P.at(0,2.2,.5)*(P.i===0?1:.3):i===3?P.at(1,0,.5)*(P.i===1?1:.3):0;
+   panel(g,x,330,w,120,{r:12,fill:hexA(c,.07+.15*hi),stroke:hexA(c,.5+.5*hi),lw:1.5+hi*1.5});T(g,n,x+w/2,378,{sz:22,w:700,al:'center',c});T(g,s,x+w/2,410,{sz:16,al:'center',c:C.mid});
+   if(i<4)arrow(g,x+w+2,390,TB[i+1][2]-4,390,hexA(CT,.8),1,{lw:2.5,hs:9})});g.globalAlpha=a0;
+  // outputs
+  const SDY=k=>250+k*84;for(let k=0;k<4;k++){ic(g,1630,SDY(k),160,56,CD,'SD'+(k+1),{sz:18,pins:'r'});g.strokeStyle=hexA(CD,.5);g.lineWidth=2;line(g,1400,390,1621,SDY(k)+28)}
+  ic(g,1630,600,160,76,CG,'Gate · GIP',{sz:18,pins:'r'});
+  // timing generator
+  const tg=P.at(2,0,.6);panel(g,700,550,470,110,{r:12,fill:hexA(CT,.06+.14*tg),stroke:hexA(CT,.4+.6*tg),lw:1.5+tg});T(g,'Timing Generator',935,594,{sz:22,f:FM,w:700,al:'center',c:CT});T(g,'STV · CLK · OE · TP · POL …',935,628,{sz:16,f:FM,al:'center',c:C.mid});
+  if(tg>0){g.globalAlpha=a0*tg;pl(g,[[1170,610],[1621,638]],hexA(CG,.9),2.5,tg,[6,5]);pl(g,[[1170,575],[1590,575],[1590,SDY(3)+44],[1621,SDY(3)+44]],hexA(CD,.9),2.5,tg,[6,5]);
+   const mem=P.at(2,1,.6);g.globalAlpha=a0*mem;ic(g,400,766,180,62,C.mid,'EEPROM/Flash',{sz:16,pins:'t'});T(g,'OD LUT · 감마 · 설정값',600,806,{sz:17,c:C.mid});
+   ic(g,1000,766,180,62,C.mid,'PMIC · 감마',{sz:16,pins:'t'});T(g,'전원 · 감마 기준전압',1200,806,{sz:17,c:C.mid});g.strokeStyle=hexA(C.mid,.6);g.lineWidth=2;g.setLineDash([4,5]);line(g,490,757,490,710);line(g,1090,757,1090,710);g.setLineDash([])}
+  g.globalAlpha=a0;
+  // data re-ordering strip
+  const r2=P.sec(1)>=0?eIO3(clamp((P.sec(1)-.6)/1.6)):0,ra=P.at(1,0,.5);if(ra>0){g.globalAlpha=a0*ra;const sx=380,sy=480,cw2=36;T(g,'1 라인 = 1920 × RGB = 5760 서브픽셀',sx,sy-4+0,{sz:16,f:FM,c:C.mid});
+   for(let i=0;i<24;i++){const grp=Math.floor(i/6),x=sx+i*cw2+grp*28*r2;g.fillStyle=['#FF6B6B','#1E9E5A','#2F6FDB'][i%3];g.globalAlpha=a0*ra*.8;g.fillRect(x,sy+8,cw2-4,26)}
+   g.globalAlpha=a0*ra*r2;for(let k=0;k<4;k++){const x=sx+k*(6*cw2+28);chip(g,x+3*cw2-2,sy+54,'SD'+(k+1)+' · 1440ch (예)',CD,{sz:14,al:'center'})}
+   if(P.sec(1)>2.2){for(let k=0;k<4;k++){const f=((P.ls*.7)+k*.2)%1;packet(g,1400,390,1621,SDY(k)+28,f,CD,null)}}}
+  g.globalAlpha=1}});
+
+/* ---------- 8 CONTROL SIGNALS ---------- */
+const SIGT=[['STV','게이트','프레임 시작 펄스 — 첫 행부터 스캔 시작',CG,1],['CPV · GCLK','게이트','시프트 클록 — GIP는 여러 위상의 클록 사용',CG,1],['OE','게이트','게이트 출력 허용 구간 조절 (없는 방식도)',CG,1],['TP · STB · LOAD','소스','한 줄 데이터를 래치 → 전 채널 동시 출력',CD,2],['POL','소스','출력 극성 반전 (LCD)',CD,2],['DATA (+ 제어)','소스','P2P에선 제어 정보가 데이터 스트림에 실리기도',CD,2]];
+S({code:'4-2',title:'패널 제어 신호 — 이름은 달라도 역할은 비슷',group:'4 · TCON의 일',
+ caps:[{t:'TCON이 만드는 대표 제어 신호입니다. 이름과 개수는 벤더와 패널마다 다릅니다.',say:'티콘이 만드는 대표 제어 신호입니다. 이름과 개수는 벤더와 패널마다 다릅니다.'},
+  {t:'게이트 쪽: STV가 프레임 시작을, CPV나 게이트 클록이 행 이동을, OE가 출력 구간을 정합니다.',say:'게이트 쪽은 에스티브이가 프레임 시작을, 씨피브이나 게이트 클록이 행 이동을, 오이가 출력 구간을 정합니다.'},
+  {t:'소스 쪽: TP로 한 줄을 래치해 한꺼번에 내보내고, POL로 극성을 뒤집습니다.',say:'소스 쪽은 티피로 한 줄을 래치해 한꺼번에 내보내고, 폴로 극성을 뒤집습니다.'}],
+ draw(g,P){tagc(g,'명칭 예시 · 벤더별 상이');ic(g,140,420,220,160,CT,'TCON',{pins:'r',sz:28,a:P.at(0,0,.5)});
+  SIGT.forEach(([n,d,r,c,k],i)=>{const y=262+i*104,a=P.at(0,.3+i*.15,.5);if(a<=0)return;const hi=P.i>=1&&P.i===k?P.at(k,0,.5):0,dm=P.i>=1&&P.i!==k?.45:1;g.save();g.globalAlpha=a*dm;
+   pl(g,[[369,440+i*24],[420,440+i*24],[440,y],[470,y]],hexA(c,.7+.3*hi),2+hi,1);
+   panel(g,470,y-40,1330,80,{r:14,fill:hexA(c,.05+.1*hi),stroke:hexA(c,.35+.55*hi),lw:1.5+hi});chip(g,494,y,n,c,{sz:20,f:FM});
+   T(g,'→ '+d,830,y+8,{sz:18,c:C.mid});T(g,r,960,y+8,{sz:22,w:hi>0?600:500});g.restore()})}});
+
+/* ---------- 9 TIMING DIAGRAM (climax) ---------- */
+const hsI=[],deI=[],gcI=[],tpI=[],polI=[];for(let k=0;k<12;k++){hsI.push([k+.02,k+.13]);gcI.push([k+.03,k+.5]);if(k%2)polI.push([k,k+1])}
+for(let k=2;k<10;k++){deI.push([k+.3,k+.94]);tpI.push([k+.96,k+1.06])}
+const TSIG=[['Vsync',CS,[[.05,.95]],1],['Hsync',CS,hsI,1],['DE',CS,deI,1],['STV',CG,[[2.55,3.25]],2],['GCLK',CG,gcI,2],['TP',CD,tpI,3],['POL',CD,polI,4],['G1',CG,[[3.04,3.97]],2],['G2',CG,[[4.04,4.97]],2],['G3',CG,[[5.04,5.97]],2]];
+S({code:'4-3',title:'타이밍 다이어그램 — 한 프레임의 시작',group:'4 · TCON의 일',
+ caps:[{t:'이제 TCON의 타이밍을 파형으로 봅니다. 한 프레임의 시작 부분을 단순화한 개념도입니다.',say:'이제 티콘의 타이밍을 파형으로 봅니다. 한 프레임의 시작 부분을 단순화한 개념도입니다.'},
+  {t:'Vsync는 프레임 시작, Hsync는 라인 시작, DE가 높을 때만 유효 데이터입니다.',say:'브이싱크는 프레임 시작, 에이치싱크는 라인 시작, 디이가 높을 때만 유효 데이터입니다.'},
+  {t:'STV가 게이트 드라이버를 출발시키고, 게이트 클록마다 G1, G2, G3 … 다음 행이 열립니다.',say:'에스티브이가 게이트 드라이버를 출발시키고, 게이트 클록마다 지원, 지투, 지쓰리, 다음 행이 열립니다.'},
+  {t:'한 줄이 모이면 TP가 래치해 모든 채널을 동시에 출력합니다. 그 사이 열린 행이 충전됩니다.',say:'한 줄이 모이면 티피가 래치해 모든 채널을 동시에 출력합니다. 그 사이 열린 행이 충전됩니다.'},
+  {t:'POL은 라인마다 극성을 뒤집습니다. 이 과정이 1080행 전부, 1초에 60번 반복됩니다.',say:'폴 신호는 라인마다 극성을 뒤집습니다. 이 과정이 천팔십 행 전부, 1초에 60번 반복됩니다.'}],
+ draw(g,P){tagc(g,'개념도 · 위상과 폭은 패널마다 다름');const X0=290,WW=920,SP=12,X=t=>X0+t/SP*WW;
+  const cur=P.sec(1)<0?0:SP*sweep(P,1,0,.88),a0=P.at(0,0,.6);
+  g.globalAlpha=a0;for(let k=0;k<=SP;k++){g.strokeStyle=hexA(C.text,k===2||k===10?.22:.08);g.lineWidth=1;g.setLineDash([3,6]);line(g,X(k),246,X(k),812);g.setLineDash([])}
+  [[0,2,'V 블랭킹',C.dim],[2,10,'Line 1 … 8 데이터 입력 (DE)',CS],[10,12,'VFP',C.dim]].forEach(([a,b,s,c])=>{g.strokeStyle=hexA(c,.6);g.lineWidth=1.5;line(g,X(a)+4,236,X(b)-4,236);T(g,s,(X(a)+X(b))/2,226,{sz:15,f:FK,al:'center',c})});
+  TSIG.forEach(([n,c,hi,k],i)=>{const y=292+i*56,foc=P.i===k||(P.i===2&&i>=7)?1:P.i===0?.7:.45;T(g,n,262,y-4,{sz:18,f:FM,w:700,al:'right',c:hexA(c,foc>.9?1:.65)});
+   wave(g,X0,y,WW,28,hi,SP,c,cur,{fa:foc>.9?.2:.1})});
+  if(P.sec(1)>=0){g.strokeStyle=CT;g.lineWidth=2;line(g,X(cur),246,X(cur),812);chip(g,X(cur),826,cur<2?'V 블랭킹':cur<10?'Line '+Math.min(8,Math.floor(cur-1)):'VFP',CT,{sz:14,al:'center',fill:'#F6F5F4'})}
+  if(P.at(3,.4,.5)>0){g.globalAlpha=P.at(3,.4,.5);chip(g,X(6.5),864,'DE로 받은 줄 → TP 래치 → 다음 라인 구간에 출력 (파이프라인)',CD,{sz:15,al:'center'});g.globalAlpha=a0}
+  // mini panel
+  const PX=1360,PY=292,PW=430,PHh=480,R=8,Cc=10,cw=PW/Cc,ch=PHh/R;let wr=-1;for(let j=1;j<=R;j++)if(cur>=2+j&&cur<3+j)wr=j-1;
+  const tpOn=tpI.some(([a,b])=>cur>=a&&cur<b+.08);
+  panel(g,PX,248,PW,24,{r:6,fill:tpOn?hexA(CD,.6):'#F2F1F0',stroke:hexA(CD,.8)});T(g,'SD',PX-12,266,{sz:15,f:FM,w:700,al:'right',c:CD});
+  panel(g,PX-34,PY,22,PHh,{r:6,fill:'#F2F1F0',stroke:hexA(CG,.8)});
+  grid(g,PX,PY,PW,PHh,R,Cc,(r)=>{const j=r+1;return cur<2+j?0:clamp((cur-(2+j))*1.4)},{});
+  if(wr>=0){g.fillStyle=CG;g.fillRect(PX-30,PY+wr*ch+4,14,ch-8);g.strokeStyle=CG;g.lineWidth=3;g.strokeRect(PX-2,PY+wr*ch,PW+4,ch);
+   if(P.i>=3){for(let c=0;c<Cc;c++){const pos=(wr+c)%2===0;T(g,pos?'+':'−',PX+(c+.5)*cw,PY+wr*ch+ch/2+8,{sz:22,f:FM,w:700,al:'center',c:pos?CO:C.text})}}}
+  T(g,wr>=0?`G${wr+1} ON → Row ${wr+1} 충전`:cur>=11?'8행 완료 (축소 표시)':'게이트 대기',PX+PW/2,PY+PHh+40,{sz:17,f:FM,al:'center',c:wr>=0?CG:C.mid});g.globalAlpha=1}});
+
+/* ---------- 10 IMAGE PROCESSING ---------- */
+const IPL=[['오버드라이브 (OD)','액정 응답 가속 · 이전 프레임 필요'],['디더링 · FRC','6비트 + FRC로 8비트급 계조 (예)'],['감마 · 색 보정','LUT로 패널 특성 맞춤'],['로컬 디밍','LCD TV · 백라이트 구역 제어'],['PSR (eDP)','정지 화면은 TCON이 스스로 재생']];
+function odVis(g,P){const ox=780,oy=790,X=t=>ox+t*320,Y=v=>oy-v*420,tt=3*clamp(P.sec(0)/Math.max(.1,P.dur0*.8));
+ g.strokeStyle=C.line;g.lineWidth=1.5;line(g,ox,oy,ox+960,oy);line(g,ox,oy,ox,oy-440);T(g,'밝기',ox-12,oy-420,{sz:16,al:'right',c:C.dim});
+ for(let k=0;k<=3;k++){g.strokeStyle=hexA(C.text,.12);g.setLineDash([3,6]);line(g,X(k),oy,X(k),oy-440);g.setLineDash([]);if(k<3)T(g,`Frame ${k+1}`,X(k+.5),oy+28,{sz:16,f:FM,al:'center',c:C.dim})}
+ pl(g,[[X(0),Y(.2)],[X(1),Y(.2)],[X(1),Y(.7)],[X(3),Y(.7)]],hexA(C.text,.5),2,1,[8,6]);T(g,'목표',X(3)+8,Y(.7)+6,{sz:16,c:C.mid});
+ pl(g,[[X(0),Y(.2)],[X(1),Y(.2)],[X(1),Y(.95)],[X(2),Y(.95)],[X(2),Y(.7)],[X(3),Y(.7)]],hexA(CT,.4),2,clamp(tt/3),[3,4]);T(g,'OD 구동 전압',X(1)+8,Y(.95)-10,{sz:15,c:hexA(CT,.8)});
+ const nr=t=>t<1?.2:.2+.5*(1-Math.exp(-(t-1)/.9)),od=t=>t<1?.2:t<2?.2+.75*(1-Math.exp(-(t-1)/.9)):.7+(.2+.75*(1-Math.exp(-1/.9))-.7)*Math.exp(-(t-2)/.3);
+ [[nr,C.mid,'일반 구동'],[od,CT,'OD 적용']].forEach(([f,c])=>{const p=[];for(let i=0;i<=90;i++){const t=i/30;if(t>tt)break;p.push([X(t),Y(f(t))])}if(p.length>1)pl(g,p,c,3.5,1)});
+ if(tt>2.05){dot(g,X(2),Y(nr(2)),C.mid,6);chip(g,X(2)+14,Y(nr(2))+26,'일반: 1프레임 뒤에도 미도달',C.mid,{sz:15});dot(g,X(2),Y(od(2)),CT,6);chip(g,X(2)-14,Y(od(2))-30,'OD: 1프레임 안에 도달',CT,{sz:15,al:'right'})}
+ [['이전 프레임',C.mid],['현재 프레임',C.text]].forEach(([s,c],i)=>{panel(g,780+i*200,238,180,48,{r:10,fill:'#F4F3F2',stroke:hexA(c,.5)});T(g,s,870+i*200,270,{sz:17,al:'center',c})});
+ arrow(g,1165,262,1215,262,CT,1,{lw:2.5,hs:9});panel(g,1225,238,150,48,{r:10,fill:hexA(CT,.12),stroke:CT});T(g,'OD LUT',1300,270,{sz:18,f:FM,w:700,al:'center',c:CT});arrow(g,1385,262,1435,262,CT,1,{lw:2.5,hs:9});T(g,'구동값',1445,270,{sz:17})}
+function frcVis(g,P){const cur=Math.floor(P.ls*2.5)%4;for(let f=0;f<4;f++){const x=760+f*200,y=300;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){const hi=(r+c+f)%2===0;g.fillStyle=hi?'#9AA1B1':'#5A606C';g.fillRect(x+c*40+1,y+r*40+1,38,38);T(g,hi?'33':'32',x+c*40+20,y+r*40+26,{sz:15,f:FM,w:600,al:'center',c:'#F7F7F6'})}
+  g.strokeStyle=f===cur?CT:C.line;g.lineWidth=f===cur?3:1.5;g.strokeRect(x-4,y-4,168,168);T(g,`F${f+1}`,x+80,y+196,{sz:18,f:FM,w:700,al:'center',c:f===cur?CT:C.mid})}
+ T(g,'=',1575,390,{sz:44,f:FM,al:'center',c:C.mid});g.fillStyle='#7A808D';g.fillRect(1610,300,160,160);T(g,'32.5',1690,390,{sz:26,f:FM,w:700,al:'center',c:'#F7F7F6'});T(g,'평균',1690,496,{sz:18,al:'center',c:C.mid});
+ ['6비트 = 64단계, 8비트 = 256단계.','6비트 32와 33을 번갈아 → 평균 32.5 ≈ 8비트 130에 해당.','시간(프레임)과 공간(이웃 픽셀) 패턴을 섞어 깜빡임을 숨깁니다.'].forEach((s,i)=>T(g,s,760,590+i*52,{sz:22,c:i===1?CT:C.text}));T(g,'숫자는 설명용 예시',760,760,{sz:16,c:C.dim})}
+function gamVis(g,P){const ox=780,oy=800,w=520,h=500,m=P.at(2,1,1.4);g.strokeStyle=C.line;g.lineWidth=1.5;line(g,ox,oy,ox+w,oy);line(g,ox,oy,ox,oy-h);
+ T(g,'입력 코드 →',ox+w,oy+28,{sz:16,al:'right',c:C.dim});T(g,'밝기',ox-10,oy-h+10,{sz:16,al:'right',c:C.dim});
+ const tgt=u=>Math.pow(u,2.2),nat=u=>clamp(Math.pow(u,1.8)+.07*Math.sin(u*Math.PI*2.5)*u);const cv=f=>{const p=[];for(let i=0;i<=60;i++){const u=i/60;p.push([ox+u*w,oy-f(u)*h])}return p};
+ pl(g,cv(tgt),hexA(C.text,.5),2,1,[7,6]);pl(g,cv(nat),hexA(C.bad,.7*(1-m)+.2),2.5,1);pl(g,cv(u=>lerp(nat(u),tgt(u),m)),CT,3.5,1);
+ chip(g,ox+20,oy-h+20,'목표 γ 2.2',C.mid,{sz:15});chip(g,ox+20,oy-h+62,'패널 원래 특성',C.bad,{sz:15});chip(g,ox+20,oy-h+104,'LUT 보정 후',CT,{sz:15});
+ const x=1380;winFrame(g,x,250,400,330,'Gamma LUT',{tc:CT,tag:'예시'});[['in','out'],['0','0'],['64','58'],['128','121'],['192','189'],['255','255']].forEach(([a,b],i)=>{T(g,a,x+60,310+i*44,{sz:20,f:FM,w:i?400:700,c:i?C.text:C.dim});T(g,'→',x+180,310+i*44,{sz:20,f:FM,c:C.dim});T(g,b,x+260,310+i*44,{sz:20,f:FM,w:i?600:700,c:i?CT:C.dim})});
+ ['R · G · B 채널별로 따로 → 화이트 밸런스','색역 · 색온도 보정도 같은 단계에서'].forEach((s,i)=>T(g,s,x,650+i*44,{sz:20,c:C.mid}))}
+function ldVis(g,P){const m=P.at(3,.6,1.6),ZR=5,ZC=8,x1=760,x2=1300,y=300,w=460,h=290;
+ const lum=(u,v)=>{const d=Math.hypot((u-.72)*1.6,v-.3);return d<.12?1:d<.2?.5:v>.8?.18:.05};
+ const zone=(zr,zc)=>{let mx=0;for(let a=0;a<4;a++)for(let b=0;b<4;b++)mx=Math.max(mx,lum((zc+(b+.5)/4)/ZC,(zr+(a+.5)/4)/ZR));return lerp(1,Math.max(.08,mx),m)};
+ T(g,'백라이트 구역',x1,y-18,{sz:19,w:600,c:C.mid});T(g,'결과 화면',x2,y-18,{sz:19,w:600,c:C.mid});
+ for(let zr=0;zr<ZR;zr++)for(let zc=0;zc<ZC;zc++){const b=zone(zr,zc);g.fillStyle=`rgba(255,236,200,${.12+.8*b})`;g.fillRect(x1+zc*w/ZC+2,y+zr*h/ZR+2,w/ZC-4,h/ZR-4)}
+ const R=20,Cc=32;for(let r=0;r<R;r++)for(let c=0;c<Cc;c++){const u=(c+.5)/Cc,v=(r+.5)/R,b=zone(Math.floor(v*ZR),Math.floor(u*ZC)),L=lum(u,v);const leak=.06*b,val=clamp(L*.98+leak)*255;g.fillStyle=`rgb(${val|0},${(val*.96)|0},${(val*.9)|0})`;g.fillRect(x2+c*w/Cc,y+r*h/R,w/Cc+.5,h/R+.5)}
+ g.strokeStyle=C.line;g.lineWidth=1.5;g.strokeRect(x1,y,w,h);g.strokeRect(x2,y,w,h);arrow(g,x1+w+14,y+h/2,x2-14,y+h/2,CT,1,{lw:3});
+ const leakTxt=m>.5?'어두운 구역 백라이트 ↓ → 검은색이 더 검게':'모든 구역 동일 밝기 → 검은색이 뜸';chip(g,1030,650,leakTxt,m>.5?CT:C.mid,{sz:19,al:'center'});
+ ['명암비 향상 + 백라이트 전력 절감.','구역 수 · 알고리즘 · 처리 위치(TCON 또는 별도 칩)는 제품마다 다릅니다.'].forEach((s,i)=>T(g,s,760,730+i*44,{sz:20,c:i?C.mid:C.text}))}
+function psrVis(g,P){const s=P.sec(4),psr=s>2.4,k=P.at(4,2.4,.6);
+ ic(g,770,330,170,110,CS,'SoC/GPU',{sz:20,a:1-.6*k,pins:'tb'});if(k>0){g.globalAlpha=k;chip(g,855,470,'Sleep · 저전력',CS,{sz:16,al:'center'});g.globalAlpha=1}
+ g.strokeStyle=hexA(CS,psr?.25:.8);g.lineWidth=4;g.setLineDash(psr?[6,8]:[]);line(g,950,385,1100,385);g.setLineDash([]);T(g,'eDP',1025,370,{sz:16,f:FM,al:'center',c:CS});
+ if(!psr){for(let j=0;j<2;j++){packet(g,950,385,1100,385,((s*1.1)+j*.5)%1,CS,null)}}
+ ic(g,1110,320,220,130,CT,'TCON',{sz:22,pins:'tb',sub:'RFB (프레임 버퍼)',glow:k});
+ const R=8,Cc=10;grid(g,1440,290,320,200,R,Cc,()=>1,{});arrow(g,1340,385,1425,385,CT,1,{lw:3});
+ if(psr){const f=((s-2.4)*1.2)%1;g.strokeStyle=hexA(CT,.8);g.lineWidth=3;g.beginPath();g.arc(1220,300,40,Math.PI*1.1,Math.PI*1.1+Math.PI*1.8*f);g.stroke();chip(g,1220,248,'자체 재생',CT,{sz:15,al:'center'})}
+ // timeline
+ const tx=780,tw=980,ty=640;T(g,'프레임',tx-14,ty+22,{sz:16,al:'right',c:C.dim});for(let i=0;i<20;i++){const x=tx+i*tw/20,fromSoC=i<9,sh=(i+.5)/20<=clamp(s/5.5);g.fillStyle=sh?hexA(fromSoC?CS:CT,.75):'#F0EFED';g.fillRect(x+2,ty,tw/20-4,34)}
+ T(g,'화면 변화 → SoC가 매 프레임 전송',tx,ty+76,{sz:18,c:CS});T(g,'정지 화면 → TCON이 RFB로 재생',tx+tw,ty+76,{sz:18,al:'right',c:CT});
+ T(g,'PSR2 등 일부만 갱신하는 확장도 있습니다. 지원 여부는 제품마다 다릅니다.',tx,ty+140,{sz:18,c:C.dim})}
+S({code:'4-4',title:'TCON의 화질 · 전력 기능',group:'4 · TCON의 일',
+ caps:[{t:'오버드라이브: 느린 액정이 한 프레임 안에 목표에 닿도록, 이전 프레임과 비교해 더 센 전압을 줍니다.'},
+  {t:'디더링·FRC: 6비트 패널도 프레임마다 두 계조를 번갈아 보여주면 그 사이 계조가 보입니다.',say:'디더링과 에프알씨: 6비트 패널도 프레임마다 두 계조를 번갈아 보여주면, 그 사이 계조가 보입니다.'},
+  {t:'감마·색 보정: 입력 코드와 실제 밝기의 관계를 LUT로 패널에 맞춥니다.',say:'감마와 색 보정: 입력 코드와 실제 밝기의 관계를 룩업 테이블로 패널에 맞춥니다.'},
+  {t:'로컬 디밍: LCD TV에서 어두운 구역의 백라이트를 줄여 명암비와 전력을 개선합니다.',say:'로컬 디밍: 엘씨디 티비에서 어두운 구역의 백라이트를 줄여, 명암비와 전력을 개선합니다.'},
+  {t:'PSR: 화면이 멈춰 있으면 TCON이 저장한 프레임으로 스스로 재생하고, GPU와 링크는 쉽니다.',say:'피에스알: 화면이 멈춰 있으면 티콘이 저장한 프레임으로 스스로 재생하고, 지피유와 링크는 쉽니다.'}],
+ draw(g,P){const act=P.i;IPL.forEach(([t,d],k)=>{const y=236+k*124,on=k===act,dn=k<act;g.globalAlpha=P.at(0,k*.12,.4);
+   panel(g,120,y,540,106,{r:14,fill:on?hexA(CT,.1):C.card,stroke:on?hexA(CT,.8):C.line,lw:on?2.5:1.5});T(g,pad2(k+1),148,y+62,{sz:22,f:FD,c:on?CT:dn?C.mid:C.dim});
+   T(g,t,210,y+48,{sz:25,w:700,c:on?C.text:dn?C.mid:C.dim});T(g,d,210,y+82,{sz:17,c:on?C.mid:C.dim})});g.globalAlpha=1;
+  const a=P.at(act,0,.5);g.save();g.globalAlpha=a;[odVis,frcVis,gamVis,ldVis,psrVis][act](g,P);g.restore()}});
+
+/* ---------- 11 SOURCE DRIVER INSIDE ---------- */
+const SDST=[['Shift Register','샘플링 위치 지정'],['Sampling Latch','한 줄 데이터 수집'],['Holding Latch','출력할 줄 보관'],['Level Shifter','저전압 → 고전압'],['DAC','코드 → 감마 전압'],['Output Buffer','데이터 라인 구동']];
+const CODES=['8C','3F','D2','71','A6','1B','E9','55'],CODES2=['90','44','CC','6E','B0','20','E1','5A'];
+S({code:'5-1',title:'소스 드라이버 내부 — 디지털에서 아날로그로',group:'5 · 소스 드라이버 (DDI)',
+ caps:[{t:'소스 드라이버는 계조 코드를 데이터 라인 전압으로 바꿉니다. 좁은 의미의 DDI입니다.',say:'소스 드라이버는 계조 코드를 데이터 라인 전압으로 바꿉니다. 좁은 의미의 디디아이입니다.'},
+  {t:'시프트 레지스터가 차례로 가리키는 자리마다, 들어오는 데이터를 샘플링 래치에 담습니다.'},
+  {t:'한 줄이 차면 TP에 맞춰 홀딩 래치로 옮기고, 레벨 시프터·DAC·버퍼를 거쳐 동시에 출력합니다.',say:'한 줄이 차면 티피에 맞춰 홀딩 래치로 옮기고, 레벨 시프터, 디에이씨, 버퍼를 거쳐 동시에 출력합니다.'},
+  {t:'래치가 둘이라 다음 줄 수신과 현재 줄 출력이 동시에 됩니다. 채널 수는 칩당 수백~1,000개 이상.',say:'래치가 둘이라 다음 줄 수신과 현재 줄 출력이 동시에 됩니다. 채널 수는 칩당 수백에서 천 개 이상입니다.'}],
+ draw(g,P){tagc(g,'개념도 · 채널 8개만 표시');const CX=k=>560+k*150,RY=i=>250+i*90,a0=P.at(0,0,.6);
+  const p1=P.sec(1)<0?-1:8*clamp(P.sec(1)/Math.max(.1,P.dur1*.85));const s2=P.sec(2),tp=s2>=.3;
+  const p2=s2<1?-1:8*clamp((s2-1)/5);// next line sampling
+  g.globalAlpha=a0;panel(g,470,220,1250,600,{r:20,fill:'#F7F7F6',stroke:hexA(CD,.6),lw:2});T(g,'Source Driver IC',490,208,{sz:18,f:FM,w:700,c:CD});
+  SDST.forEach(([n,d],i)=>{const a=P.at(0,.2+i*.18,.4);g.globalAlpha=a0*a;T(g,n,140,RY(i)+26,{sz:21,f:FM,w:700,c:i>=3?CD:C.text});T(g,d,140,RY(i)+52,{sz:16,c:C.dim})});g.globalAlpha=a0;
+  g.strokeStyle=hexA(CT,.8);g.lineWidth=3;line(g,480,RY(1)-14,1700,RY(1)-14);T(g,'DATA',480,RY(1)-24,{sz:14,f:FM,w:700,c:CT});
+  const light=(i)=>i<=2?0:tp?clamp((s2-.6-(i-3)*.5)/.4):0;
+  for(let k=0;k<8;k++){const x=CX(k)-58,el=k===6;
+   for(let i=0;i<6;i++){const y=RY(i);let fill='#F2F1F0',st=hexA(CD,.35),txt=null;
+    if(i===0){const on=p2<0?(p1>=0&&p1<8&&Math.floor(p1)===k):(p2<8&&Math.floor(p2)===k);if(on){fill=hexA(CD,.55);st=CD}}
+    if(i===1){if(p2>=0)txt=k<p2?CODES2[k]:CODES[k];else if(k<p1)txt=CODES[k];if(txt){fill=hexA(CD,.15);st=hexA(CD,.7)}}
+    if(i===2&&tp){txt=CODES[k];const fl=clamp(1-(s2-.3)/.6);fill=hexA(CT,.12+.4*fl);st=hexA(CT,.8)}
+    if(i>=3){const l=light(i);if(l>0){fill=hexA(CD,.08+.2*l);st=hexA(CD,.4+.5*l)}}
+    if(el){if(i===0){T(g,'···',CX(k),RY(3),{sz:34,f:FM,al:'center',c:C.dim})}continue}
+    panel(g,x,y,116,56,{r:8,fill,stroke:st,lw:1.5});
+    if(txt)T(g,'0x'+txt,CX(k),y+36,{sz:19,f:FM,w:600,al:'center',c:i===2?CT:C.text});
+    if(i===5){g.fillStyle=hexA(CD,.3+.6*light(5));g.beginPath();g.moveTo(CX(k)-22,y+12);g.lineTo(CX(k)-22,y+44);g.lineTo(CX(k)+22,y+28);g.closePath();g.fill()}
+    if(i===1&&k>=0){g.strokeStyle=hexA(CT,.35);g.lineWidth=1.5;line(g,CX(k),RY(1)-14,CX(k),y)}}
+   // output
+   if(!el){const l=light(5),v=parseInt(CODES[k],16)/255;g.strokeStyle=hexA(CD,.4+.6*l);g.lineWidth=2.5;line(g,CX(k),RY(5)+56,CX(k),810);
+    if(l>0){rrect(g,CX(k)+14,808-44*v*l,14,44*v*l,4);g.fillStyle=CD;g.fill()}T(g,k===7?'Yn':'Y'+(k+1),CX(k),846,{sz:18,f:FM,w:700,al:'center',c:CD})}}
+  if(tp){const fl=clamp(1-(s2-.3)/.8);g.globalAlpha=a0*(.4+.6*fl);chip(g,1790,RY(2)+28,'TP ↓',CT,{sz:18,al:'right'});g.globalAlpha=a0}
+  const c3=P.at(3,.3,.6);if(c3>0){g.globalAlpha=c3;chip(g,1790,RY(1)+28,'다음 줄 수신',CT,{sz:15,al:'right'});chip(g,1790,RY(4)+28,'현재 줄 출력',CD,{sz:15,al:'right'});
+   panel(g,130,800,310,70,{r:12,fill:hexA(CD,.08),stroke:hexA(CD,.5)});T(g,'칩당 수백~1,000+ 채널',285,832,{sz:18,w:600,al:'center',c:CD});T(g,'(제품별 상이)',285,857,{sz:15,al:'center',c:C.dim})}
+  g.globalAlpha=1}});
+
+/* ---------- 12 DAC & GAMMA ---------- */
+const gf=u=>.12+.88*Math.pow(u,.62);
+S({code:'5-2',title:'DAC와 감마 기준 전압',group:'5 · 소스 드라이버 (DDI)',
+ caps:[{t:'채널마다 있는 DAC는 저항 열이 만든 여러 전압 중 하나를 코드에 따라 골라 냅니다. R-DAC 방식입니다.',say:'채널마다 있는 디에이씨는 저항 열이 만든 전압 가운데 하나를 코드로 고릅니다. 알 디에이씨 방식입니다.'},
+  {t:'저항 열의 기준점은 감마 기준 전압이 잡아 줍니다. 그래서 코드와 전압의 관계가 곡선이 됩니다.'},
+  {t:'8비트 256단계, 10비트 1024단계. 비트가 늘면 DAC 면적이 커져 보간 방식을 섞기도 합니다.',say:'8비트면 256단계, 10비트면 1024단계. 비트가 늘면 디에이씨 면적이 커져 보간 방식을 섞기도 합니다.'},
+  {t:'LCD는 공통 전압 Vcom 위아래로 정극성·부극성 두 벌의 감마 전압을 씁니다.',say:'엘씨디는 공통 전압 브이콤 위아래로, 정극성과 부극성 두 벌의 감마 전압을 씁니다.'}],
+ draw(g,P){tagc(g,'개념도 · 곡선 모양은 예시');const SX=430,T0=260,T1=800,N=32,ty=i=>T0+i*(T1-T0)/N;const codes=[40,96,140,200,248],code=codes[Math.floor(P.ls/1.3)%5],sel=N-Math.round(code/255*N);
+  // gamma ref box
+  const ga=P.at(1,0,.6);panel(g,130,T0,170,T1-T0,{r:14,fill:hexA(CD,.05+.08*ga),stroke:hexA(CD,.35+.5*ga)});T(g,'감마',215,T0+250,{sz:22,w:700,al:'center',c:CD});T(g,'기준 전압',215,T0+280,{sz:18,al:'center',c:C.mid});
+  for(let j=0;j<=8;j++){const i=j*4,y=ty(i);g.strokeStyle=hexA(CD,.4+.5*ga);g.lineWidth=2;line(g,300,y,SX-12,y);if(ga>0){g.globalAlpha=ga;T(g,'VG'+(j+1),312,y-6,{sz:14,f:FM,c:CD});g.globalAlpha=1}}
+  // resistor string
+  g.strokeStyle=C.mid;g.lineWidth=2;for(let i=0;i<N;i++){const y0=ty(i),y1=ty(i+1),h=y1-y0;g.beginPath();g.moveTo(SX,y0);for(let z=1;z<=4;z++)g.lineTo(SX+(z%2?8:-8),y0+h*z/5);g.lineTo(SX,y1);g.stroke()}
+  T(g,'V_H',SX,T0-12,{sz:15,f:FM,al:'center',c:C.mid});T(g,'V_L',SX,T1+24,{sz:15,f:FM,al:'center',c:C.mid});
+  // decoder
+  panel(g,540,T0,160,T1-T0,{r:14,fill:'#F2F1F0',stroke:hexA(CD,.7)});TR(g,'Decoder (MUX)',628,(T0+T1)/2,{sz:20,f:FM,w:700,al:'center',c:CD});
+  for(let i=0;i<=N;i++){const y=ty(i),on=i===sel;g.strokeStyle=on?CT:hexA(C.mid,.35);g.lineWidth=on?3:1;line(g,SX+2,y,540,y)}
+  const sy=ty(sel);g.strokeStyle=CT;g.lineWidth=3;line(g,560,sy,680,(T0+T1)/2);line(g,700,(T0+T1)/2,750,(T0+T1)/2);
+  g.fillStyle=hexA(CD,.3);g.beginPath();g.moveTo(752,(T0+T1)/2-30);g.lineTo(752,(T0+T1)/2+30);g.lineTo(806,(T0+T1)/2);g.closePath();g.fill();g.strokeStyle=CD;g.lineWidth=2;g.stroke();
+  T(g,'Y 출력',820,(T0+T1)/2+7,{sz:18,w:600,c:CD});arrow(g,620,210,620,T0-4,CT,1,{lw:2.5,hs:9});chip(g,640,206,`code = ${code} (8비트)`,CT,{sz:15});
+  // plot
+  const px=1000,pw=440,pyT=300,pyB=780,vc=(pyT+pyB)/2,amp=(pyB-pyT)/2-10,neg=P.at(3,0,.8);
+  g.strokeStyle=C.line;g.lineWidth=1.5;line(g,px,pyT-10,px,pyB+10);line(g,px,vc,px+pw,vc);T(g,'코드 0 → 255',px+pw,vc+(neg>0?-12:28),{sz:15,al:'right',c:C.dim});T(g,'Vcom',px-10,vc+6,{sz:16,f:FM,al:'right',c:C.mid});T(g,'전압',px-10,pyT,{sz:15,al:'right',c:C.dim});
+  const curve=s=>{const p=[];for(let i=0;i<=60;i++){const u=i/60;p.push([px+u*pw,vc-s*gf(u)*amp])}return p};pl(g,curve(1),CD,3.5,P.at(1,.3,1.2));
+  if(P.at(1,.3,1.2)>0){const u=code/255;dot(g,px+u*pw,vc-gf(u)*amp,CT,6)}
+  if(neg>0){g.globalAlpha=neg;pl(g,curve(-1),CO,3.5,neg);T(g,'정극성 (+)',px+pw-6,pyT+20,{sz:17,w:600,al:'right',c:CD});T(g,'부극성 (−)',px+pw-6,pyB-4,{sz:17,w:600,al:'right',c:CO});g.globalAlpha=1}
+  const b=P.at(2,0,.6);if(b>0){g.globalAlpha=b;const bx=1490,bw=300;panel(g,bx,300,bw,480,{r:14,fill:'#F6F5F4',stroke:hexA(CT,.5)});T(g,'같은 전압 구간을 확대',bx+20,336,{sz:17,c:C.mid});
+   [[4,'8비트 · 256단계',400],[16,'10비트 · 1024단계',600]].forEach(([n,l,y])=>{T(g,l,bx+20,y,{sz:18,f:FK,w:700,c:CT});const p=[[bx+30,y+140]];for(let k=0;k<n;k++){const x0=bx+30+k*240/n,yy=y+140-(k+1)*120/n;p.push([x0,p[p.length-1][1]],[x0,yy])}p.push([bx+270,p[p.length-1][1]]);pl(g,p,CD,2.5,1)});g.globalAlpha=1}}});
+
+/* ---------- 13 POLARITY INVERSION ---------- */
+S({code:'5-3',title:'극성 반전 — 액정에 DC를 걸지 않기 위해',group:'5 · 소스 드라이버 (DDI)',
+ caps:[{t:'액정에 한 방향 전압, 즉 DC가 계속 걸리면 이온이 쏠려 잔상과 열화가 생깁니다.',say:'액정에 한 방향 전압, 즉 디씨가 계속 걸리면, 이온이 쏠려 잔상과 열화가 생깁니다.'},
+  {t:'그래서 같은 밝기라도 Vcom을 기준으로 프레임마다 극성을 뒤집습니다.',say:'그래서 같은 밝기라도 브이콤을 기준으로 프레임마다 극성을 뒤집습니다.'},
+  {t:'이웃 픽셀끼리 극성을 섞으면 깜빡임이 상쇄됩니다. 행, 열, 도트 반전.'},
+  {t:'도트 반전은 화질에 유리하지만 전력이 늡니다. 방식 선택은 패널마다 다릅니다.'}],
+ draw(g,P){const s1=P.sec(1),ac=s1>=0,a0=P.at(0,0,.6);g.globalAlpha=a0;
+  // LC cell with ions
+  panel(g,160,240,700,200,{r:14,fill:'#F6F5F4',stroke:C.line});g.fillStyle=hexA(C.mid,.6);g.fillRect(180,256,660,8);g.fillRect(180,416,660,8);T(g,'전극',850,268,{sz:15,al:'right',c:C.dim});T(g,'액정층',180,300,{sz:16,c:C.dim});
+  const pol=ac?(Math.floor(s1*1.2)%2?-1:1):1,drift=ac?.25:clamp(P.sec(0)/2.5);
+  for(let i=0;i<14;i++){const x=210+i*46,sgn=i%2?1:-1,base=340+((i*37)%30-15),tgt=sgn*pol>0?282:398,y=lerp(base,tgt,ac?.25*Math.abs(Math.sin(s1*3.7)):drift);g.fillStyle=sgn>0?CO:CD;g.beginPath();g.arc(x,y,11,0,7);g.fill();T(g,sgn>0?'+':'−',x,y+6,{sz:16,f:FM,w:700,al:'center',c:'#F7F7F6'})}
+  chip(g,510,478,ac?'극성 교대 → 이온이 한쪽에 쌓이지 않음':'DC 구동 → 이온 쏠림 → 잔상',ac?C.ok:C.bad,{sz:17,al:'center'});
+  // waveform
+  if(ac){const vc=680,A=110,x0=180,w=660,tt=clamp(s1/(P.dur1*.8));g.strokeStyle=hexA(C.mid,.6);g.lineWidth=1.5;g.setLineDash([6,6]);line(g,x0,vc,x0+w,vc);g.setLineDash([]);T(g,'Vcom',x0-10,vc+6,{sz:16,f:FM,al:'right',c:C.mid});
+   const p=[];for(let f=0;f<6;f++){const y=vc-(f%2?-A:A);p.push([x0+f*w/6,y],[x0+(f+1)*w/6,y]);if(f<5)p.push([x0+(f+1)*w/6,vc-((f+1)%2?-A:A)])}pl(g,p,CD,3,tt);
+   for(let f=0;f<6;f++)T(g,`F${f+1}`,x0+(f+.5)*w/6,vc+A+34,{sz:15,f:FM,al:'center',c:C.dim});T(g,'+V',x0-10,vc-A+6,{sz:15,f:FM,al:'right',c:CO});T(g,'−V',x0-10,vc+A+6,{sz:15,f:FM,al:'right',c:CD});
+   T(g,'픽셀 전압 (같은 계조)',x0,vc-A-22,{sz:17,c:C.mid})}
+  g.globalAlpha=1;g.strokeStyle=C.line;g.lineWidth=1.5;line(g,930,210,930,860);
+  const b=P.at(2,0,.6);if(b<=0)return;g.globalAlpha=b;const fr=Math.floor(P.ls*1.1)%2,Ns=6,cs=40;
+  [['Line 반전',(r,c)=>r],['Column 반전',(r,c)=>c],['Dot 반전',(r,c)=>r+c]].forEach(([n,fn],j)=>{const x=990+j*280,y=300;T(g,n,x+cs*Ns/2,y-22,{sz:21,w:700,al:'center',c:j===2?CT:C.text});
+   for(let r=0;r<Ns;r++)for(let c=0;c<Ns;c++){const pos=(fn(r,c)+fr)%2===0;g.fillStyle=hexA(pos?CO:CD,.35);g.fillRect(x+c*cs+1,y+r*cs+1,cs-2,cs-2);T(g,pos?'+':'−',x+c*cs+cs/2,y+r*cs+cs/2+7,{sz:20,f:FM,w:700,al:'center',c:pos?CO:CD})}});
+  chip(g,1380,580,`Frame ${fr?'N+1':'N'} — 매 프레임 전체 극성 뒤집힘`,C.mid,{sz:16,al:'center'});
+  const c3=P.at(3,0,.6);if(c3>0){g.globalAlpha=c3;[['Line','가로줄 깜빡임이 보이기 쉬움',C.mid],['Column','한 프레임 동안 열 극성 유지 → 전력 ↓',C.mid],['Dot','깜빡임 · 크로스토크 억제 ↑ · 매 줄 스윙 → 전력 ↑',CT]].forEach(([k,d,c],i)=>{const y=650+i*64;panel(g,990,y,800,52,{r:10,fill:'#F6F5F4',stroke:hexA(c,.4)});T(g,k,1012,y+34,{sz:19,f:FM,w:700,c});T(g,d,1140,y+34,{sz:19})})}
+  g.globalAlpha=1}});
+
+/* ---------- 14 MOBILE DDI ---------- */
+const MB=[['MIPI DSI Rx',CS,0],['TCON 로직',CT,0],['GRAM (SRAM)',CT,0],['감마 · 보정',CT,0],['Source 출력',CD,0],['GIP 타이밍',CG,0],['전원 DC-DC',C.mid,0],['Touch AFE',C.ok,1]];
+S({code:'6-1',title:'모바일 DDI — 한 칩에 모으다',group:'6 · 모바일 · OLED',
+ caps:[{t:'모바일은 TCON·소스 드라이버·게이트 타이밍·전원까지 한 칩, DDI에 넣습니다. 터치까지 합치면 TDDI.',say:'모바일은 티콘, 소스와 게이트 타이밍, 전원까지 디디아이 한 칩에 넣습니다. 터치까지 합치면 티디디아이.'},
+  {t:'MIPI DSI 비디오 모드: AP가 매 프레임 픽셀을 실시간으로 계속 보냅니다.',say:'미피 디에스아이 비디오 모드에서는, 에이피가 매 프레임 픽셀을 실시간으로 계속 보냅니다.'},
+  {t:'커맨드 모드: 바뀐 화면만 칩 안 SRAM에 쓰고 DDI가 스스로 재생합니다. 그동안 AP는 쉽니다.',say:'커맨드 모드는 바뀐 화면만 칩 안 에스램에 쓰고, 디디아이가 스스로 재생합니다. 그동안 에이피는 쉽니다.'}],
+ draw(g,P){tagc(g,'개념도 · 구성은 제품별');const a0=P.at(0,0,.6);g.globalAlpha=a0;
+  panel(g,170,220,340,640,{r:44,fill:'#F8F8F7',stroke:C.mid,lw:2.5});grid(g,196,256,288,500,14,8,()=>1,{frame:false});
+  ic(g,250,782,180,44,CD,'DDI',{sz:20,pins:'',lw:2.5,glow:.6});T(g,'COG / COP 등',340,848,{sz:14,f:FM,al:'center',c:C.dim});
+  g.strokeStyle=hexA(CD,.5);g.lineWidth=1.5;g.setLineDash([5,6]);line(g,430,782,640,516);line(g,430,826,640,516);g.setLineDash([]);
+  panel(g,640,226,1160,290,{r:18,fill:'#F7F6F5',stroke:hexA(CD,.8),lw:2});T(g,'Mobile DDI (한 칩)',664,258,{sz:18,f:FM,w:700,c:CD});
+  MB.forEach(([n,c,t],i)=>{const x=664+(i%4)*282,y=280+Math.floor(i/4)*110,a=t?P.at(0,4,.6):P.at(0,.4+i*.15,.4);if(a<=0)return;g.globalAlpha=a0*a;
+   panel(g,x,y,262,92,{r:12,fill:hexA(c,.1),stroke:hexA(c,.7),dash:t?[6,5]:null});T(g,n,x+131,y+(t?42:54),{sz:20,w:700,al:'center',c});if(t)T(g,'TDDI일 때',x+131,y+72,{sz:15,al:'center',c:C.mid})});g.globalAlpha=1;
+  // modes
+  const m2=P.at(1,0,.6),m3=P.at(2,0,.6);
+  const lane=(y,al,title,desc,cmd)=>{g.save();g.globalAlpha=al;T(g,title,660,y-10,{sz:19,f:FM,w:700,c:cmd?CT:CS});ic(g,660,y,130,70,CS,'AP',{sz:20,pins:'r'});ic(g,1140,y,150,70,CD,'DDI',{sz:20,pins:'l',sub:cmd?'GRAM':null,ssz:14});
+   g.strokeStyle=hexA(CS,.6);g.lineWidth=3;line(g,800,y+35,1130,y+35);grid(g,1360,y-4,120,78,4,6,()=>1,{});g.strokeStyle=hexA(CD,.7);g.lineWidth=2.5;line(g,1300,y+35,1346,y+35);
+   T(g,desc,1510,y+42,{sz:17,c:C.mid});g.restore()};
+  if(m2>0){lane(600,m2,'Video mode','AP가 매 프레임 전송',0);if(P.sec(1)>.5){for(let j=0;j<3;j++){g.globalAlpha=m2;packet(g,800,635,1130,635,((P.ls*1.2)+j/3)%1,CS,null)}g.globalAlpha=1}}
+  if(m3>0){lane(760,m3,'Command mode','GRAM으로 자체 재생',1);const s=P.sec(2);g.globalAlpha=m3;if(s>.4&&s<1.6)packet(g,800,795,1130,795,(s-.4)/1.2,CT,'변경분');
+   if(s>1.8){chip(g,725,852,'AP Sleep',CS,{sz:14,al:'center'});const f=((s-1.8)*1.3)%1;dot(g,lerp(1300,1346,f),795,CD,5)}
+   g.strokeStyle=hexA(CT,.7);g.lineWidth=2;g.setLineDash([4,5]);line(g,1130,818,800,818);g.setLineDash([]);T(g,'TE (쓰기 타이밍 동기)',965,846,{sz:14,f:FM,al:'center',c:CT});g.globalAlpha=1}}});
+
+/* ---------- 15 OLED ---------- */
+const mura=(r,c)=>.1*Math.sin(c*.8+r*.5)+.07*Math.cos(r*1.1-c*.35)+.14*Math.exp(-((c-4)**2+(r-6)**2)/6)-.12*Math.exp(-((c-10)**2+(r-3)**2)/5);
+S({code:'6-2',title:'OLED DDI — 편차 보상이 핵심',group:'6 · 모바일 · OLED',
+ caps:[{t:'OLED는 구동 TFT가 전류를 정하므로, TFT 문턱전압과 이동도의 작은 편차도 밝기 얼룩이 됩니다.',say:'오엘이디는 구동 티에프티가 전류를 정하므로, 문턱전압과 이동도의 작은 편차도 밝기 얼룩이 됩니다.'},
+  {t:'디뮤라: 공장에서 카메라로 얼룩을 측정해 보정 데이터를 만들고, 메모리에 저장합니다.',say:'디뮤라. 공장에서 카메라로 얼룩을 측정해 보정 데이터를 만들고, 메모리에 저장합니다.'},
+  {t:'DDI는 영상 데이터에 이 보정값을 픽셀 단위로 실시간 적용합니다. 방식과 압축은 회사마다 다릅니다.',say:'디디아이는 영상 데이터에 이 보정값을 픽셀 단위로 실시간 적용합니다. 방식과 압축은 회사마다 다릅니다.'},
+  {t:'픽셀 내부 보상, 센싱 기반 외부 보상, 열화 보상도 함께 쓰입니다. 조합은 제품마다 다릅니다.'}],
+ draw(g,P){tagc(g,'개념도');const R=10,Cc=14,w=440,h=314,ys=300,xs=[150,740,1330];const grey=v=>{const q=clamp(v)*255;return[q,q*.97,q*.93]};
+  const a0=P.at(0,0,.6),a1=P.at(1,.4,.8),a2=P.at(2,.2,.8);
+  g.globalAlpha=a0;T(g,'보정 전 · 얼룩(mura)',xs[0],ys-26,{sz:20,w:700,c:CO});grid(g,xs[0],ys,w,h,R,Cc,()=>1,{col:(r,c)=>grey(.52+mura(r,c)*1.2),fc:CO});
+  chip(g,xs[0]+w/2,ys+h+48,'같은 코드 → 픽셀마다 다른 전류',CO,{sz:16,al:'center'});
+  if(a1>0){g.globalAlpha=a1;const cx=xs[0]+w+60,cy=236;rrect(g,cx-34,cy-20,68,44,8);g.fillStyle='#EEEDEA';g.fill();g.strokeStyle=C.text;g.lineWidth=2;g.stroke();g.beginPath();g.arc(cx,cy+2,13,0,7);g.stroke();
+   g.strokeStyle=hexA(C.text,.25);g.lineWidth=1.5;line(g,cx-20,cy+24,xs[0]+60,ys);line(g,cx-10,cy+24,xs[0]+w-20,ys);
+   T(g,'보정 데이터 (측정 → 계산)',xs[1],ys-26,{sz:20,w:700,c:CT});grid(g,xs[1],ys,w,h,R,Cc,()=>1,{col:(r,c)=>{const m=-mura(r,c)*4;return m>0?[255,181,71].map(v=>v*clamp(m)+20):[76,141,255].map(v=>v*clamp(-m)+20)},fc:CT});
+   ic(g,xs[1]+w/2-80,ys+h+30,160,44,C.mid,'Flash',{sz:18,pins:''});arrow(g,xs[0]+w+14,ys+h/2,xs[1]-14,ys+h/2,CT,1,{lw:3})}
+  if(a2>0){g.globalAlpha=a2;T(g,'보정 후 · DDI 실시간 적용',xs[2],ys-26,{sz:20,w:700,c:CD});grid(g,xs[2],ys,w,h,R,Cc,()=>1,{col:(r,c)=>grey(.52+mura(r,c)*1.2*(1-.9*a2)),fc:CD});
+   arrow(g,xs[1]+w+14,ys+h/2,xs[2]-14,ys+h/2,CD,1,{lw:3});chip(g,(xs[1]+w+xs[2])/2,ys+h/2-30,'DDI',CD,{sz:15,al:'center'})}
+  const a3=P.at(3,0,.6);if(a3>0){g.globalAlpha=a3;[['내부 보상','픽셀 회로(6T·7T 등)가 Vth 편차 상쇄'],['외부 보상','센싱 → 데이터 보정 (대형 OLED에 흔함)'],['열화 · 전압','번인 보상 · 넓은 데이터 전압 범위']].forEach(([k,d],i)=>{const x=150+i*560;panel(g,x,730,530,110,{r:14,fill:hexA(CO,.06),stroke:hexA(CO,.5)});T(g,k,x+24,772,{sz:22,w:700,c:CO});T(g,d,x+24,810,{sz:18,c:C.mid})})}
+  g.globalAlpha=1}});
+
+/* ---------- 16 LCD vs OLED TABLE ---------- */
+const TBL=[['빛','백라이트 + 액정 셔터','자발광 (픽셀이 직접 빛남)'],['픽셀 구동','전압 — 액정 커패시터 충전','전류 — 구동 TFT가 전류 조절'],['극성 반전','필요 (DC 방지)','불필요'],['대표 보정','오버드라이브 · FRC · 로컬 디밍','디뮤라 · Vth · 열화 보상'],['게이트 구동','GIP/GOA 흔함','GIP 흔함 · 발광(EM) 제어 추가'],['모바일 칩','TDDI 많음','OLED DDI · 터치 IC 별도인 경우 많음'],['블랙','백라이트 누설 → 완전한 블랙 어려움','픽셀을 끄면 완전한 블랙']];
+S({code:'7',title:'LCD vs OLED — 구동 차이 한눈에',group:'7 · 정리',
+ caps:[{t:'구동 차이를 정리합니다. LCD는 빛을 막는 셔터, OLED는 스스로 빛을 냅니다.',say:'구동 차이를 정리합니다. 엘씨디는 빛을 막는 셔터, 오엘이디는 스스로 빛을 냅니다.'},
+  {t:'LCD는 전압과 극성 반전, OLED는 전류와 편차 보상이 설계의 중심입니다.',say:'엘씨디는 전압과 극성 반전, 오엘이디는 전류와 편차 보상이 설계의 중심입니다.'},
+  {t:'그에 맞춰 보정 기능과 칩 구성도 달라집니다. 표는 일반적 경향이며 제품마다 다릅니다.'}],
+ draw(g,P){tagc(g,'일반적 경향 · 제품별 상이');const cx=[140,480,1140],a0=P.at(0,0,.5);g.globalAlpha=a0;
+  T(g,'항목',cx[0]+20,262,{sz:20,w:600,c:C.dim});chip(g,cx[1]+20,254,'LCD',C.text,{sz:22,f:FM});chip(g,cx[2]+20,254,'OLED',CO,{sz:22,f:FM});
+  g.strokeStyle=C.line;g.lineWidth=1.5;line(g,130,290,1800,290);
+  const rk=[0,0,1,1,2,2,2];TBL.forEach(([k,l,o],i)=>{const a=P.at(rk[i],.3+(i%3)*.3,.5);if(a<=0)return;const y=300+i*78;g.globalAlpha=a;const hi=(P.i===1&&(i===1||i===2||i===3))?1:0;
+   if(hi){panel(g,130,y+4,1670,70,{r:10,fill:hexA(CT,.06),stroke:hexA(CT,.3)})}
+   T(g,k,cx[0]+20,y+48,{sz:22,w:700,c:C.mid});T(g,l,cx[1]+20,y+48,{sz:23});T(g,o,cx[2]+20,y+48,{sz:23,c:'#FFD2BE'});g.strokeStyle=hexA(C.text,.07);g.lineWidth=1;line(g,130,y+78,1800,y+78)});g.globalAlpha=1}});
+
+/* ---------- 17 SUMMARY ---------- */
+const SUM=['SoC → 링크 → TCON → 소스 · 게이트 드라이버 → 픽셀. 패널은 한 행씩 스캔됩니다.','FHD 60 Hz: 픽셀 클록 148.5 MHz, 한 라인 ≈ 14.81 µs, 한 프레임 ≈ 16.67 ms.','TCON은 패널 타이밍을 만들고, 데이터를 재배열하며, 화질 · 전력 기능을 처리합니다.','소스 드라이버: 래치 → 레벨 시프터 → DAC → 버퍼. LCD는 극성 반전이 필수입니다.','모바일은 한 칩 DDI(TDDI)로 통합되고, OLED는 전류 구동과 편차 보상이 핵심입니다.'];
+S({code:'요약',title:'정리',group:'DISPLAY IC',
+ caps:[{t:'신호는 SoC → TCON → 드라이버로 가고, 패널은 한 행씩 스캔됩니다.',say:'신호는 에스오씨에서 티콘을 거쳐 드라이버로 가고, 패널은 한 행씩 스캔됩니다.'},
+  {t:'TCON은 타이밍과 데이터 배치, 화질 처리를 맡고, 소스 드라이버는 코드를 전압으로 바꿉니다.',say:'티콘은 타이밍과 데이터 배치, 화질 처리를 맡고, 소스 드라이버는 코드를 전압으로 바꿉니다.'},
+  {t:'모바일은 한 칩 DDI로 통합되고, OLED는 전류 구동과 보상이 핵심입니다.',say:'모바일은 한 칩 디디아이로 통합되고, 오엘이디는 전류 구동과 보상이 핵심입니다.'}],
+ draw(g,P){const cols=[CS,C.mid,CT,CD,CO];SUM.forEach((s,k)=>{const a=k<2?P.at(0,.3+k*.6,.6):k<4?P.at(1,(k-2)*.6,.6):P.at(2,.2,.6);if(a<=0)return;const y=250+k*120;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   panel(g,200,y,1520,100,{r:14,fill:'#F6F5F4',stroke:hexA(cols[k],.45)});g.fillStyle=cols[k];g.fillRect(200,y+16,4,68);
+   T(g,pad2(k+1),240,y+62,{sz:28,f:FD,c:cols[k]});T(g,s,330,y+60,{sz:27,w:500});g.restore()})}});
+
+
+/* ================= timing ================= */
+const capDur=c=>{const n=Math.max(c.t.replace(/\s/g,'').length,(c.say||'').replace(/\s/g,'').length);return clamp(1.0+n*.112,3.2,10)};
+let DUR=0;const CAPS=[];
+SC.forEach((s,si)=>{s.start=DUR;s.capT=[];s.capD=[];let acc=0;s.caps.forEach((c,ci)=>{const d=capDur(c)+(si===0?1.2:0);s.capT.push(acc);s.capD.push(d);CAPS.push({si,ci,t:DUR+acc,d,text:c.t,say:c.say||c.t});acc+=d});s.dur=acc+(si===SC.length-1?1.2:.35);DUR+=s.dur});
+function makeP(si,ls){const s=SC[si];let i=0;for(let k=0;k<s.capT.length;k++)if(ls>=s.capT[k])i=k;
+  return{ls,u:ls/s.dur,i,dur:s.dur,dur0:s.capD[0],dur1:s.capD[1]||1,sec:k=>ls-(s.capT[k]??1e9),c:k=>s.capT[k]===undefined?0:clamp((ls-s.capT[k])/s.capD[k]),at:(k,d=0,du=.5)=>s.capT[k]===undefined?0:eO3(clamp((ls-s.capT[k]-d)/du))}}
+function sceneAt(t){let si=0;for(let k=0;k<SC.length;k++)if(t>=SC[k].start)si=k;return si}
+function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;return k}
+
+/* ================= composite ================= */
+const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(90,70,40,0.10)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
+function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#F4F3F2';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
+function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+  g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
+  if(!s.hideHead){const a=eO3(clamp(ls/.5));g.save();g.globalAlpha=a;g.translate(0,(1-a)*20);g.font=`400 34px ${FD}`;g.fillStyle=C.amber;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(s.code,M,M+44);
+   const cw=g.measureText(s.code).width;T(g,s.group,M+cw+26,M+14,{sz:15,f:FM,c:C.dim});T(g,s.title,M+cw+26,M+48,{sz:30,w:700});g.restore()}
+  T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
+  g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
+  const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(244,242,238,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
+function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
+  if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
+  else drawScene(g,si,ls);
+  if(si===SC.length-1){const f=inv(SC[si].dur-1,SC[si].dur,ls);if(f>0){g.fillStyle=`rgba(0,0,0,${f})`;g.fillRect(0,0,W,H)}}
+  g.drawImage(vig,0,0);hud(g,t,si,ls)}
+
+/* ================= audio bed ================= */
+const AU={ctx:null,on:false,bus:null,sched:0};
+function auInit(){const c=new(window.AudioContext||window.webkitAudioContext)();AU.ctx=c;const comp=c.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
+  AU.master=c.createGain();AU.master.gain.value=.5;AU.master.connect(comp);comp.connect(c.destination);
+  const len=Math.floor(c.sampleRate*3),ib=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  AU.rev=c.createConvolver();AU.rev.buffer=ib;const rg=c.createGain();rg.gain.value=.5;AU.rev.connect(rg);rg.connect(AU.master)}
+function newBus(){const c=AU.ctx,b={dry:c.createGain(),rev:c.createGain()};b.dry.connect(AU.master);b.rev.connect(AU.rev);AU.bus=b}
+function killBus(){const b=AU.bus;if(!b)return;const n=AU.ctx.currentTime;[b.dry,b.rev].forEach(x=>x.gain.setTargetAtTime(0,n,.02));setTimeout(()=>[b.dry,b.rev].forEach(x=>x.disconnect()),300);AU.bus=null}
+function send(node,dry,rv){const c=AU.ctx,b=AU.bus;[[dry,b.dry],[rv,b.rev]].forEach(([v,d])=>{if(!v)return;const x=c.createGain();x.gain.value=v;node.connect(x);x.connect(d)})}
+function pad(w,ch,dur,a){const c=AU.ctx,lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const g=c.createGain();g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(a,w+1.2);g.gain.setValueAtTime(a,w+Math.max(1.3,dur-1));g.gain.linearRampToValueAtTime(0,w+dur+.6);
+  ch.forEach(f=>[-7,7].forEach(dt=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(lp);o.start(w);o.stop(w+dur+.8)}));lp.connect(g);send(g,.5,.6)}
+function blip(w,f,a){const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,w);g.gain.exponentialRampToValueAtTime(a,w+.005);g.gain.exponentialRampToValueAtTime(.0001,w+.35);o.connect(g);send(g,.6,.5);o.start(w);o.stop(w+.4)}
+const CHORDS=[[146.83,174.61,220],[116.54,146.83,174.61],[174.61,220,261.63],[130.81,164.81,196]];
+const EV=[];SC.forEach((s,i)=>{EV.push({t:s.start,f:w=>pad(w,CHORDS[i%4],s.dur,.045)});EV.push({t:s.start,f:w=>blip(w,[880,988,1175,1319][i%4],.05)})});CAPS.forEach((c,i)=>{if(c.ci>0)EV.push({t:c.t,f:w=>blip(w,[1760,1976,2349][i%3],.025)})});EV.sort((a,b)=>a.t-b.t);
+
+/* ================= narration (Web Speech) ================= */
+const TTS={ok:'speechSynthesis' in window,on:false,voice:null,last:-1};
+function pickVoice(){if(!TTS.ok)return;const vs=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));TTS.voice=vs.find(v=>/Heami|SunHi|InJoon|Google/i.test(v.name))||vs[0]||null;voiceNote()}
+
+function speak(s){if(!TTS.ok)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='ko-KR';if(TTS.voice)u.voice=TTS.voice;u.rate=Math.min(2,1.1*SPEED);u.pitch=1;speechSynthesis.speak(u)}catch(e){}}
+function hush(){if(TTS.ok)try{speechSynthesis.cancel()}catch(e){}}
+
+/* ================= transport ================= */
+let t=0,tAbs=0,playing=false,anchorT=0,anchorClock=0,lastSrc='',dirty=true,scrubbing=false,started=false;
+const srcKey=()=>AU.on&&AU.ctx&&AU.ctx.state==='running'?'a':'p',clk=()=>srcKey()==='a'?AU.ctx.currentTime:performance.now()/1000;
+function reanchor(){anchorT=tAbs;anchorClock=clk();lastSrc=srcKey();if(AU.on&&AU.ctx){killBus();if(playing)newBus();AU.sched=tAbs}}
+function auTick(){if(!AU.on||!playing||scrubbing||!AU.bus||srcKey()!=='a')return;const c=AU.ctx;if(AU.sched<tAbs-.05)AU.sched=tAbs;const until=tAbs+.25;
+  for(const e of EV)if(e.t>=AU.sched&&e.t<until){const w=anchorClock+(e.t-anchorT)/SPEED;if(w>=c.currentTime-.01)e.f(Math.max(w,c.currentTime+.001))}AU.sched=until}
+function narrTick(){if(!TTS.on||!playing||scrubbing)return;const k=capAt(t);if(k!==TTS.last){TTS.last=k;if(t-CAPS[k].t<1)speak(CAPS[k].say)}}
+function play(){if(t>=DUR-.05){t=0}started=true;playing=true;tAbs=t;reanchor();bigplay.hidden=true;TTS.last=-1;const k=capAt(t);if(TTS.on&&t-CAPS[k].t>=1){TTS.last=k;speak(CAPS[k].say)}dirty=true;syncUI()}
+function pause(){playing=false;if(AU.bus)killBus();hush();dirty=true;syncUI()}
+function seek(nt){t=clamp(nt,0,DUR-1e-3);tAbs=t;hush();TTS.last=-1;if(playing)reanchor();dirty=true}
+async function setMusic(on){if(on){if(!AU.ctx)auInit();try{await AU.ctx.resume()}catch(e){}AU.on=true}else{AU.on=false;if(AU.bus)killBus()}if(playing)reanchor();syncUI()}
+function setVoice(on){if(!TTS.ok)return;TTS.on=on;if(!TTS.on)hush();TTS.last=-1;
+  if(TTS.on&&playing){const k=capAt(t);TTS.last=k;speak(CAPS[k].say)}if(AU.master&&AU.ctx)AU.master.gain.setTargetAtTime(TTS.on?.32:.5,AU.ctx.currentTime,.2);syncUI()}
+function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock)*SPEED;t=tAbs;if(t>=DUR){t=DUR-1e-3;playing=false;if(AU.bus)killBus();syncUI()}auTick();narrTick();dirty=true}
+  if(dirty){render(t);ui();dirty=false}requestAnimationFrame(frame)}
+
+/* ================= page UI ================= */
+const $=s=>document.querySelector(s),track=$('#track'),head=$('#head'),bigplay=$('#bigplay'),playBtn=$('#play'),voiceBtn=$('#voice'),musicBtn=$('#music'),tc=$('#tc'),shots=$('#shots');
+const fmt=s=>`${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
+SC.forEach((s,i)=>{const sg=document.createElement('div');sg.className='seg';sg.style.flex=`${s.dur} 1 0`;sg.innerHTML=`<i></i><span>${s.code}</span>`;track.insertBefore(sg,head);
+  const li=document.createElement('li');li.className='shot';li.innerHTML=`<button type="button"><span class="n">${s.code}</span><span class="t"></span><span class="r">${fmt(s.start)}–${fmt(s.start+s.dur)}</span><span class="d"></span></button>`;
+  li.querySelector('.t').textContent=s.title;li.querySelector('.d').textContent=s.caps.map(c=>c.t).join(' ');
+  li.querySelector('button').addEventListener('click',()=>{seek(s.start+.001);bigplay.hidden=true;if(!playing)play()});shots.appendChild(li)});
+track.setAttribute('aria-valuemax',DUR.toFixed(1));$('#meta').textContent=`${SC.length}개 장면 · 자막 ${CAPS.length}개 · ${fmt(DUR)}`;
+const segs=[...track.querySelectorAll('.seg')],shotEls=[...shots.children];let lastSi=-1;
+function ui(){const si=sceneAt(t);head.style.left=(t/DUR*100)+'%';segs.forEach((s,i)=>{const S0=SC[i];s.firstChild.style.width=(t>=S0.start+S0.dur?100:t<S0.start?0:(t-S0.start)/S0.dur*100)+'%'});
+  if(si!==lastSi){segs.forEach((s,i)=>s.classList.toggle('on',i===si));shotEls.forEach((s,i)=>s.classList.toggle('on',i===si));lastSi=si}
+  tc.innerHTML=`<b>${fmt(t)}</b> / ${fmt(DUR)}`;track.setAttribute('aria-valuenow',t.toFixed(1))}
+function voiceNote(){const n=$('#vnote');if(!TTS.ok){n.textContent='이 브라우저는 음성 합성을 지원하지 않아 자막으로만 재생됩니다.';voiceBtn.disabled=true;return}
+  n.textContent=TTS.voice?`음성 해설: ${TTS.voice.name}`:'한국어 음성을 찾는 중입니다. 없으면 기본 음성으로 읽습니다.'}
+function syncUI(){playBtn.setAttribute('aria-label',playing?'일시정지':'재생');$('#playic').innerHTML=playing?'<path d="M3 2h4v12H3zm6 0h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
+  voiceBtn.setAttribute('aria-pressed',String(TTS.on));voiceBtn.textContent=TTS.on?'음성 해설 켜짐':'음성 해설 꺼짐';musicBtn.setAttribute('aria-pressed',String(AU.on));musicBtn.textContent=AU.on?'배경음 켜짐':'배경음 꺼짐'}
+bigplay.addEventListener('click',async()=>{setVoice(true);await setMusic(true);seek(0);play()});
+playBtn.addEventListener('click',()=>{if(!started)seek(0);playing?pause():play()});
+voiceBtn.addEventListener('click',()=>setVoice(!TTS.on));musicBtn.addEventListener('click',()=>setMusic(!AU.on));
+$('#fs').addEventListener('click',()=>{const el=$('#screen');try{if(document.fullscreenElement)document.exitFullscreen();else el.requestFullscreen&&el.requestFullscreen().catch(()=>{})}catch(e){}});
+const scrubTo=e=>{const r=track.getBoundingClientRect();seek(clamp((e.clientX-r.left)/r.width)*DUR)};
+track.addEventListener('pointerdown',e=>{scrubbing=true;track.setPointerCapture(e.pointerId);started=true;bigplay.hidden=true;scrubTo(e)});
+track.addEventListener('pointermove',e=>{if(scrubbing)scrubTo(e)});
+const endScrub=()=>{if(!scrubbing)return;scrubbing=false;if(playing)reanchor()};track.addEventListener('pointerup',endScrub);track.addEventListener('pointercancel',endScrub);
+const jump=d=>{const k=capAt(t);let n=d>0?k+1:(t-CAPS[k].t<1.2?k-1:k);n=clamp(n,0,CAPS.length-1);seek(CAPS[n].t+.001)};
+track.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();jump(e.key==='ArrowRight'?1:-1)}});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+  if(e.key===' '){e.preventDefault();if(!started)seek(0);playing?pause():play()}else if(e.key==='ArrowRight')jump(1);else if(e.key==='ArrowLeft')jump(-1);
+  else if(e.key==='v'||e.key==='V')setVoice(!TTS.on);else if(e.key==='f'||e.key==='F')$('#fs').click()});
+
+{const pp=(typeof POSTER!=='undefined'?POSTER:[SC.length-1,0,.9]),ps=SC[Math.min(pp[0],SC.length-1)],pc=Math.min(pp[1],ps.capT.length-1);t=ps.start+ps.capT[pc]+ps.capD[pc]*pp[2];tAbs=t}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
+['400 20px "Archivo Black"','500 20px "DM Mono"','600 20px "Noto Sans KR"','700 20px "Noto Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}/* ---- playback speed ---- */
+let SPEED=1;
+function setSpeed(r){if(playing){tAbs=anchorT+(clk()-anchorClock)*SPEED}SPEED=r;if(playing)reanchor();
+  document.querySelectorAll('#spd button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.r===r)));dirty=true}
+document.querySelectorAll('#spd button').forEach(b=>b.addEventListener('click',()=>setSpeed(+b.dataset.r)));
+syncUI();requestAnimationFrame(frame);
+window.Lesson={render,SC,CAPS,DUR,canvas:cv};
+})();
+</script>
+</body>
+</html>

@@ -67,6 +67,11 @@ kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2p
   .shots{grid-template-columns:1fr}
   .bigplay{top:50%;padding:8px 16px 8px 8px;font-size:13px}.bigplay .ic{width:34px;height:34px}
 }
+/* playback speed */
+.spd{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.spd button{height:32px;min-width:44px;padding:0 8px;border:0;border-radius:6px;background:transparent;color:var(--dim);font:500 12px var(--fm);cursor:pointer;font-variant-numeric:tabular-nums}
+.spd button:hover{color:var(--text)}
+.spd button[aria-pressed="true"]{background:var(--amber);color:var(--bg)}
 </style>
 </head>
 <body>
@@ -90,7 +95,7 @@ kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2p
     </div>
     <div class="controls" style="margin-top:10px">
       <button class="btn" id="play" type="button" aria-label="재생"><svg viewBox="0 0 16 16" id="playic"><path d="M4 2l10 6-10 6z"/></svg></button>
-      <button class="btn" id="sound" type="button" aria-pressed="false">사운드 꺼짐</button>
+      <button class="btn" id="sound" type="button" aria-pressed="false">사운드 꺼짐</button><div class="spd" id="spd" role="group" aria-label="재생 속도"><button type="button" data-r="1" aria-pressed="true">1×</button><button type="button" data-r="1.2" aria-pressed="false">1.2×</button><button type="button" data-r="1.5" aria-pressed="false">1.5×</button></div>
       <div class="track" id="track" role="slider" tabindex="0" aria-label="타임라인" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0"><div class="head" id="head"></div></div>
       <span class="tc" id="tc"><b>00:00.00</b> / 00:15.00</span>
       <button class="btn" id="fs" type="button" aria-label="전체 화면"><svg viewBox="0 0 16 16"><path d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg></button>
@@ -698,12 +703,12 @@ const clk=()=>srcKey()==='a'?AU.ctx.currentTime:performance.now()/1000;
 function reanchor(){anchorT=tAbs;anchorClock=clk();lastSrc=srcKey();if(AU.on&&AU.ctx){killBus();if(playing)newBus();AU.sched=tAbs}}
 function auTick(){if(!AU.on||!playing||scrubbing||!AU.bus||srcKey()!=='a')return;const c=AU.ctx,now=tAbs;if(AU.sched<now-.05)AU.sched=now;
   const until=now+.2;let a=AU.sched;while(a<until){const n=Math.floor(a/DUR),b=Math.min(until,(n+1)*DUR),la=a-n*DUR,lb=b-n*DUR;
-    for(const e of EV){if(e.t>=la&&e.t<lb){const when=anchorClock+(n*DUR+e.t-anchorT);if(when>=c.currentTime-.01)e.f(Math.max(when,c.currentTime+.001))}}a=b}AU.sched=until}
+    for(const e of EV){if(e.t>=la&&e.t<lb){const when=anchorClock+(n*DUR+e.t-anchorT)/SPEED;if(when>=c.currentTime-.01)e.f(Math.max(when,c.currentTime+.001))}}a=b}AU.sched=until}
 function play(){started=true;playing=true;tAbs=t;reanchor();bigplay.hidden=true;dirty=true}
 function pause(){playing=false;if(AU.bus)killBus();dirty=true}
 function seek(nt){t=clamp(nt,0,DUR-1e-3);tAbs=t;if(playing)reanchor();dirty=true}
 async function setSound(on){if(on){if(!AU.ctx)auInit();try{await AU.ctx.resume()}catch(e){}AU.on=true}else{AU.on=false;if(AU.bus)killBus()}if(playing)reanchor();syncUI()}
-function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock);t=((tAbs%DUR)+DUR)%DUR;auTick();dirty=true}
+function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock)*SPEED;t=((tAbs%DUR)+DUR)%DUR;auTick();dirty=true}
   if(dirty){render(t);ui();dirty=false}requestAnimationFrame(frame)}
 
 /* ============================================================
@@ -751,6 +756,11 @@ document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('b
 buildAssets();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
 ['400 20px "Michroma"','500 20px "JetBrains Mono"','400 16px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+/* ---- playback speed ---- */
+let SPEED=1;
+function setSpeed(r){if(playing){tAbs=anchorT+(clk()-anchorClock)*SPEED}SPEED=r;if(playing)reanchor();
+  document.querySelectorAll('#spd button').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.r===r)));dirty=true}
+document.querySelectorAll('#spd button').forEach(b=>b.addEventListener('click',()=>setSpeed(+b.dataset.r)));
 syncUI();requestAnimationFrame(frame);
 window.SiliconReel={render,BAR,DUR,canvas:cv};
 })();

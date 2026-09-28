@@ -6,15 +6,15 @@
 <title>Agent 능력 확장</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap">
 <style>
 :root{
   color-scheme:dark;
-  --bg:#07080C; --panel:#0E1117; --line:#1C212C; --line2:#2A3140;
-  --dim:#6E7688; --soft:#A9ADB8; --text:#ECE8DE; --amber:#FFB547;
-  --fd:"Michroma","Eurostile","Arial Black",sans-serif;
-  --fm:"JetBrains Mono",ui-monospace,Consolas,monospace;
-  --fb:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --bg:#0A1628; --panel:#10203A; --line:#1D3050; --line2:#2A4166;
+  --dim:#71829C; --soft:#A8B6CA; --text:#E8EEF6; --amber:#5EEAD4;
+  --fd:"Syne","Arial Black",sans-serif;
+  --fm:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --fb:"Gothic A1","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
 }
 html,body{margin:0;background:var(--bg);color:var(--text)}
 [hidden]{display:none!important}
@@ -28,20 +28,20 @@ h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft
 .screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
 .screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
 canvas{display:block;width:100%;height:100%;object-fit:contain}
-.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(255,181,71,.55);background:rgba(7,8,12,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(94,234,212,.55);background:rgba(10,22,40,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
 .bigplay:hover{border-color:var(--amber)}
 .bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
 .bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
 .btn:hover{border-color:var(--line2)}
-.btn[aria-pressed="true"]{border-color:rgba(255,181,71,.55);color:var(--amber)}
+.btn[aria-pressed="true"]{border-color:rgba(94,234,212,.55);color:var(--amber)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn svg{width:16px;height:16px;fill:currentColor}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
-.seg{position:relative;background:#10141B;border-radius:2px;overflow:hidden;min-width:0}
-.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,181,71,.2);width:0}
+.seg{position:relative;background:#12233F;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(94,234,212,.2);width:0}
 .seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
 .seg.on span{color:var(--amber)}
 .head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
@@ -94,7 +94,7 @@ kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2p
     <div class="screen" id="screen">
       <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
       <button class="bigplay" id="bigplay" type="button">
-        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#07080C"/></svg></span>
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#0A1628"/></svg></span>
         <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
       </button>
     </div>
@@ -128,9 +128,9 @@ const cv=document.getElementById('stage');cv.width=W;cv.height=H;
 const ctx=cv.getContext('2d');
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 const scratch=mk(W,H),sctx=scratch.getContext('2d');
-const C={bg:'#07080C',grid:'#141925',line:'#232A38',dim:'#6E7688',mid:'#9AA3B5',text:'#ECE8DE',amber:'#FFB547',
-  m1:'#4C8DFF',m2:'#FF4FA3',m3:'#2FE3C4',m4:'#B98CFF',m5:'#FF7A45',ok:'#3DDC84',bad:'#FF5A5F',card:'#0F131B'};
-const FD='"Michroma","Eurostile","Arial Black",sans-serif',FM='"JetBrains Mono",ui-monospace,Consolas,monospace',FK='"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const C={bg:'#0A1628',grid:'#15253B',line:'#1F3859',dim:'#71829C',mid:'#9FB0C8',text:'#E8EEF6',amber:'#5EEAD4',
+  m1:'#7AA2FF',m2:'#FF7EB6',m3:'#FFD166',m4:'#C4A1FF',m5:'#FF9F5A',ok:'#4ADE80',bad:'#FF6B6B',card:'#101D2E'};
+const FD='"Syne","Arial Black",sans-serif',FM='"IBM Plex Mono",ui-monospace,Consolas,monospace',FK='"Gothic A1","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
 const _ha=new Map();
 function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
 const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
@@ -150,7 +150,7 @@ function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(l
 function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
 function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
 function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
-  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#131824';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#142439';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
   g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
   const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
   if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
@@ -159,7 +159,7 @@ function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.global
   if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
 function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
   if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
-  g.fillStyle='#0D1118';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  g.fillStyle='#0F1A2A';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
   if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
   const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
   g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
@@ -171,8 +171,8 @@ function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,
 function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
 function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
   if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
-function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0D1118'})}
-function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#161B26';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0F1A2A'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#16273E';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
   T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
 function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
 function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
@@ -185,11 +185,11 @@ function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.
   g.restore()})}
 function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
   if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
-  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9CCD4';
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9D3E1';
   const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
   if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
   else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
-function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+30,w,14);
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0D1725',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#111E30';g.fill();g.fillRect(x,y+30,w,14);
   T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
 
 /* ================= scenes ================= */
@@ -208,20 +208,20 @@ const SKC=C.m4,   // Skill (violet)
 const NAVY='#0A1547',ACC='#1428A0',LAV='#C2C8E8',PALE='#F2F3F7',PERI='#7C9BFF';
 
 const typed=(s,f)=>s.slice(0,Math.ceil(s.length*clamp(f)));
-function gear(g,x,y,r,col){g.fillStyle=col;g.beginPath();for(let i=0;i<16;i++){const an=i/16*Math.PI*2,rr=i%2?r:r*1.32;g.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr)}g.closePath();g.fill();g.fillStyle='#131824';g.beginPath();g.arc(x,y,r*.45,0,7);g.fill()}
+function gear(g,x,y,r,col){g.fillStyle=col;g.beginPath();for(let i=0;i<16;i++){const an=i/16*Math.PI*2,rr=i%2?r:r*1.32;g.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr)}g.closePath();g.fill();g.fillStyle='#142439';g.beginPath();g.arc(x,y,r*.45,0,7);g.fill()}
 function book(g,x,y,s,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const w=s*.78;
   if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,s*.9,0,7);g.fill()}
-  rrect(g,x-w/2,y-s/2,w,s,s*.08);g.fillStyle='#131824';g.fill();g.fillStyle=hexA(col,.16);g.fill();g.strokeStyle=col;g.lineWidth=2.5;g.stroke();
+  rrect(g,x-w/2,y-s/2,w,s,s*.08);g.fillStyle='#142439';g.fill();g.fillStyle=hexA(col,.16);g.fill();g.strokeStyle=col;g.lineWidth=2.5;g.stroke();
   g.fillStyle=col;g.fillRect(x-w/2+s*.1,y-s/2,Math.max(3,s*.06),s);gear(g,x+s*.05,y-s*.1,s*.15,col);
   if(o.label){let lz=o.lsz??Math.max(13,s*.12);g.font=`600 ${lz}px ${FM}`;const lw=g.measureText(o.label).width;if(lw>w*.7)lz=Math.max(9,lz*w*.7/lw);T(g,o.label,x+s*.04,y+s*.3,{sz:lz,f:FM,w:600,al:'center',c:C.text})}
   if(o.name)T(g,o.name,x,y+s/2+(o.nsz??18)+10,{sz:o.nsz??18,w:600,al:'center',c:o.nc??col,f:o.nf??FM});g.restore()}
 function termL(g,x,y,L,o={}){const lh=o.lh??40,sz=o.sz??19;L.forEach((r,i)=>{if(!r)return;const a=o.a?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const[s,c,w,hl]=r;const yy=y+i*lh;
   if(hl){rrect(g,x-12,yy-lh+10,o.w??900,lh,6);g.fillStyle=hexA(hl,.14);g.fill();g.fillStyle=hl;g.fillRect(x-12,yy-lh+10,3,lh)}
   T(g,s,x,yy,{sz,f:FM,w:w??400,c:c??C.text});g.restore()})}
-function browser(g,x,y,w,h,url,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,50,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+34,w,16);
+function browser(g,x,y,w,h,url,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0D1725',stroke:o.stroke??C.line});rrect(g,x,y,w,50,14);g.fillStyle='#111E30';g.fill();g.fillRect(x,y+34,w,16);
   ['#FF5F57','#FEBC2E','#28C840'].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.arc(x+24+i*20,y+25,6,0,7);g.fill()});
-  panel(g,x+96,y+11,w-120-(o.tag?180:0),28,{r:14,fill:'#161B26',stroke:null});T(g,url,x+114,y+31,{sz:15,f:FM,c:C.mid});if(o.tag)chip(g,x+w-18,y+25,o.tag,C.dim,{sz:13,al:'right'})}
-function bubble(g,x,y,w,h,col,lines,o={}){panel(g,x,y,w,h,{r:16,fill:o.fill??'#12161F',stroke:hexA(col,.55)});lines.forEach((s,i)=>T(g,s,x+22,y+(o.top??38)+i*(o.lh??32),{sz:o.sz??20,w:o.w??500,c:o.c??C.text,f:o.f??FK}))}
+  panel(g,x+96,y+11,w-120-(o.tag?180:0),28,{r:14,fill:'#16273E',stroke:null});T(g,url,x+114,y+31,{sz:15,f:FM,c:C.mid});if(o.tag)chip(g,x+w-18,y+25,o.tag,C.dim,{sz:13,al:'right'})}
+function bubble(g,x,y,w,h,col,lines,o={}){panel(g,x,y,w,h,{r:16,fill:o.fill??'#122134',stroke:hexA(col,.55)});lines.forEach((s,i)=>T(g,s,x+22,y+(o.top??38)+i*(o.lh??32),{sz:o.sz??20,w:o.w??500,c:o.c??C.text,f:o.f??FK}))}
 function cellText(g,s,x,y,w,o={}){const sz=o.sz??19;g.font=`${o.w??500} ${sz}px ${FK}`;const L=wrapLines(g,s,w);const lh=sz*1.35;L.forEach((l,i)=>T(g,l,x,y-(L.length-1)*lh/2+i*lh,{sz,w:o.w??500,al:o.al??'center',c:o.c??C.text}))}
 function tile(g,x,y,w,h,label,col,glyph,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;panel(g,x-w/2,y-h/2,w,h,{r:16,fill:hexA(col,.07+.08*(o.hi||0)),stroke:hexA(col,.35+.5*(o.hi||0)),lw:1.5+(o.hi||0)});
   T(g,glyph,x,y+2,{sz:30,f:FM,w:700,al:'center',c:col});T(g,label,x,y+h/2-16,{sz:18,w:600,al:'center'});g.restore()}
@@ -232,7 +232,7 @@ S({code:'03',title:'Agent 능력 확장',group:'CHAPTER',hideHead:1,
  draw(g,P){const t=P.ls,cx=960,cy=470,la=P.at(0,0,1.2);
   for(let k=0;k<6;k++){const an=k/6*Math.PI*2+t*.12,x=cx+Math.cos(an)*620,y=cy+Math.sin(an)*280;g.globalAlpha=la*.45;g.strokeStyle=hexA(C.amber,.5);g.lineWidth=1.2;g.setLineDash([4,9]);line(g,cx,cy,x,y);g.setLineDash([]);g.globalAlpha=1;
    if(k%2===0)book(g,x,y,74,SKC,{a:la*.85});else tile(g,x,y,96,84,'',MCPC,'MCP',{a:la*.8})}
-  const rg=g.createRadialGradient(cx,cy+30,40,cx,cy+30,560);rg.addColorStop(0,'rgba(7,8,12,0.96)');rg.addColorStop(1,'rgba(7,8,12,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const rg=g.createRadialGradient(cx,cy+30,40,cx,cy+30,560);rg.addColorStop(0,'rgba(10,22,40,0.96)');rg.addColorStop(1,'rgba(10,22,40,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
   const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8),a4=P.at(0,1.3,.8);
   g.globalAlpha=a1;T(g,'CHAPTER 03',cx,380,{sz:22,f:FM,w:500,al:'center',c:C.amber});
   g.globalAlpha=a2;T(g,'Agent +',cx,530+(1-a2)*30,{sz:118,f:FD,w:400,al:'center'});
@@ -246,7 +246,7 @@ S({code:'00',title:'학습 목표',group:'CHAPTER 03',
  draw(g,P){OBJ.forEach((s,k)=>{const a=P.at(0,.2+k*.25,.6),y=270+k*140;if(a<=0)return;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
    const ck=eO3(clamp((P.sec(1)-.3-k*.9)/.45));panel(g,300,y-10,1320,112,{fill:ck>0?hexA(C.amber,.05):C.card,stroke:ck>0?hexA(C.amber,.45):C.line});
    rrect(g,340,y+22,48,48,10);g.strokeStyle=ck>0?C.amber:C.mid;g.lineWidth=2.5;g.stroke();check(g,364,y+46,30,C.amber,ck);
-   T(g,s,420,y+56,{sz:28,w:500,c:ck>0?C.text:'#C4C7CF'});g.restore()})}});
+   T(g,s,420,y+56,{sz:28,w:500,c:ck>0?C.text:'#C3CEDD'});g.restore()})}});
 
 // 2 SKILL?
 const LONGP=['다음 조사 결과를 바탕으로 보고서를 작성해줘.','제목은 28px Bold, 본문은 16px,','폰트는 Pretendard로 해줘.','포인트 색상은 #2563EB, 보조 색상은','#E5E7EB, 표 헤더는 연한 파랑(#DBEAFE),','여백은 24px로 하고, 목차도 만들어줘.','시장 상황을 분석하고, 어떤 부분이 중요한지','인사이트를 뽑아서 작성해줘...'];
@@ -260,7 +260,7 @@ S({code:'1-1',title:'Skill이란?',group:'1 · 반복해서 사용하는 업무 
   T(g,'Skill이 없을 때',520,232,{sz:30,w:700,al:'center'});T(g,'같은 지시를 매번 다시 설명',520,266,{sz:18,al:'center',c:C.dim});
   T(g,'Skill이 있을 때',1400,232,{sz:30,w:700,al:'center',c:R>0?C.text:C.dim});T(g,'한 번 만든 업무 방법을 필요할 때마다',1400,266,{sz:18,al:'center',c:C.dim});
   agent(g,200,460,50,RWC,{name:'report-writer',nsz:17});
-  const rv=clamp(P.sec(0)/Math.max(.1,P.dur0*.8));panel(g,290,300,560,340,{r:18,fill:'#12161F',stroke:hexA(C.text,.3)});
+  const rv=clamp(P.sec(0)/Math.max(.1,P.dur0*.8));panel(g,290,300,560,340,{r:18,fill:'#122134',stroke:hexA(C.text,.3)});
   const n=Math.floor(LONGP.length*rv);LONGP.forEach((s,i)=>{if(i<n)T(g,s,312,340+i*37,{sz:19,c:/#|px|Pretendard/.test(s)?C.amber:C.text})});
   const pa=P.at(1,0,.6);if(pa>0){g.globalAlpha=pa;panel(g,120,680,780,170,{r:16,fill:hexA(C.bad,.07),stroke:hexA(C.bad,.5)});T(g,'⚠ 문제점',150,722,{sz:22,w:700,c:C.bad});
    ['매번 같은 지시를 다시 입력해야 함','분석 기준과 디자인 지시가 섞여 복잡해짐','결과물의 품질이 일정하지 않을 수 있음'].forEach((s,i)=>{const b=P.at(1,.3+i*.35,.4);g.globalAlpha=pa*b;T(g,'• '+s,310,724+i*40,{sz:20})});g.globalAlpha=1}
@@ -271,7 +271,7 @@ S({code:'1-1',title:'Skill이란?',group:'1 · 반복해서 사용하는 업무 
    if(f2>=1){const d=eOB(clamp((P.sec(2)-2.1)/.5));g.save();g.translate(1715,460);g.scale(d,d);doc(g,0,0,110,140,C.ok,{lines:5,title:'시장조사 보고서',tsz:16});g.restore()}
    const ba=P.at(2,2.2,.6);g.globalAlpha=R*ba;
    [['핵심 업무에 집중','분석 · 판단 · 인사이트 도출',1010],['일관된 결과물','정해둔 디자인 규칙으로 같은 품질',1420]].forEach(([t,d,x])=>{panel(g,x,680,390,170,{r:16,fill:hexA(C.ok,.06),stroke:hexA(C.ok,.45)});T(g,t,x+24,726,{sz:23,w:700,c:C.ok});T(g,d,x+24,770,{sz:18,c:C.mid})});g.restore()}
-  const m=P.at(3,0,.6);if(m>0){g.globalAlpha=m;chip(g,960,190,'Skill = 반복해서 쓰는 지시 · 방법 · 기준을 재사용하는 ‘업무 매뉴얼’',SKC,{sz:20,al:'center',fill:'#141022'});g.globalAlpha=1}
+  const m=P.at(3,0,.6);if(m>0){g.globalAlpha=m;chip(g,960,190,'Skill = 반복해서 쓰는 지시 · 방법 · 기준을 재사용하는 ‘업무 매뉴얼’',SKC,{sz:20,al:'center',fill:'#132235'});g.globalAlpha=1}
   g.globalAlpha=1;chip(g,1800,850,'교안 그림 기준',C.dim,{sz:13,al:'right'})}});
 
 // 3 AGENT vs SKILL
@@ -283,7 +283,7 @@ S({code:'1-2',title:'Agent와 Skill은 무엇이 다를까?',group:'1 · 반복�
   {t:'Skill은 별도의 담당자가 아니라, Agent가 불러와 참고하는 재사용 가능한 지시·절차·기준입니다.',say:'스킬은 별도의 담당자가 아니라, 에이전트가 불러와 참고하는 재사용 가능한 지시, 절차, 기준입니다.'},
   {t:'Agent는 memory를 설정하면 경험을 축적할 수 있지만, Skill 자체에는 지속 Memory 기능이 없습니다.',say:'에이전트는 메모리를 설정하면 경험을 축적할 수 있지만, 스킬 자체에는 지속 메모리 기능이 없습니다.'}],
  draw(g,P){const cw=P.at(1,0,.6);
-  panel(g,120,215,780,520,{r:20,fill:'#0D1119',stroke:hexA(RWC,.25+.4*cw),lw:2,dash:cw>0?[8,6]:null});
+  panel(g,120,215,780,520,{r:20,fill:'#0F1B2B',stroke:hexA(RWC,.25+.4*cw),lw:2,dash:cw>0?[8,6]:null});
   if(cw>0){g.globalAlpha=cw;chip(g,144,248,'report-writer의 독립된 Context Window',RWC,{sz:16});g.globalAlpha=1}
   agent(g,330,450,64,RWC,{a:P.at(0,0,.5),name:'report-writer',role:'판단하며 업무를 수행하는 담당자',glow:.3});
   const tl=P.at(1,.4,.5);if(tl>0){g.globalAlpha=tl;chip(g,520,330,'Tool',C.m3,{sz:17});g.globalAlpha=1}
@@ -333,13 +333,13 @@ S({code:'2-1',title:'스킬을 만들어주는 스킬 — skill-creator',group:'
   book(g,960,470,190,SKC,{a:a0,label:'skill-creator',lsz:20,glow:.3+.6*P.at(3,0,.6)});
   if(a0>0){g.globalAlpha=a0;T(g,'Skill을 만드는 Skill',960,630,{sz:22,w:600,al:'center',c:SKC});g.globalAlpha=1}
   const ia=P.at(1,0,.5);if(ia>0){g.save();g.globalAlpha=ia;person(g,220,420,70,C.text,{name:'나'});
-   panel(g,120,560,420,190,{r:16,fill:'#12161F',stroke:hexA(C.text,.35)});T(g,'전달하는 것',144,600,{sz:17,c:C.dim});T(g,'• 원하는 업무',144,642,{sz:22});T(g,'• 참고 자료 (좋은 샘플)',144,684,{sz:22});T(g,'• 반복할 기준',144,726,{sz:22});
+   panel(g,120,560,420,190,{r:16,fill:'#122134',stroke:hexA(C.text,.35)});T(g,'전달하는 것',144,600,{sz:17,c:C.dim});T(g,'• 원하는 업무',144,642,{sz:22});T(g,'• 참고 자료 (좋은 샘플)',144,684,{sz:22});T(g,'• 반복할 기준',144,726,{sz:22});
    const f=clamp((P.sec(1)-.5)/1);arrow(g,550,470,lerp(550,840,f),470,hexA(C.text,.6),f,{dash:[6,6]});packet(g,550,470,850,470,clamp((P.sec(1)-.5)/1.2),C.amber,'업무 + 자료');g.restore()}
   const oa=P.at(1,1.6,.6);if(oa>0){g.save();g.globalAlpha=oa;const f=clamp((P.sec(1)-1.6)/.8);arrow(g,1080,470,lerp(1080,1230,f),470,hexA(SKC,.8),f,{lw:3});
    winFrame(g,1250,220,570,560,'.claude/skills/<스킬 이름>/',{tc:SKC,tag:'구조'});
    const r=j=>j===0?1:P.at(2,.3+j*.35,.4);
    tree(g,1280,310,[{n:'<스킬 이름>/',d:0,dir:1,c:SKC,tc:SKC},{n:'SKILL.md',d:1,c:C.amber,tc:C.amber,hi:P.at(2,0,.5),hc:C.amber,tag:'필수'},{n:'references/',d:1,dir:1,a:r(1)},{n:'scripts/',d:1,dir:1,a:r(2)},{n:'assets/',d:1,dir:1,a:r(3)}],{w:520,sz:21,lh:56});
-   const da=P.at(2,.1,.5);if(da>0){g.globalAlpha=oa*da;panel(g,1280,610,510,140,{r:12,fill:'#0A0D12',stroke:hexA(C.amber,.5)});
+   const da=P.at(2,.1,.5);if(da>0){g.globalAlpha=oa*da;panel(g,1280,610,510,140,{r:12,fill:'#0C1522',stroke:hexA(C.amber,.5)});
     codeLines(g,1302,650,['---','name: <스킬 이름>','description: 언제 이 Skill을 부를지'],{lh:34,sz:18,w:480,hi:i=>i===2?P.at(2,.3,.5):0})}g.restore()}
   const sa=P.at(2,1.8,.6);if(sa>0){g.globalAlpha=sa;chip(g,960,760,'안에 든 것: 좋은 Skill 구조 · 작성 기준',SKC,{sz:18,al:'center'});g.globalAlpha=1}
   const qa=P.at(3,.2,.6);if(qa>0){g.globalAlpha=qa;T(g,'“Skill을 만드는 방법” 자체를 Skill로',960,840,{sz:32,w:700,al:'center',c:C.amber});g.globalAlpha=1}}});
@@ -359,7 +359,7 @@ S({code:'2-1',title:'skill-creator 설치하기 — /plugin',group:'2 · 실습 
   {t:'그러면 이제 /skill-creator 명령이 활성화됩니다.',say:'그러면 이제 슬래시 스킬 크리에이터 명령이 활성화됩니다.'},
   {t:'메뉴에서 설치가 잘 되지 않으면 터미널에서 claude plugin install 명령을 사용할 수 있습니다.',say:'메뉴에서 설치가 잘 되지 않으면, 터미널에서 클로드 플러그인 인스톨 명령을 사용할 수 있습니다.'}],
  draw(g,P){const i=P.i;g.strokeStyle=C.line;g.lineWidth=2;line(g,160,280,160,800);
-  ISTEP.forEach(([t,d],k)=>{const y=280+k*130,on=k===i,dn=k<i&&k<4;const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0D1118';g.beginPath();g.arc(160,y,28,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
+  ISTEP.forEach(([t,d],k)=>{const y=280+k*130,on=k===i,dn=k<i&&k<4;const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0F1A2A';g.beginPath();g.arc(160,y,28,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
    if(dn)check(g,160,y+2,24,C.ok,1);else T(g,String(k+1),160,y+9,{sz:22,f:FD,al:'center',c:col});T(g,t,210,y-2,{sz:24,w:700,c:on||dn?C.text:C.mid});T(g,d,210,y+30,{sz:17,c:C.dim,f:k===4?FM:FK})});
   const a=P.at(i,0,.4);g.save();g.globalAlpha=a;winFrame(g,640,215,1180,640,i===4?'Windows PowerShell':'Claude Code',{tc:i===4?C.mid:C.amber,tag:'교안 화면 기준'});
   termL(g,680,300,INST[i],{lh:i===2?46:52,sz:19,w:1110,a:k=>P.at(i,.1+k*.12,.3)});g.restore()}});
@@ -390,7 +390,7 @@ S({code:'2-2',title:'좋은 샘플로 Skill 만들기',group:'2 · 실습 — �
   {t:'생성이 끝나면 .claude/skills/ 아래 SKILL.md를 열어, 샘플의 특징이 재사용 가능한 규칙으로 정리됐는지 확인합니다.',say:'생성이 끝나면 닷 클로드 슬래시 스킬즈 아래의 스킬 엠디를 열어, 샘플의 특징이 재사용 가능한 규칙으로 잘 정리됐는지 확인합니다.'}],
  draw(g,P){const sel=P.at(1,.3,.5);
   SAMP.forEach(([n,d,fn],k)=>{const a=P.at(0,.2+k*.25,.5);if(a<=0)return;const x=130+k*330,y=215,dim=k===1?1:1-.6*sel;g.save();g.globalAlpha=a*dim;
-   panel(g,x-10,y-10,310,300,{r:14,fill:'#0D1119',stroke:hexA(k===1&&sel>0?C.amber:C.line,k===1&&sel>0?.9:1),lw:k===1?1.5+sel*1.5:1.5});
+   panel(g,x-10,y-10,310,300,{r:14,fill:'#0F1B2B',stroke:hexA(k===1&&sel>0?C.amber:C.line,k===1&&sel>0?.9:1),lw:k===1?1.5+sel*1.5:1.5});
    fn(g,x+50,y+8,190,210,1);T(g,n,x+145,y+248,{sz:16,f:FM,w:600,al:'center',c:k===1&&sel>0?C.amber:C.text});T(g,d,x+145,y+274,{sz:15,al:'center',c:C.dim});g.restore()});
   if(sel>0){g.globalAlpha=sel;chip(g,605,540,'실제 파일 · doc-sample.html 선택',C.amber,{sz:15,al:'center'});g.globalAlpha=1}
   const pa=P.at(2,0,.5);if(pa>0){g.save();g.globalAlpha=pa;winFrame(g,1140,205,680,300,'Claude Code · 프롬프트',{tc:SKC,tag:'교안 프롬프트'});
@@ -408,7 +408,7 @@ S({code:'2-2',title:'좋은 샘플로 Skill 만들기',group:'2 · 실습 — �
 function repPage(g,x,y,w,h,styled,a){g.save();g.globalAlpha*=a;
   if(!styled){panel(g,x,y,w,h,{r:8,fill:'#F4F4F4',stroke:null});const L=[['AI 반도체 시장조사 보고서',26,700],['1. 시장 규모 · 성장 전망',19,700],['',0],['2. 주요 공급사 · 점유율',19,700],['',0],['3. 수요처 · 응용 분야',19,700],['',0],['4. 종합 · 시사점',19,700]];
    let yy=y+50;L.forEach(([s,sz,wt])=>{if(s){g.font=`${wt} ${sz}px "Times New Roman",serif`;g.fillStyle='#111';g.textAlign='left';g.fillText(s,x+30,yy);yy+=sz+14}else{g.fillStyle='#BBB';g.fillRect(x+30,yy-8,w-60,4);g.fillRect(x+30,yy+4,w-120,4);yy+=34}})}
-  else{panel(g,x,y,w,h,{r:8,fill:'#FFFFFF',stroke:null});const px=x+30,iw=w-60;g.fillStyle='#C8CCD8';g.fillRect(px,y+26,iw,1.5);T(g,'대외비 · 사내 한정',px,y+20,{sz:11,c:'#6E7688'});
+  else{panel(g,x,y,w,h,{r:8,fill:'#FFFFFF',stroke:null});const px=x+30,iw=w-60;g.fillStyle='#C8CCD8';g.fillRect(px,y+26,iw,1.5);T(g,'대외비 · 사내 한정',px,y+20,{sz:11,c:'#71829C'});
    T(g,'AI 반도체 시장조사 보고서',x+w/2,y+68,{sz:22,w:700,al:'center',c:NAVY});g.fillStyle=PALE;g.fillRect(px,y+88,iw,54);g.strokeStyle='#D5D9E3';g.lineWidth=1;g.strokeRect(px,y+88,iw,54);g.fillStyle='#9BA2B2';g.fillRect(px+14,y+106,iw-28,4);g.fillRect(px+14,y+120,iw-80,4);
    ['Ⅰ. 시장 규모 · 성장 전망','Ⅱ. 주요 공급사 · 점유율','Ⅲ. 수요처 · 응용 분야'].forEach((s,k)=>{const yy=y+176+k*86;T(g,s,px,yy,{sz:16,w:700,c:NAVY});g.fillStyle=NAVY;g.fillRect(px,yy+8,iw,2);T(g,'○',px+4,yy+34,{sz:13,c:ACC});g.fillStyle='#C8CCD8';g.fillRect(px+24,yy+26,iw-40,4);g.fillRect(px+24,yy+42,iw-90,4);
     if(k===0)for(let b=0;b<6;b++){g.fillStyle=b>3?ACC:LAV;g.fillRect(px+iw-120+b*20,yy-4-b*3,14,b*3+4)}})}g.restore()}
@@ -418,12 +418,12 @@ S({code:'2-3',title:'기존 결과물에 Skill 적용하기',group:'2 · 실습 
   {t:'결과는 report/report_styled.html로 저장한 뒤 원본과 비교합니다.',say:'결과는 리포트 스타일드 에이치티엠엘로 저장한 뒤, 원본과 비교합니다.'},
   {t:'마음에 들지 않으면 결과물 하나를 고치는 대신, SKILL.md를 수정한 뒤 다시 실행합니다.',say:'결과가 마음에 들지 않으면, 결과물 하나를 고치는 대신 스킬 엠디를 수정한 뒤 다시 실행해 봅니다.'}],
  draw(g,P){const a0=P.at(0,0,.5);g.globalAlpha=a0;winFrame(g,110,225,560,590,'report/report.html',{tc:C.mid,tag:'원본'});repPage(g,140,290,500,500,false,1);g.globalAlpha=1;
-  const ca=P.at(1,0,.4);if(ca>0){g.save();g.globalAlpha=ca;panel(g,700,195,520,64,{r:12,fill:'#0A0D12',stroke:hexA(SKC,.6)});const cmd='> /report-design @report/report.html';T(g,typed(cmd,P.sec(1)/1),722,236,{sz:20,f:FM,w:600,c:SKC});
+  const ca=P.at(1,0,.4);if(ca>0){g.save();g.globalAlpha=ca;panel(g,700,195,520,64,{r:12,fill:'#0C1522',stroke:hexA(SKC,.6)});const cmd='> /report-design @report/report.html';T(g,typed(cmd,P.sec(1)/1),722,236,{sz:20,f:FM,w:600,c:SKC});
    book(g,960,470,130,SKC,{label:'report-design',lsz:14,glow:.4});T(g,'내용 그대로 · 디자인만',960,580,{sz:18,al:'center',c:C.mid});
    const f=clamp((P.sec(1)-1)/1.2);packet(g,680,470,880,470,f,C.mid,'내용');packet(g,1040,470,1240,470,clamp((P.sec(1)-1.8)/1.2),SKC,'+ 규칙');g.restore()}
   const sa=P.at(1,2.6,.6)||P.at(2,0,.5);if(sa>0){g.save();g.globalAlpha=sa;winFrame(g,1260,225,560,590,'report/report_styled.html',{tc:C.ok,tag:'Skill 적용'});repPage(g,1290,290,500,500,true,1);g.restore()}
   const cm=P.at(2,.2,.5);if(cm>0){g.globalAlpha=cm;chip(g,390,848,'원본',C.mid,{sz:16,al:'center'});chip(g,960,848,'← 비교 →',C.amber,{sz:16,al:'center'});chip(g,1540,848,'report_styled.html',C.ok,{sz:16,al:'center'});g.globalAlpha=1}
-  const lp=P.at(3,0,.5);if(lp>0){g.save();g.globalAlpha=lp;panel(g,700,620,520,190,{r:16,fill:'#12161F',stroke:hexA(C.amber,.6)});T(g,'결과가 마음에 들지 않으면?',730,660,{sz:20,w:700,c:C.amber});
+  const lp=P.at(3,0,.5);if(lp>0){g.save();g.globalAlpha=lp;panel(g,700,620,520,190,{r:16,fill:'#122134',stroke:hexA(C.amber,.6)});T(g,'결과가 마음에 들지 않으면?',730,660,{sz:20,w:700,c:C.amber});
    cross(g,745,700,16,C.bad);T(g,'결과물 하나를 직접 고치기',770,707,{sz:19,c:C.mid});check(g,745,752,22,C.ok,P.at(3,.5,.4));T(g,'SKILL.md 수정 → 다시 실행',770,760,{sz:19,w:700});
    const sp=P.ls*2;g.strokeStyle=hexA(SKC,.8);g.lineWidth=3;g.beginPath();g.arc(1150,752,26,sp,sp+Math.PI*1.5);g.stroke();g.restore()}
   chip(g,1820,190,'예시 화면 · report.html은 Ch2 실습 결과물',C.dim,{sz:13,al:'right'})}});
@@ -440,10 +440,10 @@ S({code:'2-4',title:'에이전트에 Skill 연동하기',group:'2 · 실습 — 
   [0,1,2].forEach(k=>{const a=P.at(0,.4+k*.15,.4);if(a<=0)return;const y=340+k*100;g.globalAlpha=a;doc(g,150,y,44,58,MAC,{lines:2});g.globalAlpha=1;
    if(i2)packet(g,180,y,320,440,clamp((P.sec(2)-.2-k*.2)/1),MAC,null)});
   if(a0>0){g.globalAlpha=a0;T(g,'data/ 조사 결과',150,600,{sz:16,al:'center',c:C.dim});g.globalAlpha=1}
-  const ba=P.at(1,0,.5);if(ba>0){g.save();g.globalAlpha=ba;panel(g,110,195,760,64,{r:14,fill:'#12161F',stroke:hexA(C.text,.35)});T(g,'> report-writer가 보고서를 작성할 때 report-design Skill을 사용하도록 연결해줘.',130,236,{sz:16,f:FM,c:C.text});g.restore()}
+  const ba=P.at(1,0,.5);if(ba>0){g.save();g.globalAlpha=ba;panel(g,110,195,760,64,{r:14,fill:'#122134',stroke:hexA(C.text,.35)});T(g,'> report-writer가 보고서를 작성할 때 report-design Skill을 사용하도록 연결해줘.',130,236,{sz:16,f:FM,c:C.text});g.restore()}
   const bx=lerp(700,540,lk),by=lerp(700,440,lk);if(ba>0)book(g,bx,by,lerp(110,90,lk),SKC,{a:ba,label:'report-design',lsz:13,glow:lk});
   if(lk>.98){g.strokeStyle=hexA(SKC,.7);g.lineWidth=2;g.setLineDash([5,5]);line(g,485,440,500,440);g.setLineDash([])}
-  if(i2){const d=eOB(clamp((P.sec(2)-1.4)/.5));if(d>0){g.save();g.translate(640,680);g.scale(d,d);doc(g,0,0,110,140,C.ok,{lines:5,fill:'#141A26'});g.restore()}
+  if(i2){const d=eOB(clamp((P.sec(2)-1.4)/.5));if(d>0){g.save();g.translate(640,680);g.scale(d,d);doc(g,0,0,110,140,C.ok,{lines:5,fill:'#15263C'});g.restore()}
    packet(g,480,470,600,620,clamp((P.sec(2)-.9)/.6),RWC,null);if(P.at(2,1.8,.4)>0){g.globalAlpha=P.at(2,1.8,.4);chip(g,640,820,'내용 + 디자인 규칙',C.ok,{sz:16,al:'center'});g.globalAlpha=1}}
   const fa=P.at(3,0,.5);if(fa>0){g.save();g.globalAlpha=fa;winFrame(g,930,290,890,560,'.claude/agents/report-writer.md',{tc:RWC,tag:'Ch2_완성본 실제 파일 + 연결 후 예시'});
    codeLines(g,960,370,RWMD,{lh:38,sz:18,w:840,a:i=>eO3(clamp((P.sec(3)-.1-i*.1)/.3)),hi:i=>(i===4||i===9)?P.at(3,1.4,.5):0});
@@ -465,7 +465,7 @@ S({code:'2-5',title:'다른 사람이 만든 Skill 가져오기',group:'2 · 실
    T(g,typed('https://github.com/NomaDamas/k-skill',P.sec(2)/.8),990,290,{sz:18,f:FM,c:C.m1});T(g,typed('여기서 [내가 원하는 스킬 이름]을 스킬로 다운로드 받아줘',(P.sec(2)-.8)/1),990,326,{sz:18,f:FM});
    winFrame(g,960,370,860,300,'프로젝트 폴더',{tc:C.mid});const d=P.sec(2)>1.8;
    tree(g,1000,450,[{n:'.claude/',d:0,dir:1},{n:'skills/',d:1,dir:1},{n:'report-design/',d:2,dir:1,c:SKC,tc:C.mid},{n:'[가져온 스킬 이름]/',d:2,dir:1,c:SKC,tc:SKC,a:d?P.at(2,1.9,.4):0,tag:'NEW',hc:C.ok},{n:'SKILL.md',d:3,c:C.amber,tc:C.amber,a:P.at(3,0,.4),hi:P.at(3,.2,.5),tag:'열어서 확인',hc:C.amber}],{w:790,sz:19,lh:44});g.restore()}
-  const ca=P.at(3,1,.5);if(ca>0){g.globalAlpha=ca;panel(g,960,700,860,110,{r:14,fill:'#0A0D12',stroke:hexA(C.amber,.6)});T(g,typed('> /[다운받은 스킬 이름]',(P.sec(3)-1)/.8),990,768,{sz:24,f:FM,w:600,c:C.amber});g.globalAlpha=1}}});
+  const ca=P.at(3,1,.5);if(ca>0){g.globalAlpha=ca;panel(g,960,700,860,110,{r:14,fill:'#0C1522',stroke:hexA(C.amber,.6)});T(g,typed('> /[다운받은 스킬 이름]',(P.sec(3)-1)/.8),990,768,{sz:24,f:FM,w:600,c:C.amber});g.globalAlpha=1}}});
 
 // 11 MCP?
 const TOOLS=[['웹 브라우저','WWW',-1,-1],['노션','N',1,-1],['이메일','@',-1,-.35],['데이터베이스','DB',1,-.35],['구글 드라이브','▲',-1,.35],['슬랙','#',1,.35],['깃허브','git',-.45,1],['캘린더','31',.45,1]];
@@ -490,13 +490,13 @@ const PWSTEP=[['페이지 열기','browser.goto','먼저 쇼핑몰 페이지를 
 function shopView(g,x,y,w,h,st,fr){ // st = completed steps (0..5), fr = progress of current
   browser(g,x,y,w,h,st>=1?'https://shopping.naver.com':'about:blank',{tag:'교안 그림 · 예시 요청'});if(st<1){T(g,'빈 페이지',x+w/2,y+h/2,{sz:22,al:'center',c:C.dim});return}
   const px=x+30;g.fillStyle='#03C75A';rrect(g,px,y+80,52,52,8);g.fill();T(g,'N',px+26,y+118,{sz:32,w:800,al:'center',c:'#FFFFFF',f:FK});T(g,'쇼핑',px+70,y+116,{sz:28,w:700});
-  const sx=px+180,sw=w-260;panel(g,sx,y+82,sw,50,{r:10,fill:'#0D1119',stroke:st>=2?PWC:'#3A4150',lw:st>=2?2.5:1.5});
+  const sx=px+180,sw=w-260;panel(g,sx,y+82,sw,50,{r:10,fill:'#0F1B2B',stroke:st>=2?PWC:'#2E5282',lw:st>=2?2.5:1.5});
   const txt=st>=3?'노트북':'';if(txt)T(g,txt,sx+18,y+116,{sz:22,w:600});else T(g,'상품을 검색해보세요.',sx+18,y+116,{sz:19,c:C.dim});
-  const bxx=sx+sw-50;rrect(g,bxx,y+86,42,42,8);g.fillStyle=st>=4?'#03C75A':'#1A1F2A';g.fill();g.strokeStyle='#FFFFFF';g.lineWidth=2.5;g.beginPath();g.arc(bxx+19,y+105,8,0,7);g.stroke();line(g,bxx+25,y+111,bxx+31,y+117);
+  const bxx=sx+sw-50;rrect(g,bxx,y+86,42,42,8);g.fillStyle=st>=4?'#03C75A':'#182C45';g.fill();g.strokeStyle='#FFFFFF';g.lineWidth=2.5;g.beginPath();g.arc(bxx+19,y+105,8,0,7);g.stroke();line(g,bxx+25,y+111,bxx+31,y+117);
   ['홈','오늘행사','베스트','패션의류','…'].forEach((s,i)=>T(g,s,px+i*110,y+176,{sz:17,c:C.mid}));
-  if(st>=4){const r=st>=5?1:0;[0,1,2].forEach(k=>{const yy=y+210+k*80;panel(g,px,yy,w-60,68,{r:10,fill:k===0&&r?hexA(PWC,.1):'#10141C',stroke:k===0&&r?PWC:C.line,lw:k===0&&r?2.5:1});
-    g.fillStyle='#1E2A44';rrect(g,px+12,yy+10,80,48,6);g.fill();
-    if(k===0){T(g,'LG 그램 16',px+110,yy+30,{sz:17,c:C.mid});T(g,'1,490,000원',px+110,yy+56,{sz:22,w:700,c:r?PWC:C.text});T(g,'로켓배송',px+300,yy+56,{sz:15,c:C.m1})}else{g.fillStyle='#2A3040';g.fillRect(px+110,yy+22,220,8);g.fillRect(px+110,yy+42,140,8)}})}
+  if(st>=4){const r=st>=5?1:0;[0,1,2].forEach(k=>{const yy=y+210+k*80;panel(g,px,yy,w-60,68,{r:10,fill:k===0&&r?hexA(PWC,.1):'#111E30',stroke:k===0&&r?PWC:C.line,lw:k===0&&r?2.5:1});
+    g.fillStyle='#213C5F';rrect(g,px+12,yy+10,80,48,6);g.fill();
+    if(k===0){T(g,'LG 그램 16',px+110,yy+30,{sz:17,c:C.mid});T(g,'1,490,000원',px+110,yy+56,{sz:22,w:700,c:r?PWC:C.text});T(g,'로켓배송',px+300,yy+56,{sz:15,c:C.m1})}else{g.fillStyle='#244166';g.fillRect(px+110,yy+22,220,8);g.fillRect(px+110,yy+42,140,8)}})}
   else if(st>=3&&fr>.5){} }
 S({code:'3-2',title:'MCP는 어떻게 동작할까?',group:'3 · 외부 도구를 연결하는 — MCP',
  caps:[{t:'MCP를 연결하면 Claude는 외부 서비스가 제공하는 기능의 이름과 사용 방법을 알 수 있습니다.',say:'엠씨피를 연결하면, 클로드는 외부 서비스가 제공하는 기능의 이름과 사용 방법을 알 수 있습니다.'},
@@ -515,11 +515,11 @@ S({code:'3-2',title:'MCP는 어떻게 동작할까?',group:'3 · 외부 도구�
   panel(g,N.mc[0]-84,272,168,56,{r:28,fill:MCPC,stroke:null});T(g,'MCP',N.mc[0],312,{sz:26,f:FD,al:'center',c:'#FFFFFF'});
   agent(g,N.pw[0],300,56,PWC,{name:'Playwright',work:k>=0&&fr>.33&&fr<.66?.5:0,spin:P.ls*6});
   const la=P.at(0,.4,.5)*(1-.0);if(la>0){g.globalAlpha=la;[['요청 이해 · 기능 판단',N.cl[0]],['기능 목록을 AI에게 제공',N.mc[0]],['브라우저를 실제로 조작',N.pw[0]]].forEach(([s,x])=>T(g,s,x,408,{sz:17,al:'center',c:C.mid}));g.globalAlpha=1}
-  const fa=P.at(0,.8,.6)*(1-P.at(1,0,.4));if(fa>0){g.globalAlpha=fa;panel(g,110,450,800,200,{r:16,fill:'#0A0D12',stroke:hexA(MCPC,.5)});T(g,'Playwright MCP가 알려주는 기능 (일부)',134,490,{sz:18,c:MCPC,w:600});chip(g,890,484,'개념 예시',C.dim,{sz:13,al:'right'});
+  const fa=P.at(0,.8,.6)*(1-P.at(1,0,.4));if(fa>0){g.globalAlpha=fa;panel(g,110,450,800,200,{r:16,fill:'#0C1522',stroke:hexA(MCPC,.5)});T(g,'Playwright MCP가 알려주는 기능 (일부)',134,490,{sz:18,c:MCPC,w:600});chip(g,890,484,'개념 예시',C.dim,{sz:13,al:'right'});
    PWSTEP.forEach(([t,fn],i)=>{T(g,fn,134+(i%3)*260,540+Math.floor(i/3)*50,{sz:20,f:FM,c:C.text})});g.globalAlpha=1}
   if(k>=0&&sp<5){const q=fr;packet(g,N.cl[0]+60,300,N.mc[0]-84,300,clamp(q/.3),C.amber,PWSTEP[k][1]);packet(g,N.mc[0]+84,300,N.pw[0]-60,300,clamp((q-.3)/.3),MCPC,null);
    packet(g,N.pw[0]+60,300,1000,300,clamp((q-.55)/.15),PWC,null);g.strokeStyle=hexA(C.text,.15);g.setLineDash([4,6]);g.beginPath();g.moveTo(N.pw[0],360);g.quadraticCurveTo(520,440,N.cl[0],360);g.stroke();g.setLineDash([]);
-   const rb=clamp((q-.72)/.25);if(rb>0&&rb<1){const t=eIO3(rb),x=(1-t)*(1-t)*N.pw[0]+2*(1-t)*t*520+t*t*N.cl[0],y=(1-t)*(1-t)*360+2*(1-t)*t*440+t*t*360;g.fillStyle=PWC;g.beginPath();g.arc(x,y,7,0,7);g.fill();chip(g,x,y+28,'결과 확인',PWC,{sz:14,al:'center',fill:'#0D1118'})}}
+   const rb=clamp((q-.72)/.25);if(rb>0&&rb<1){const t=eIO3(rb),x=(1-t)*(1-t)*N.pw[0]+2*(1-t)*t*520+t*t*N.cl[0],y=(1-t)*(1-t)*360+2*(1-t)*t*440+t*t*360;g.fillStyle=PWC;g.beginPath();g.arc(x,y,7,0,7);g.fill();chip(g,x,y+28,'결과 확인',PWC,{sz:14,al:'center',fill:'#0F1A2A'})}}
   // request bubble
   const ra=P.at(1,0,.5);if(ra>0){g.globalAlpha=ra;person(g,150,520,50,C.text);bubble(g,210,470,700,90,C.text,['“쇼핑몰에서 노트북을 검색해서','  첫 번째 상품의 가격을 알려줘.”'],{sz:21,top:36,lh:32});g.globalAlpha=1}
   // judgment bubble
@@ -530,7 +530,7 @@ S({code:'3-2',title:'MCP는 어떻게 동작할까?',group:'3 · 외부 도구�
   if(k===3&&fr>.4&&fr<.9){const cx=1000+820-80+18,cy=200+105;g.fillStyle='#FFFFFF';g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy+26);g.lineTo(cx+7,cy+19);g.lineTo(cx+14,cy+30);g.lineTo(cx+18,cy+27);g.lineTo(cx+11,cy+17);g.lineTo(cx+20,cy+16);g.closePath();g.fill()}
   // step cards
   PWSTEP.forEach(([t,fn],i)=>{const x=110+i*346,y=715,on=i===k&&sp<5,dn=sp>=5||i<k||(i===k&&fr>.97);const col=dn?C.ok:on?C.amber:C.dim;const a=P.at(0,.2+i*.1,.4);if(a<=0)return;g.globalAlpha=a;
-   panel(g,x,y,330,140,{r:14,fill:on?hexA(C.amber,.08):C.card,stroke:hexA(col,on||dn?.8:.4),lw:on?2.5:1.5});g.fillStyle=col;g.beginPath();g.arc(x+36,y+40,20,0,7);g.fill();T(g,String(i+1),x+36,y+48,{sz:20,f:FD,al:'center',c:'#07080C'});
+   panel(g,x,y,330,140,{r:14,fill:on?hexA(C.amber,.08):C.card,stroke:hexA(col,on||dn?.8:.4),lw:on?2.5:1.5});g.fillStyle=col;g.beginPath();g.arc(x+36,y+40,20,0,7);g.fill();T(g,String(i+1),x+36,y+48,{sz:20,f:FD,al:'center',c:'#0A1628'});
    T(g,t,x+68,y+48,{sz:23,w:700,c:on||dn?C.text:C.mid});T(g,'사용한 기능 (MCP · 개념 예시)',x+24,y+92,{sz:14,c:C.dim});T(g,fn,x+24,y+122,{sz:20,f:FM,w:600,c:on?C.amber:dn?C.ok:C.mid});if(i<4)arrow(g,x+332,y+70,x+344,y+70,hexA(C.text,.4),1,{hs:8});g.globalAlpha=1})}});
 
 // 13 CONNECT PLAYWRIGHT
@@ -592,11 +592,11 @@ S({code:'3-5',title:'MCP 활용 방법을 Skill로 만들기',group:'3 · 외부
   CODE10.forEach((s,i)=>{const a=P.at(1,.1+i*.1,.3);if(a<=0||!s)return;g.globalAlpha=pa*a;T(g,s,136,268+i*38,{sz:16,f:FM,c:i===0?SKC:/^\d/.test(s)?C.amber:C.text})});g.restore();
   const bf=P.at(1,1.6,.6);if(bf>0){book(g,920,460,150,SKC,{a:bf,label:'SIA 매출 확인',lsz:14,glow:.3+.5*P.at(2,0,.4),name:'Skill (이름 예시)',nf:FK,nsz:16});const f=clamp((P.sec(1)-1.4)/.6);arrow(g,760,460,lerp(760,830,f),460,hexA(SKC,.8),f,{lw:3})}
   const ra=P.sec(2)>=0;if(ra){const f=clamp(P.sec(2)/1);arrow(g,1010,460,lerp(1010,1130,f),460,hexA(PWC,.8),f,{lw:3});
-   panel(g,1140,220,680,250,{r:16,fill:'#0D1119',stroke:hexA(PWC,.6)});T(g,'Playwright MCP 사용',1170,262,{sz:20,f:FM,w:700,c:PWC});
+   panel(g,1140,220,680,250,{r:16,fill:'#0F1B2B',stroke:hexA(PWC,.6)});T(g,'Playwright MCP 사용',1170,262,{sz:20,f:FM,w:700,c:PWC});
    ['SIA 웹사이트에 접속','최근 글로벌 반도체 매출 자료 찾기','기준 월 · 매출 · 증감률 확인','결과를 표로 정리'].forEach((s,i)=>{const on=clamp((P.sec(2)-.6-i*.6)/.4);g.globalAlpha=.4+.6*on;T(g,String(i+1),1180,312+i*42,{sz:18,f:FD,al:'center',c:on>=1?C.ok:C.amber});T(g,s,1210,318+i*42,{sz:19,c:on>0?C.text:C.mid});g.globalAlpha=1});
-   const tb=P.at(2,3,.5);if(tb>0){g.globalAlpha=tb;const x=1140,y=500,cw=[190,260,230];panel(g,x,y,680,170,{r:12,fill:'#0B0E14'});let xx=x;['기준 월','글로벌 반도체 매출','전월 대비 증감률'].forEach((h,j)=>{T(g,h,xx+20,y+44,{sz:18,w:700,c:C.amber});T(g,'(실행 시 확인)',xx+20,y+110,{sz:18,c:C.dim});xx+=cw[j]});
+   const tb=P.at(2,3,.5);if(tb>0){g.globalAlpha=tb;const x=1140,y=500,cw=[190,260,230];panel(g,x,y,680,170,{r:12,fill:'#0D1725'});let xx=x;['기준 월','글로벌 반도체 매출','전월 대비 증감률'].forEach((h,j)=>{T(g,h,xx+20,y+44,{sz:18,w:700,c:C.amber});T(g,'(실행 시 확인)',xx+20,y+110,{sz:18,c:C.dim});xx+=cw[j]});
     g.strokeStyle=C.line;g.lineWidth=1;line(g,x,y+66,x+680,y+66);chip(g,x+670,y+150,'값은 실행 시점 SIA 최신 발표',C.dim,{sz:13,al:'right'});g.globalAlpha=1}}
-  const ea=P.at(3,0,.6);if(ea>0){g.globalAlpha=ea;panel(g,110,760,1710,96,{r:16,fill:'#0D1119',stroke:hexA(C.amber,.5)});
+  const ea=P.at(3,0,.6);if(ea>0){g.globalAlpha=ea;panel(g,110,760,1710,96,{r:16,fill:'#0F1B2B',stroke:hexA(C.amber,.5)});
    T(g,'MCP',170,820,{sz:26,f:FM,w:700,c:PWC});T(g,'= 기능 확장',250,820,{sz:26,w:600});T(g,'+',760,820,{sz:32,w:700,al:'center',c:C.mid});T(g,'Skill',860,820,{sz:26,f:FM,w:700,c:SKC});T(g,'= 그 기능을 사용하는 방법을 재사용',960,820,{sz:26,w:600});g.globalAlpha=1}}});
 
 // 16 WEB SEARCH vs PLAYWRIGHT
@@ -610,16 +610,16 @@ S({code:'3-6',title:'[보너스] Web Search가 있는데 왜 Playwright를 써�
   T(g,'Web Search',530,238,{sz:30,f:FM,w:700,al:'center',c:C.m3});T(g,'찾고 읽기',530,272,{sz:18,al:'center',c:C.dim});
   const rA=P.at(1,0,.5);T(g,'Playwright MCP',1390,238,{sz:30,f:FM,w:700,al:'center',c:rA>0?PWC:C.dim});T(g,'직접 들어가 조작하기',1390,272,{sz:18,al:'center',c:C.dim});
   const why=P.sec(3)>=0;
-  if(!why){const a0=P.at(0,0,.5);g.globalAlpha=a0;panel(g,130,310,800,60,{r:30,fill:'#12161F',stroke:hexA(C.m3,.6)});T(g,typed('코레일 서울 부산 월요일 첫차',P.sec(0)/1),160,350,{sz:20});
-   [0,1,2].forEach(k=>{const a=P.at(0,.8+k*.3,.4);g.globalAlpha=a0*a;panel(g,130,400+k*120,800,100,{r:12,fill:C.card});g.fillStyle=C.m1;g.fillRect(156,428+k*120,300,12);g.fillStyle='#2A3040';g.fillRect(156,456+k*120,620,8);g.fillRect(156,474+k*120,480,8);if(k===0)chip(g,900,432+k*120,'예매 페이지 링크',C.mid,{sz:14,al:'right'})});
+  if(!why){const a0=P.at(0,0,.5);g.globalAlpha=a0;panel(g,130,310,800,60,{r:30,fill:'#122134',stroke:hexA(C.m3,.6)});T(g,typed('코레일 서울 부산 월요일 첫차',P.sec(0)/1),160,350,{sz:20});
+   [0,1,2].forEach(k=>{const a=P.at(0,.8+k*.3,.4);g.globalAlpha=a0*a;panel(g,130,400+k*120,800,100,{r:12,fill:C.card});g.fillStyle=C.m1;g.fillRect(156,428+k*120,300,12);g.fillStyle='#244166';g.fillRect(156,456+k*120,620,8);g.fillRect(156,474+k*120,480,8);if(k===0)chip(g,900,432+k*120,'예매 페이지 링크',C.mid,{sz:14,al:'right'})});
    g.globalAlpha=a0*P.at(0,2,.5);T(g,'검색 엔진에 저장된 페이지 제목 · 요약',530,800,{sz:20,al:'center',c:C.mid});g.globalAlpha=1}
   else{const wa=P.at(3,0,.5);g.save();g.globalAlpha=wa;winFrame(g,110,300,830,560,'Claude Code · Web Search만 사용',{tc:C.m3,tag:'교안 화면 기준'});
    T(g,'> 코레일에서 다음주 월요일 서울역 -> 부산역',140,380,{sz:17,f:FM,c:C.amber});T(g,'  가장 빠른 기차 출발 시간 알려줘',140,410,{sz:17,f:FM,c:C.amber});T(g,'  web search로 안되면 그만하고 왜 안되는지 알려줘.',140,440,{sz:17,f:FM,c:C.amber});
    T(g,'안 되는 이유',140,500,{sz:22,w:700,c:C.bad});WHY.forEach((s,i)=>{const a=P.at(3,.6+i*.5,.4);g.globalAlpha=wa*a;g.font=`500 18px ${FK}`;const L=wrapLines(g,s,760);L.forEach((l,j)=>T(g,l,140,545+i*70+j*28,{sz:18,c:s.startsWith('   ')?C.mid:C.text}))});g.restore()}
   if(rA>0){g.save();g.globalAlpha=rA;browser(g,1000,310,820,470,'letskorail.com · 승차권 예매',{tag:'예시 화면'});const st=[P.at(1,.5,.4),P.at(1,1.1,.4),P.at(1,1.7,.4),P.at(1,2.3,.4),P.at(1,2.9,.4)];
-   const fld=(x,y,w,lab,val,k)=>{T(g,lab,x,y-10,{sz:15,c:C.dim});panel(g,x,y,w,50,{r:8,fill:'#0D1119',stroke:st[k]>0?PWC:'#3A4150',lw:st[k]>0?2:1.3});if(st[k]>0){g.globalAlpha=rA*st[k];T(g,val,x+16,y+33,{sz:20,w:600});g.globalAlpha=rA}};
+   const fld=(x,y,w,lab,val,k)=>{T(g,lab,x,y-10,{sz:15,c:C.dim});panel(g,x,y,w,50,{r:8,fill:'#0F1B2B',stroke:st[k]>0?PWC:'#2E5282',lw:st[k]>0?2:1.3});if(st[k]>0){g.globalAlpha=rA*st[k];T(g,val,x+16,y+33,{sz:20,w:600});g.globalAlpha=rA}};
    fld(1040,420,340,'출발역','서울',0);fld(1420,420,360,'도착역','부산',1);fld(1040,530,340,'출발일','다음주 월요일',2);fld(1420,530,360,'필터','KTX · 빠른 순',3);
-   rrect(g,1040,620,740,56,10);g.fillStyle=st[4]>0?PWC:'#1A1F2A';g.fill();T(g,'조회하기',1410,657,{sz:22,w:700,al:'center',c:st[4]>0?'#07080C':C.mid});
+   rrect(g,1040,620,740,56,10);g.fillStyle=st[4]>0?PWC:'#182C45';g.fill();T(g,'조회하기',1410,657,{sz:22,w:700,al:'center',c:st[4]>0?'#0A1628':C.mid});
    const L=P.at(2,0,.5);if(L>0){g.globalAlpha=rA*L;panel(g,1040,700,740,60,{r:10,fill:hexA(PWC,.1),stroke:hexA(PWC,.6)});T(g,'조건 입력 후에만 결과 표시',1410,738,{sz:19,al:'center',c:PWC})}g.restore();
    const ca=P.at(1,.4,.4);if(ca>0){g.globalAlpha=ca;['입력','클릭','날짜 선택','필터 적용'].forEach((s,i)=>chip(g,1040+i*160,830,s,PWC,{sz:16}));g.globalAlpha=1}}}});
 
@@ -636,11 +636,11 @@ S({code:'3-7',title:'[보너스] Playwright MCP가 제품이 되면?',group:'3 �
   const pa=P.at(3,0,.5);if(pa>0){g.globalAlpha=pa;['코레일에서 다음주 월요일 서울역 -> 부산역','가장 빠른 기차 출발 시간 알려줘'].forEach((s,i)=>T(g,s,130,675+i*30,{sz:17,f:FM,c:C.mid}));T(g,'교안 예시 프롬프트 ①',130,645,{sz:15,c:C.dim});
    T(g,'교안 예시 프롬프트 ②',130,765,{sz:15,c:C.dim});['Airbnb에서 다음주 월~수, 성인 2명이 묵을 속초','숙소를 찾아줘. 1박 20만 원대 숙소만 찾아서','괜찮은 곳 3개를 비교해줘.'].forEach((s,i)=>T(g,s,130,795+i*28,{sz:17,f:FM,c:C.text}));g.globalAlpha=1}
   const ba=P.at(1,.4,.6);if(ba>0){g.save();g.globalAlpha=ba;browser(g,700,200,1120,660,P.sec(3)>=0?'airbnb.co.kr · 속초 숙소':'현재 웹페이지',{tag:'예시 화면'});
-   const px=730,pw=680;for(let k=0;k<6;k++){const x=px+(k%3)*230,y=280+Math.floor(k/3)*270;panel(g,x,y,210,250,{r:10,fill:'#10141C',stroke:C.line});g.fillStyle='#1E2A44';rrect(g,x+10,y+10,190,130,8);g.fill();g.fillStyle='#2A3040';g.fillRect(x+14,y+160,150,10);g.fillRect(x+14,y+182,100,10);
+   const px=730,pw=680;for(let k=0;k<6;k++){const x=px+(k%3)*230,y=280+Math.floor(k/3)*270;panel(g,x,y,210,250,{r:10,fill:'#111E30',stroke:C.line});g.fillStyle='#213C5F';rrect(g,x+10,y+10,190,130,8);g.fill();g.fillStyle='#244166';g.fillRect(x+14,y+160,150,10);g.fillRect(x+14,y+182,100,10);
     const pick=P.sec(3)>=0&&[0,2,4].includes(k)&&P.at(3,.8+k*.2,.4)>0;if(pick){g.strokeStyle=C.amber;g.lineWidth=3;rrect(g,x,y,210,250,10);g.stroke();chip(g,x+105,y+226,'비교 후보',C.amber,{sz:14,al:'center'})}}
-   panel(g,1430,250,370,590,{r:12,fill:'#12161F',stroke:hexA(C.amber,.5)});T(g,'Claude',1454,288,{sz:20,w:700,c:C.amber});
+   panel(g,1430,250,370,590,{r:12,fill:'#122134',stroke:hexA(C.amber,.5)});T(g,'Claude',1454,288,{sz:20,w:700,c:C.amber});
    const acts=[['페이지 내용 확인',C.m3],['탐색 · 스크롤',C.m1],['날짜 · 인원 입력',PWC],['필터 클릭',PWC],['3곳 비교 정리',C.ok]];acts.forEach(([s,c],i)=>{const a=P.at(2,.3+i*.5,.4);if(a<=0)return;g.globalAlpha=ba*a;chip(g,1454,340+i*56,'● '+s,c,{sz:16})});
-   const ua=P.at(2,2.6,.5);if(ua>0){g.globalAlpha=ba*ua;panel(g,1450,690,330,120,{r:12,fill:'#0B0E14',stroke:C.line});T(g,'그동안 사용자는',1470,728,{sz:16,c:C.dim});T(g,'다음 작업을 결정',1470,764,{sz:22,w:700})}
+   const ua=P.at(2,2.6,.5);if(ua>0){g.globalAlpha=ba*ua;panel(g,1450,690,330,120,{r:12,fill:'#0D1725',stroke:C.line});T(g,'그동안 사용자는',1470,728,{sz:16,c:C.dim});T(g,'다음 작업을 결정',1470,764,{sz:22,w:700})}
    if(P.sec(2)>=0){const t=P.sec(2),cx=900+Math.sin(t*1.3)*160,cy=420+Math.cos(t*1.1)*120;g.globalAlpha=ba;g.fillStyle='#FFFFFF';g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy+26);g.lineTo(cx+7,cy+19);g.lineTo(cx+14,cy+30);g.lineTo(cx+18,cy+27);g.lineTo(cx+11,cy+17);g.lineTo(cx+20,cy+16);g.closePath();g.fill()}g.restore()}}});
 
 // 18 SUMMARY
@@ -668,7 +668,7 @@ function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;retu
 /* ================= composite ================= */
 const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,0.55)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
 function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
-  g.fillStyle='#10141C';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.fillStyle='#111E30';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
   g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
 function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
   g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
@@ -677,7 +677,7 @@ function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.global
   T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
   g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
   const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
-   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(7,8,12,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(10,22,40,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
    L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
 function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
   if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
@@ -755,7 +755,7 @@ document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('b
 
 {const pp=(typeof POSTER!=='undefined'?POSTER:[SC.length-1,0,.9]),ps=SC[Math.min(pp[0],SC.length-1)],pc=Math.min(pp[1],ps.capT.length-1);t=ps.start+ps.capT[pc]+ps.capD[pc]*pp[2];tAbs=t}
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
-['400 20px "Michroma"','500 20px "JetBrains Mono"','600 20px "IBM Plex Sans KR"','700 20px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+['400 20px "Syne"','500 20px "IBM Plex Mono"','600 20px "Gothic A1"','700 20px "Gothic A1"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
 voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}/* ---- playback speed ---- */
 let SPEED=1;
 function setSpeed(r){if(playing){tAbs=anchorT+(clk()-anchorClock)*SPEED}SPEED=r;if(playing)reanchor();

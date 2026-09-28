@@ -6,15 +6,15 @@
 <title>Agent 및 Claude Code 이해</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap">
 <style>
 :root{
   color-scheme:dark;
-  --bg:#07080C; --panel:#0E1117; --line:#1C212C; --line2:#2A3140;
-  --dim:#6E7688; --soft:#A9ADB8; --text:#ECE8DE; --amber:#FFB547;
-  --fd:"Michroma","Eurostile","Arial Black",sans-serif;
-  --fm:"JetBrains Mono",ui-monospace,Consolas,monospace;
-  --fb:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  --bg:#0A1628; --panel:#10203A; --line:#1D3050; --line2:#2A4166;
+  --dim:#71829C; --soft:#A8B6CA; --text:#E8EEF6; --amber:#5EEAD4;
+  --fd:"Syne","Arial Black",sans-serif;
+  --fm:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --fb:"Gothic A1","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
 }
 html,body{margin:0;background:var(--bg);color:var(--text)}
 [hidden]{display:none!important}
@@ -28,20 +28,20 @@ h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft
 .screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
 .screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
 canvas{display:block;width:100%;height:100%;object-fit:contain}
-.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(255,181,71,.55);background:rgba(7,8,12,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(94,234,212,.55);background:rgba(10,22,40,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
 .bigplay:hover{border-color:var(--amber)}
 .bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
 .bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
 .controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
 .btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
 .btn:hover{border-color:var(--line2)}
-.btn[aria-pressed="true"]{border-color:rgba(255,181,71,.55);color:var(--amber)}
+.btn[aria-pressed="true"]{border-color:rgba(94,234,212,.55);color:var(--amber)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn svg{width:16px;height:16px;fill:currentColor}
 :focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
-.seg{position:relative;background:#10141B;border-radius:2px;overflow:hidden;min-width:0}
-.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,181,71,.2);width:0}
+.seg{position:relative;background:#12233F;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(94,234,212,.2);width:0}
 .seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
 .seg.on span{color:var(--amber)}
 .head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
@@ -94,7 +94,7 @@ kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2p
     <div class="screen" id="screen">
       <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
       <button class="bigplay" id="bigplay" type="button">
-        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#07080C"/></svg></span>
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#0A1628"/></svg></span>
         <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
       </button>
     </div>
@@ -128,9 +128,9 @@ const cv=document.getElementById('stage');cv.width=W;cv.height=H;
 const ctx=cv.getContext('2d');
 const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
 const scratch=mk(W,H),sctx=scratch.getContext('2d');
-const C={bg:'#07080C',grid:'#141925',line:'#232A38',dim:'#6E7688',mid:'#9AA3B5',text:'#ECE8DE',amber:'#FFB547',
-  m1:'#4C8DFF',m2:'#FF4FA3',m3:'#2FE3C4',m4:'#B98CFF',m5:'#FF7A45',ok:'#3DDC84',bad:'#FF5A5F',card:'#0F131B'};
-const FD='"Michroma","Eurostile","Arial Black",sans-serif',FM='"JetBrains Mono",ui-monospace,Consolas,monospace',FK='"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const C={bg:'#0A1628',grid:'#15253B',line:'#1F3859',dim:'#71829C',mid:'#9FB0C8',text:'#E8EEF6',amber:'#5EEAD4',
+  m1:'#7AA2FF',m2:'#FF7EB6',m3:'#FFD166',m4:'#C4A1FF',m5:'#FF9F5A',ok:'#4ADE80',bad:'#FF6B6B',card:'#101D2E'};
+const FD='"Syne","Arial Black",sans-serif',FM='"IBM Plex Mono",ui-monospace,Consolas,monospace',FK='"Gothic A1","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
 const _ha=new Map();
 function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
 const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
@@ -150,7 +150,7 @@ function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(l
 function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
 function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
 function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
-  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#131824';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#142439';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
   g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
   const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
   if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
@@ -159,7 +159,7 @@ function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.global
   if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
 function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
   if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
-  g.fillStyle='#0D1118';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  g.fillStyle='#0F1A2A';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
   if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
   const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
   g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
@@ -171,8 +171,8 @@ function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,
 function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
 function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
   if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
-function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0D1118'})}
-function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#161B26';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0F1A2A'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#16273E';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
   T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
 function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
 function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
@@ -185,11 +185,11 @@ function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.
   g.restore()})}
 function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
   if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
-  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9CCD4';
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9D3E1';
   const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
   if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
   else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
-function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+30,w,14);
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0D1725',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#111E30';g.fill();g.fillRect(x,y+30,w,14);
   T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
 
 /* ================= scenes ================= */
@@ -200,7 +200,7 @@ const POSTER=[14,4,.97];
 const tw=(s,f)=>s.slice(0,Math.ceil(s.length*clamp(f)));
 function para(g,s,x,y,mw,o={}){const sz=o.sz??20,lh=o.lh??Math.round(sz*1.5),w=o.w??500,f=o.f??FK;g.font=`${w} ${sz}px ${f}`;const L=wrapLines(g,s,mw);L.forEach((l,i)=>T(g,l,x,y+i*lh,{sz,w,f,c:o.c??C.text,al:o.al}));return L.length*lh}
 function term(g,x,y,w,h,title,rows,o={}){winFrame(g,x,y,w,h,title,{tc:o.tc,tag:o.tag});const lh=o.lh??34,sz=o.sz??19;
-  rows.forEach((r,i)=>{if(!r||!r[0])return;const a=o.a?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;T(g,r[0],x+28,y+(o.top??88)+i*lh,{sz,f:FM,c:r[1]??'#C9CCD4',w:r[2]??400});g.restore()})}
+  rows.forEach((r,i)=>{if(!r||!r[0])return;const a=o.a?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;T(g,r[0],x+28,y+(o.top??88)+i*lh,{sz,f:FM,c:r[1]??'#C9D3E1',w:r[2]??400});g.restore()})}
 function table(g,x0,x1,y,cx,head,rows,o={}){const lh=o.lh??40,sz=o.sz??19,ra=o.ra??(()=>1);g.save();g.globalAlpha*=(o.a??1);
   head.forEach((s,j)=>T(g,s,cx[j],y,{sz:sz-1,w:700,c:o.hc?o.hc[j]:C.dim}));g.strokeStyle=C.line;g.lineWidth=1.2;line(g,x0,y+14,x1,y+14);
   rows.forEach((r,i)=>{const a=ra(i);if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+(i+1)*lh;r.forEach((s,j)=>T(g,s,cx[j],yy,{sz,w:j===0?600:400,c:j===0?C.mid:(o.cc?o.cc[j]:C.text)}));g.strokeStyle=hexA(C.line,.7);line(g,x0,yy+14,x1,yy+14);g.restore()});g.restore()}
@@ -208,7 +208,7 @@ function bubble(g,x,y,w,s,col,o={}){const sz=o.sz??19;g.font=`500 ${sz}px ${FK}`
   panel(g,x0,y,w,h,{r:16,fill:hexA(col,.1),stroke:hexA(col,.5)});L.forEach((l,i)=>T(g,l,x0+18,y+sz+12+i*sz*1.45,{sz,c:o.c??C.text}));return h}
 function bigFolder(g,x,y,s,col){g.fillStyle=hexA(col,.75);rrect(g,x,y,s*.42,s*.2,6);g.fill();g.fillStyle=col;rrect(g,x,y+s*.12,s,s*.66,8);g.fill()}
 function mascot(g,x,y,s){const c='#D97757';g.fillStyle=c;g.fillRect(x-s*.5,y-s*.22,s,s*.36);g.fillRect(x-s*.7,y-s*.06,s*.2,s*.12);g.fillRect(x+s*.5,y-s*.06,s*.2,s*.12);
-  for(let k=0;k<4;k++)g.fillRect(x-s*.42+k*s*.26,y+s*.14,s*.1,s*.2);g.fillStyle='#0B0E14';g.fillRect(x-s*.3,y-s*.14,s*.08,s*.12);g.fillRect(x+s*.22,y-s*.14,s*.08,s*.12)}
+  for(let k=0;k<4;k++)g.fillRect(x-s*.42+k*s*.26,y+s*.14,s*.1,s*.2);g.fillStyle='#0D1725';g.fillRect(x-s*.3,y-s*.14,s*.08,s*.12);g.fillRect(x+s*.22,y-s*.14,s*.08,s*.12)}
 const COL={model:C.m4,tool:C.m2,ctx:C.m1,ins:C.m3};
 
 // 0 TITLE
@@ -217,7 +217,7 @@ S({code:'01',title:'Agent 및 Claude Code 이해',group:'CHAPTER',hideHead:1,
  draw(g,P){const t=P.ls,cx=960,cy=480,la=P.at(0,0,1.2),labs=['목표 이해','계획','Tool 선택','실행','결과 확인'],cols=[C.amber,C.m3,C.m2,C.m1,C.ok];
   g.globalAlpha=la*.5;g.strokeStyle=hexA(C.amber,.4);g.lineWidth=1.5;g.setLineDash([4,10]);g.beginPath();g.ellipse(cx,cy,660,300,0,0,7);g.stroke();g.setLineDash([]);
   labs.forEach((s,k)=>{const an=-Math.PI/2+k/5*Math.PI*2+t*.14,x=cx+Math.cos(an)*660,y=cy+Math.sin(an)*300;g.globalAlpha=la*.75;chip(g,x,y,s,cols[k],{sz:18,al:'center'})});g.globalAlpha=1;
-  const rg=g.createRadialGradient(cx,cy,40,cx,cy,520);rg.addColorStop(0,'rgba(7,8,12,0.96)');rg.addColorStop(1,'rgba(7,8,12,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const rg=g.createRadialGradient(cx,cy,40,cx,cy,520);rg.addColorStop(0,'rgba(10,22,40,0.96)');rg.addColorStop(1,'rgba(10,22,40,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
   const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8),a4=P.at(0,1.3,.8);
   g.globalAlpha=a1;T(g,'CHAPTER 01',cx,390,{sz:22,f:FM,w:500,al:'center',c:C.amber});
   g.globalAlpha=a2;T(g,'Agent & Claude Code',cx,520+(1-a2)*30,{sz:84,f:FD,w:400,al:'center'});
@@ -231,7 +231,7 @@ S({code:'00',title:'학습 목표',group:'CHAPTER 01',
  draw(g,P){OBJ.forEach((s,k)=>{const a=P.at(0,.2+k*.25,.6),y=270+k*140;if(a<=0)return;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
    const ck=eO3(clamp((P.sec(1)-.3-k*1.2)/.45));panel(g,300,y-10,1320,112,{fill:ck>0?hexA(C.amber,.05):C.card,stroke:ck>0?hexA(C.amber,.45):C.line});
    rrect(g,340,y+22,48,48,10);g.strokeStyle=ck>0?C.amber:C.mid;g.lineWidth=2.5;g.stroke();check(g,364,y+46,30,C.amber,ck);
-   g.font=`500 28px ${FK}`;const L=wrapLines(g,s,1150);L.forEach((l,i)=>T(g,l,420,y+(L.length>1?38:56)+i*40,{sz:28,w:500,c:ck>0?C.text:'#C4C7CF'}));g.restore()})}});
+   g.font=`500 28px ${FK}`;const L=wrapLines(g,s,1150);L.forEach((l,i)=>T(g,l,420,y+(L.length>1?38:56)+i*40,{sz:28,w:500,c:ck>0?C.text:'#C3CEDD'}));g.restore()})}});
 
 // 2 1-1 COMPONENTS
 const PARTS=[['Model (LLM)','두뇌','이해하고 판단함','“무엇을 해야 하지?”',COL.model,150,230],['Tools','행동 수단','검색·파일·코드·메일 등 실제 작업 수행','“어떻게 실행하지?”',COL.tool,150,590],
@@ -260,7 +260,7 @@ S({code:'1-2',title:'Agent의 구동 원리 — Agentic Loop',group:'1 · AI Age
   {t:'핵심은 “한 번 계획하고 끝”이 아니라, 결과를 보면서 다음 행동을 계속 결정한다는 것.',say:'핵심은 한 번 계획하고 끝이 아니라, 결과를 보면서 다음 행동을 계속 결정한다는 것입니다.'}],
  draw(g,P){const a0=P.at(0,0,.6);
   // chatbot
-  g.globalAlpha=a0;panel(g,110,250,480,580,{r:20,fill:'#0D1119',stroke:hexA(C.mid,.4)});T(g,'일반 챗봇',350,300,{sz:26,w:700,al:'center',c:C.mid});
+  g.globalAlpha=a0;panel(g,110,250,480,580,{r:20,fill:'#0F1B2B',stroke:hexA(C.mid,.4)});T(g,'일반 챗봇',350,300,{sz:26,w:700,al:'center',c:C.mid});
   panel(g,170,350,360,70,{r:35,fill:hexA(C.text,.06),stroke:hexA(C.text,.3)});T(g,'질문',350,395,{sz:24,al:'center'});
   arrow(g,350,430,350,500,C.mid,P.at(0,.4,.5));const ab=P.at(0,.8,.5);g.globalAlpha=a0*ab;panel(g,170,510,360,70,{r:35,fill:hexA(C.mid,.1),stroke:hexA(C.mid,.5)});T(g,'답변 생성',350,555,{sz:24,al:'center'});
   g.globalAlpha=a0*P.at(0,1.2,.5);chip(g,350,650,'여기서 끝',C.dim,{sz:18,al:'center'});T(g,'질문 → 답변',350,760,{sz:20,f:FM,al:'center',c:C.dim});g.globalAlpha=1;
@@ -277,7 +277,7 @@ S({code:'1-2',title:'Agent의 구동 원리 — Agentic Loop',group:'1 · AI Age
   LOOPN.forEach(([n,s,c],k)=>{const [x,y]=lp(la(k)),a=ra*P.at(0,1.2+k*.12,.5);if(a<=0)return;g.save();g.globalAlpha=a;const on=lit(k)&&P.i>=1;
    let cur=0;if(P.i===1)cur=Math.floor(q)===k?1:0;if(P.i===2&&P.c(2)<.4)cur=k===4?1:0;if(P.i>=3){const ph=((P.sec(3)*1.3)%5+5)%5;cur=Math.floor(ph)===k?1:0}
    if(cur){g.fillStyle=hexA(c,.14);rrect(g,x-138,y-58,276,116,20);g.fill()}
-   panel(g,x-122,y-46,244,92,{r:16,fill:on?hexA(c,.12):'#0D1119',stroke:hexA(c,on?.9:.3),lw:on?2.5:1.5});
+   panel(g,x-122,y-46,244,92,{r:16,fill:on?hexA(c,.12):'#0F1B2B',stroke:hexA(c,on?.9:.3),lw:on?2.5:1.5});
    T(g,`${k+1}  ${n}`,x,y-6,{sz:24,w:700,al:'center',c:on?C.text:C.mid});T(g,s,x,y+26,{sz:16,al:'center',c:on?c:C.dim});g.restore()});
   // orbit packet
   let pa=null;if(P.i===1)pa=la(q);else if(P.i===2&&P.c(2)<.3)pa=la(3+P.c(2)/.3);else if(P.i>=3)pa=la(P.sec(3)*1.3);
@@ -291,7 +291,7 @@ S({code:'1-3',title:'Agent가 일을 더 잘하게 만드는 4가지 방법',gro
   {t:'Agent의 성능은 “AI 모델 자체의 능력”과 “그 AI가 일할 수 있는 업무 환경의 품질”이 함께 결정합니다.',say:'에이전트의 성능은, AI 모델 자체의 능력과, 그 AI가 일할 수 있는 업무 환경의 품질이 함께 결정합니다.'},
   {t:'Model은 더 높은 성능으로(Haiku → Sonnet → Opus), Instruction은 역할·목표·판단 기준을 명확하게.',say:'모델은 하이쿠, 소네트, 오퍼스처럼 더 높은 성능으로, 인스트럭션은 역할과 목표, 판단 기준을 명확하게 줍니다.'},
   {t:'Tools는 업무에 필요한 도구를 연결하고, Context·Memory는 정확하고 품질 높은 업무 정보를 제공합니다.',say:'툴즈는 업무에 필요한 도구를 연결하고, 컨텍스트와 메모리는 정확하고 품질 높은 업무 정보를 제공합니다.'}],
- draw(g,P){const f1=P.at(1,0,.6);panel(g,110,190,1700,96,{r:18,fill:'#0D1119',stroke:hexA(C.amber,.25+.4*f1)});
+ draw(g,P){const f1=P.at(1,0,.6);panel(g,110,190,1700,96,{r:18,fill:'#0F1B2B',stroke:hexA(C.amber,.25+.4*f1)});
   T(g,'Agent 성능',180,250,{sz:30,w:700,c:C.amber});T(g,'=',400,250,{sz:30,f:FM,c:C.mid});
   const m1=P.at(0,.3,.5);g.globalAlpha=m1;chip(g,440,238,'AI 모델 자체의 능력',COL.model,{sz:22});T(g,'+',850,250,{sz:30,f:FM,c:C.mid});chip(g,890,238,'그 AI가 일할 수 있는 업무 환경의 품질',C.m3,{sz:22});g.globalAlpha=1;
   const R=[['Model','더 높은 성능의 모델을 사용',COL.model],['Instruction','역할·목표·판단 기준을 명확하게 제공',COL.ins],['Tools','업무에 필요한 도구를 연결',COL.tool],['Context · Memory','정확하고 품질 높은 업무 정보를 제공',COL.ctx]];
@@ -338,7 +338,7 @@ S({code:'1-5',title:'Agent와 RPA의 차이',group:'1 · AI Agent 이해하기',
   {t:'가장 큰 차이 — 정해진 절차를 그대로 실행하느냐, 상황을 보고 다음 행동을 판단하느냐입니다.'}],
  draw(g,P){g.strokeStyle=C.line;g.lineWidth=1.5;line(g,960,200,960,560);const a0=P.at(0,0,.6);g.globalAlpha=a0;
   T(g,'RPA',520,232,{sz:30,f:FM,w:700,al:'center',c:C.mid});T(g,'AI Agent',1400,232,{sz:30,f:FM,w:700,al:'center',c:C.amber});chip(g,900,232,'예시',C.dim,{sz:14,al:'right'});g.globalAlpha=1;
-  const box=(x,y,s,c,on,bad)=>{panel(g,x-82,y-30,164,60,{r:12,fill:bad?hexA(C.bad,.12):on?hexA(c,.14):'#0D1119',stroke:hexA(bad?C.bad:c,on||bad?.9:.35),lw:on?2.2:1.5});T(g,s,x,y+7,{sz:19,al:'center',c:on||bad?C.text:C.mid})};
+  const box=(x,y,s,c,on,bad)=>{panel(g,x-82,y-30,164,60,{r:12,fill:bad?hexA(C.bad,.12):on?hexA(c,.14):'#0F1B2B',stroke:hexA(bad?C.bad:c,on||bad?.9:.35),lw:on?2.2:1.5});T(g,s,x,y+7,{sz:19,al:'center',c:on||bad?C.text:C.mid})};
   const RX=[190,380,570,760],AX=[1070,1260,1450,1640],Y=360;
   // RPA
   const r=P.sec(1)<0?0:clamp(P.sec(1)/2.2)*2.0;g.globalAlpha=a0;RX.forEach((x,k)=>{if(k<3)arrow(g,x+84,Y,RX[k+1]-86,Y,hexA(C.mid,.6),1,{hs:9});box(x,Y,RS[k],C.mid,r>=k&&P.i>=1&&k<=2,false)});
@@ -359,7 +359,7 @@ S({code:'1-5',title:'Agent와 RPA의 차이',group:'1 · AI Agent 이해하기',
   g.globalAlpha=1;
   const R=[['실행 방식','미리 정해진 규칙과 순서대로 실행','상황을 해석하고 다음 행동을 결정'],['판단','거의 없음','LLM이 판단'],['Workflow','사전에 고정','실행 중 달라질 수 있음'],['예외 상황','별도 규칙 필요','Context를 바탕으로 대응 가능'],['입력','정형화된 입력에 강함','문서, 자연어 등 다양한 입력 처리 가능'],['적합한 업무','반복적이고 규칙적인 업무','판단이 필요한 복합 업무']];
   table(g,130,1790,612,[150,470,1080],['구분','RPA','AI Agent'],R,{a:P.at(0,.6,.6),lh:40,sz:19,hc:[C.dim,C.mid,C.amber],ra:i=>i<3?P.at(1,.2+i*.5,.4):P.at(2,1+(i-3)*.5,.4)});
-  const fa=P.at(3,.3,.5);if(fa>0){g.globalAlpha=fa;g.fillStyle='rgba(7,8,12,.82)';g.fillRect(110,586,1700,284);chip(g,560,720,'정해진 절차를 그대로 실행',C.mid,{sz:26,al:'center'});T(g,'vs',960,730,{sz:30,f:FD,al:'center',c:C.dim});chip(g,1380,720,'상황을 보고 다음 행동을 판단',C.amber,{sz:26,al:'center'});g.globalAlpha=1}}});
+  const fa=P.at(3,.3,.5);if(fa>0){g.globalAlpha=fa;g.fillStyle='rgba(10,22,40,.82)';g.fillRect(110,586,1700,284);chip(g,560,720,'정해진 절차를 그대로 실행',C.mid,{sz:26,al:'center'});T(g,'vs',960,730,{sz:30,f:FD,al:'center',c:C.dim});chip(g,1380,720,'상황을 보고 다음 행동을 판단',C.amber,{sz:26,al:'center'});g.globalAlpha=1}}});
 
 // 7 1-6 MULTI-AGENT
 const MA=[['자료 검색 Agent','필요한 자료 검색·수집',C.m3,360],['데이터 분석 Agent','수치 분석·핵심 지표 정리',C.m1,760],['보고서 작성 Agent','보고서 초안 작성',C.m2,1160],['검토 Agent','오류·누락 검토',C.m4,1560]];
@@ -387,7 +387,7 @@ S({code:'2-1',title:'Claude Code가 일하는 공간 — 폴더',group:'2 · Cla
  caps:[{t:'폴더 하나가 곧 클로드의 “작업실”입니다.',say:'폴더 하나가 곧 클로드의 작업실입니다.'},
   {t:'Claude Code를 실행했던 폴더를 하나의 독립된 작업 공간으로 인식합니다.',say:'클로드 코드를 실행했던 폴더를, 하나의 독립된 작업 공간으로 인식합니다.'},
   {t:'이 폴더 안의 파일과 하위 폴더를 작업에 필요한 Context로 탐색하고 활용할 수 있습니다.',say:'이 폴더 안의 파일과 하위 폴더를, 작업에 필요한 컨텍스트로 탐색하고 활용할 수 있습니다.'}],
- draw(g,P){const a0=P.at(0,0,.6),room=P.at(1,0,.8);g.globalAlpha=a0;panel(g,110,200,900,660,{r:18,fill:'#0B0E14',stroke:hexA(C.amber,.2+.7*room),lw:1.5+room*1.5,dash:room>0?null:[6,8]});
+ draw(g,P){const a0=P.at(0,0,.6),room=P.at(1,0,.8);g.globalAlpha=a0;panel(g,110,200,900,660,{r:18,fill:'#0D1725',stroke:hexA(C.amber,.2+.7*room),lw:1.5+room*1.5,dash:room>0?null:[6,8]});
   T(g,'탐색기',136,238,{sz:16,f:FM,c:C.dim});chip(g,985,232,'교안 그림 기준 · 예시 구조',C.dim,{sz:13,al:'right'});g.globalAlpha=1;
   if(room>0){g.globalAlpha=room;chip(g,560,232,'독립된 작업 공간 = 작업실',C.amber,{sz:18,al:'center'});g.globalAlpha=1}
   const s2=P.sec(2),scan=s2<0?-1:Math.floor(s2*3.2)%FT.length;
@@ -407,21 +407,21 @@ S({code:'2-2',title:'실습 폴더에서 Claude Code 실행하기',group:'2 · C
   {t:'현재 폴더를 신뢰할 수 있는지 물어봅니다. 위아래 방향키로 옵션을 바꿀 수 있고, Yes를 선택합니다.',say:'현재 폴더를 신뢰할 수 있는지 물어봅니다. 위아래 방향키로 옵션을 바꿀 수 있고, 예스를 선택합니다.'},
   {t:'이 화면이 뜨면 정상입니다. Claude Code 에이전트가 여러분이 일을 시키기를 기다리고 있습니다.',say:'이 화면이 뜨면 정상입니다. 클로드 코드 에이전트가, 여러분이 일을 시키기를 기다리고 있습니다.'}],
  draw(g,P){const i=P.i;g.strokeStyle=C.line;g.lineWidth=2;line(g,160,300,160,720);
-  RUNST.forEach(([t,d],k)=>{const y=300+k*140,on=k===i,dn=k<i||(i===3&&P.c(3)>.5);const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0D1118';g.beginPath();g.arc(160,y,28,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
+  RUNST.forEach(([t,d],k)=>{const y=300+k*140,on=k===i,dn=k<i||(i===3&&P.c(3)>.5);const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0F1A2A';g.beginPath();g.arc(160,y,28,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
    if(dn)check(g,160,y+2,24,C.ok,1);else T(g,String(k+1),160,y+9,{sz:22,f:FD,al:'center',c:col});T(g,t,210,y-4,{sz:25,w:700,c:on||dn?C.text:C.mid});T(g,d,210,y+30,{sz:18,c:C.dim})});
   const x=620,y=200,w=1190,h=660,a=P.at(i,0,.4);g.save();g.globalAlpha=a;
-  if(i===0){winFrame(g,x,y,w,h,'삼성전자_DS_실습자료',{tag:'교안 화면 기준'});panel(g,x+20,y+60,w-40,50,{r:10,fill:'#10141C',stroke:null});T(g,'›  바탕 화면  ›  삼성전자_DS_실습자료  ›',x+40,y+93,{sz:19});
+  if(i===0){winFrame(g,x,y,w,h,'삼성전자_DS_실습자료',{tag:'교안 화면 기준'});panel(g,x+20,y+60,w-40,50,{r:10,fill:'#111E30',stroke:null});T(g,'›  바탕 화면  ›  삼성전자_DS_실습자료  ›',x+40,y+93,{sz:19});
    ['갤러리','바탕 화면','다운로드','문서','사진','내 업무 샘플','reference'].forEach((s,k)=>T(g,s,x+44,y+170+k*50,{sz:18,c:k===1?C.text:C.mid}));g.strokeStyle=C.line;line(g,x+230,y+125,x+230,y+h-50);
    const it=[['실습자료',1],['강의 교안 바로가기',0],['패들릿 바로가기',0]];it.forEach(([n,dir],k)=>{const ix=x+330+k*210,iy=y+170;if(dir)bigFolder(g,ix,iy+10,110,'#F4C150');else{doc(g,ix+55,iy+55,84,104,C.m1,{lines:2});chip(g,ix+14,iy+96,'↗',C.m1,{sz:14})}T(g,n,ix+55,iy+150,{sz:17,al:'center'})});
    T(g,'3개 항목',x+30,y+h-18,{sz:15,c:C.dim});
    const m=P.at(0,1.4,.4);if(m>0){g.globalAlpha=a*m;const mx=x+700,my=y+380;g.fillStyle=C.text;g.beginPath();g.moveTo(mx-20,my-30);g.lineTo(mx-20,my);g.lineTo(mx-12,my-8);g.lineTo(mx-4,my+6);g.lineTo(mx,my+3);g.lineTo(mx-8,my-11);g.lineTo(mx+2,my-12);g.closePath();g.fill();
-    panel(g,mx+10,my-10,300,190,{r:10,fill:'#1A1F2A',stroke:C.line});['보기','정렬 기준','터미널에서 열기','속성'].forEach((s,k)=>{if(k===2){rrect(g,mx+18,my+2+k*44,284,40,6);g.fillStyle=hexA(C.amber,.18);g.fill()}T(g,s,mx+36,my+30+k*44,{sz:18,c:k===2?C.amber:C.text})});chip(g,mx+300,my+200,'메뉴는 예시 (Windows 11)',C.dim,{sz:13,al:'right'})}}
-  else if(i===1){const cmd='claude',f=clamp((P.sec(1)-.6)/1);term(g,x,y,w,h,'Windows PowerShell',[['Windows PowerShell'],['Copyright (C) Microsoft Corporation. All rights reserved.'],[''],['PS C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료> '+tw(cmd,f)+(f<1&&Math.floor(P.ls*3)%2?'▌':''),'#C9CCD4']],{sz:21,lh:40,tag:'교안 화면 기준'});
+    panel(g,mx+10,my-10,300,190,{r:10,fill:'#182C45',stroke:C.line});['보기','정렬 기준','터미널에서 열기','속성'].forEach((s,k)=>{if(k===2){rrect(g,mx+18,my+2+k*44,284,40,6);g.fillStyle=hexA(C.amber,.18);g.fill()}T(g,s,mx+36,my+30+k*44,{sz:18,c:k===2?C.amber:C.text})});chip(g,mx+300,my+200,'메뉴는 예시 (Windows 11)',C.dim,{sz:13,al:'right'})}}
+  else if(i===1){const cmd='claude',f=clamp((P.sec(1)-.6)/1);term(g,x,y,w,h,'Windows PowerShell',[['Windows PowerShell'],['Copyright (C) Microsoft Corporation. All rights reserved.'],[''],['PS C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료> '+tw(cmd,f)+(f<1&&Math.floor(P.ls*3)%2?'▌':''),'#C9D3E1']],{sz:21,lh:40,tag:'교안 화면 기준'});
    if(f>=1){g.globalAlpha=a*P.at(1,1.8,.4);chip(g,x+w/2,y+h-80,'Enter ⏎',C.amber,{sz:22,al:'center'})}}
-  else if(i===2){const sel=P.sec(2)>1.6&&P.sec(2)<2.6?1:0;term(g,x,y,w,h,'claude',[['Accessing workspace:',C.amber,700],[''],['C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료',C.text],[''],['Quick safety check: Is this a project you created or one you trust? (Like your'],['own code, a well-known open source project, or work from your team). If not,'],["take a moment to review what's in this folder first."],[''],["Claude Code'll be able to read, edit, and execute files here."],[''],[(sel?'  ':'❯ ')+'1. Yes, I trust this folder',sel?'#C9CCD4':'#A9A6F5',sel?400:600],[(sel?'❯ ':'  ')+'2. No, exit',sel?'#A9A6F5':'#C9CCD4',sel?600:400],[''],['Enter to confirm · Esc to cancel',C.dim]],{sz:19,lh:34,tag:'교안 화면 기준'});
+  else if(i===2){const sel=P.sec(2)>1.6&&P.sec(2)<2.6?1:0;term(g,x,y,w,h,'claude',[['Accessing workspace:',C.amber,700],[''],['C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료',C.text],[''],['Quick safety check: Is this a project you created or one you trust? (Like your'],['own code, a well-known open source project, or work from your team). If not,'],["take a moment to review what's in this folder first."],[''],["Claude Code'll be able to read, edit, and execute files here."],[''],[(sel?'  ':'❯ ')+'1. Yes, I trust this folder',sel?'#C9D3E1':'#A9A6F5',sel?400:600],[(sel?'❯ ':'  ')+'2. No, exit',sel?'#A9A6F5':'#C9D3E1',sel?600:400],[''],['Enter to confirm · Esc to cancel',C.dim]],{sz:19,lh:34,tag:'교안 화면 기준'});
    g.globalAlpha=a*P.at(2,1.2,.4);chip(g,x+w-40,y+h-40,'↑ ↓ 방향키로 이동',C.m3,{sz:16,al:'right'})}
   else{winFrame(g,x,y,w,h,'Claude Code',{tag:'교안 화면 기준 · 계정 정보 생략'});const bx=x+30,by=y+80,bw=w-60,bh=260;g.strokeStyle='#D97757';g.lineWidth=2;rrect(g,bx,by,bw,bh,10);g.stroke();
-   g.fillStyle='#0B0E14';g.fillRect(bx+30,by-14,140,28);T(g,'Claude Code',bx+40,by+7,{sz:19,f:FM,c:'#D97757'});
+   g.fillStyle='#0D1725';g.fillRect(bx+30,by-14,140,28);T(g,'Claude Code',bx+40,by+7,{sz:19,f:FM,c:'#D97757'});
    T(g,'Welcome back!',bx+330,by+56,{sz:21,f:FM,w:700,al:'center'});mascot(g,bx+330,by+120,90);T(g,'Opus 5.5 · API Usage Billing',bx+330,by+196,{sz:17,f:FM,al:'center',c:C.mid});T(g,'~\\Desktop\\삼성전자_DS_실습자료',bx+330,by+228,{sz:17,f:FM,al:'center',c:C.mid});
    g.strokeStyle='#D97757';line(g,bx+680,by+20,bx+680,bh+by-20);T(g,'Tips for getting started',bx+710,by+50,{sz:18,f:FM,w:700,c:'#D97757'});T(g,'Run /init to create a CLAUDE.md f…',bx+710,by+80,{sz:17,f:FM});
    T(g,"What's new",bx+710,by+130,{sz:18,f:FM,w:700,c:'#D97757'});T(g,'/release-notes for more',bx+710,by+160,{sz:17,f:FM,c:C.mid});
@@ -440,13 +440,13 @@ S({code:'2-3',title:'Model 설정하기',group:'2 · Claude Code 시작하기',
   {t:'다른 LLM과의 성능 비교는 Artificial Analysis의 Intelligence Index에서 확인할 수 있습니다.',say:'GPT 등 다른 LLM과의 성능 비교는, 아티피셜 애널리시스의 인텔리전스 인덱스에서 확인할 수 있습니다.'}],
  draw(g,P){MODELS.forEach(([n,d,c],k)=>{const y=200+k*150,a=P.at(0,.2+k*.25,.5);if(a<=0)return;g.save();g.globalAlpha=a;const pick=k===1?P.at(1,1.2,.5):0;
    panel(g,110,y,780,130,{r:16,fill:hexA(pick?C.amber:COL.model,.05+.08*pick),stroke:hexA(pick?C.amber:COL.model,.35+.55*pick),lw:1.5+pick});T(g,n,140,y+54,{sz:30,f:FM,w:700,c:pick?C.amber:COL.model});chip(g,860,y+44,d,pick?C.amber:COL.model,{sz:17,al:'right'});
-   T(g,c,140,y+100,{sz:20,c:'#C4C7CF'});g.restore()});
+   T(g,c,140,y+100,{sz:20,c:'#C3CEDD'});g.restore()});
   const pa=P.at(1,1.2,.5);if(pa>0){g.globalAlpha=pa;chip(g,500,832,'이번 실습: Opus 5.5',C.amber,{sz:20,al:'center'});g.globalAlpha=1}
   const x=950,y=200,w=860,h=660;
-  if(P.i===1){g.save();g.globalAlpha=P.at(1,0,.5);const sel=P.sec(1)>1;term(g,x,y,w,h,'Claude Code',[['Claude Code',C.text,700],['Opus 5.5 · Claude Max',C.mid],['~\\Desktop\\삼성전자_DS_실습자료_260928',C.mid],[''],['❯ /model',C.text,600],[sel?'  └ Set model to Opus 5.5 and saved as your default':'',C.mid],[''],['Select model','#A9A6F5',700],['  1. Default (recommended)  Opus 5.5 · Best for everyday'],[(sel?'❯ ':'  ')+'2. Opus 5.5 ✔             Most capable for ambitious work',sel?C.ok:'#C9CCD4',sel?700:400],['  3. Fable 5.1              For your toughest challenges'],['  4. Sonnet 5               Most efficient for everyday tasks'],['  5. Haiku 4.5              Fastest for quick answers'],['     … +6 models',C.dim],[''],['◐ Medium effort (default) ←/→ to adjust',C.mid]],{sz:17,lh:33,top:84,tag:'교안 화면 기준'});g.restore()}
+  if(P.i===1){g.save();g.globalAlpha=P.at(1,0,.5);const sel=P.sec(1)>1;term(g,x,y,w,h,'Claude Code',[['Claude Code',C.text,700],['Opus 5.5 · Claude Max',C.mid],['~\\Desktop\\삼성전자_DS_실습자료_260928',C.mid],[''],['❯ /model',C.text,600],[sel?'  └ Set model to Opus 5.5 and saved as your default':'',C.mid],[''],['Select model','#A9A6F5',700],['  1. Default (recommended)  Opus 5.5 · Best for everyday'],[(sel?'❯ ':'  ')+'2. Opus 5.5 ✔             Most capable for ambitious work',sel?C.ok:'#C9D3E1',sel?700:400],['  3. Fable 5.1              For your toughest challenges'],['  4. Sonnet 5               Most efficient for everyday tasks'],['  5. Haiku 4.5              Fastest for quick answers'],['     … +6 models',C.dim],[''],['◐ Medium effort (default) ←/→ to adjust',C.mid]],{sz:17,lh:33,top:84,tag:'교안 화면 기준'});g.restore()}
   else if(P.i>=2){g.save();g.globalAlpha=P.at(2,0,.5);winFrame(g,x,y,w,h,'Artificial Analysis Intelligence Index v4.3',{tag:'교안 화면 기준 · 상위 10개'});
    AAI.forEach(([n,v,cl],k)=>{const yy=y+100+k*54,f=eO3(clamp((P.sec(2)-.3-k*.12)/.6)),bw=(v/55)*470*f;T(g,n,x+30,yy+8,{sz:18,f:FM,c:cl?C.text:C.mid,w:cl?600:400});
-    rrect(g,x+280,yy-16,Math.max(4,bw),34,6);g.fillStyle=cl?'#CC7A5C':'#3A4150';g.fill();if(f>.6)T(g,String(v),x+290+bw,yy+8,{sz:19,f:FM,w:700,c:cl?'#E8A88E':C.mid})});
+    rrect(g,x+280,yy-16,Math.max(4,bw),34,6);g.fillStyle=cl?'#CC7A5C':'#2E5282';g.fill();if(f>.6)T(g,String(v),x+290+bw,yy+8,{sz:19,f:FM,w:700,c:cl?'#E8A88E':C.mid})});
    T(g,'AA-Briefcase, GDPval-AA v2, Terminal-Bench v4.0 등 10개 평가 종합',x+30,y+h-24,{sz:15,c:C.dim});g.restore()}
   else{g.globalAlpha=P.at(0,1,.6)*.6;panel(g,x,y,w,h,{r:14,fill:'rgba(0,0,0,0)',stroke:C.line,dash:[6,8]});T(g,'/model',x+w/2,y+h/2,{sz:40,f:FM,w:700,al:'center',c:C.dim});g.globalAlpha=1}}});
 
@@ -456,7 +456,7 @@ S({code:'2-4',title:'Effort 설정하기',group:'2 · Claude Code 시작하기',
  caps:[{t:'Effort는 Claude가 작업할 때 얼마나 많은 추론을 사용할지 설정하는 항목입니다.',say:'에포트는 클로드가 작업할 때, 얼마나 많은 추론을 사용할지 설정하는 항목입니다.'},
   {t:'effort 매개변수로 응답에 쓰는 토큰 수를 제어해, 응답의 철저함과 토큰 효율성 사이의 균형을 조절합니다.',say:'에포트 매개변수로 응답에 쓰는 토큰 수를 제어해서, 응답의 철저함과 토큰 효율성 사이의 균형을 조절합니다.'},
   {t:'이번 실습에서는 /effort로 Opus 5.5의 권장 Effort 수준인 Medium을 설정합니다.',say:'이번 실습에서는 슬래시 에포트로, 오퍼스 5.5의 권장 에포트 수준인 미디엄을 설정합니다.'}],
- draw(g,P){const a0=P.at(0,0,.6),Y=400;g.globalAlpha=a0;panel(g,160,220,1600,300,{r:18,fill:'#0B0E14'});T(g,'Effort',200,268,{sz:22,f:FM,w:700});chip(g,1740,256,'교안 화면 기준',C.dim,{sz:13,al:'right'});
+ draw(g,P){const a0=P.at(0,0,.6),Y=400;g.globalAlpha=a0;panel(g,160,220,1600,300,{r:18,fill:'#0D1725'});T(g,'Effort',200,268,{sz:22,f:FM,w:700});chip(g,1740,256,'교안 화면 기준',C.dim,{sz:13,al:'right'});
   T(g,'Faster',300,Y-40,{sz:22,f:FM,c:C.mid});T(g,'Smarter',1700,Y-40,{sz:22,f:FM,al:'right',c:C.mid});g.strokeStyle=C.mid;g.lineWidth=2;line(g,300,Y,1250,Y);line(g,1330,Y,1700,Y);g.setLineDash([3,4]);line(g,1290,Y-20,1290,Y+20);g.setLineDash([]);
   let pos;const s0=P.sec(0);if(P.i===0)pos=lerp(0,4,(1-Math.cos(clamp(s0/4)*Math.PI*2))/2);else if(P.i===1)pos=4-3*eIO3(clamp(P.sec(1)/2));else pos=1;
   const mx=lerp(EFF[0][1],EFF[4][1],pos/4);
@@ -464,11 +464,11 @@ S({code:'2-4',title:'Effort 설정하기',group:'2 · Claude Code 시작하기',
   T(g,'ultracode',1500,Y+50,{sz:24,f:FM,al:'center',c:C.mid});T(g,'xhigh + workflows',1500,Y+82,{sz:18,f:FM,al:'center',c:C.dim});
   g.fillStyle=P.i===2?C.ok:C.text;g.beginPath();g.moveTo(mx,Y-4);g.lineTo(mx-12,Y-24);g.lineTo(mx+12,Y-24);g.closePath();g.fill();
   const tk=pos/4;gauge(g,300,Y+92,950,.12+.8*tk,P.i===2?C.ok:C.amber,'추론에 쓰는 토큰 (개념도)');g.globalAlpha=1;
-  const qa=P.at(1,0,.6);if(qa>0){g.globalAlpha=qa;panel(g,160,560,1600,190,{r:18,fill:'#10141C',stroke:hexA(C.m1,.45)});chip(g,1740,592,'Claude 공식 문서 · 교안 인용',C.dim,{sz:13,al:'right'});
+  const qa=P.at(1,0,.6);if(qa>0){g.globalAlpha=qa;panel(g,160,560,1600,190,{r:18,fill:'#111E30',stroke:hexA(C.m1,.45)});chip(g,1740,592,'Claude 공식 문서 · 교안 인용',C.dim,{sz:13,al:'right'});
    T(g,'“effort”(노력) 매개변수를 사용하면',200,630,{sz:23});const w1=(g.font=`500 23px ${FK}`,g.measureText('“effort”(노력) 매개변수를 사용하면 ').width);const hl=P.at(1,1,.8);
    rrect(g,196+w1,604,g.measureText('Claude가 요청에 응답할 때 소비하는 토큰 수를 제어').width*hl+8,36,6);g.fillStyle=hexA(C.m1,.35);g.fill();T(g,'Claude가 요청에 응답할 때 소비하는 토큰 수를 제어',200+w1,630,{sz:23,w:600});
    T(g,'할 수 있습니다. 단일 모델로 응답의 철저함과 토큰 효율성 사이에서 균형을 조절할 수 있습니다.',200,676,{sz:23});T(g,'(최상위 effort 매개변수는 지원되는 모든 모델에서 베타 헤더 없이 사용 가능)',200,720,{sz:18,c:C.dim});g.globalAlpha=1}
-  const ta=P.at(2,.2,.5);if(ta>0){g.globalAlpha=ta;panel(g,160,780,760,76,{r:12,fill:'#0A0D12',stroke:hexA(C.ok,.6)});T(g,'> /effort',190,828,{sz:22,f:FM,w:600,c:C.amber});T(g,'◐ medium · /effort',880,828,{sz:21,f:FM,al:'right',c:C.ok});
+  const ta=P.at(2,.2,.5);if(ta>0){g.globalAlpha=ta;panel(g,160,780,760,76,{r:12,fill:'#0C1522',stroke:hexA(C.ok,.6)});T(g,'> /effort',190,828,{sz:22,f:FM,w:600,c:C.amber});T(g,'◐ medium · /effort',880,828,{sz:21,f:FM,al:'right',c:C.ok});
    chip(g,960,818,'Opus 5.5 권장 = Medium',C.ok,{sz:20});g.globalAlpha=1}}});
 
 // 12 2-5 MODE
@@ -483,8 +483,8 @@ S({code:'2-5',title:'Mode 설정하기',group:'2 · Claude Code 시작하기',
    panel(g,x,y,395,380,{r:20,fill:hexA(c,on?.13:.03),stroke:hexA(c,on?.95:.3),lw:on?3:1.5});T(g,n,x+30,y+64,{sz:32,f:FM,w:700,c});T(g,s,x+30,y+118,{sz:26,w:700,c:on?C.text:C.mid});
    para(g,d,x+30,y+180,340,{sz:21,lh:34,c:on?'#D8DAE0':C.dim});if(k===0&&P.i===3)check(g,x+350,y+56,30,C.ok,P.at(3,.4,.4));g.restore()});
   const ka=P.at(0,.2,.5);g.globalAlpha=ka;const press=P.i===0||P.i===3?(P.ls*1.4%1<.25):false;
-  [['Shift',180],['Tab',140]].forEach(([s,w],j)=>{const x=j?1000:780;panel(g,x,690+(press?4:0),w,64,{r:10,fill:press?hexA(C.amber,.25):'#161B26',stroke:hexA(C.amber,.7),lw:2});T(g,s,x+w/2,732+(press?4:0),{sz:24,f:FM,w:700,al:'center'})});T(g,'+',980,732,{sz:26,f:FM,al:'center',c:C.mid});
-  const st=P.i===3?'⏵⏵ auto mode on':'⏸ manual mode on';panel(g,560,790,800,58,{r:10,fill:'#0A0D12',stroke:hexA(P.i===3?C.amber:C.m1,.5)});T(g,st+'  · ? for shortcuts',590,828,{sz:20,f:FM,c:P.i===3?C.amber:C.mid});chip(g,1340,819,P.i===3?'상태 표시 예시':'교안 화면 기준',C.dim,{sz:13,al:'right'});g.globalAlpha=1}});
+  [['Shift',180],['Tab',140]].forEach(([s,w],j)=>{const x=j?1000:780;panel(g,x,690+(press?4:0),w,64,{r:10,fill:press?hexA(C.amber,.25):'#16273E',stroke:hexA(C.amber,.7),lw:2});T(g,s,x+w/2,732+(press?4:0),{sz:24,f:FM,w:700,al:'center'})});T(g,'+',980,732,{sz:26,f:FM,al:'center',c:C.mid});
+  const st=P.i===3?'⏵⏵ auto mode on':'⏸ manual mode on';panel(g,560,790,800,58,{r:10,fill:'#0C1522',stroke:hexA(P.i===3?C.amber:C.m1,.5)});T(g,st+'  · ? for shortcuts',590,828,{sz:20,f:FM,c:P.i===3?C.amber:C.mid});chip(g,1340,819,P.i===3?'상태 표시 예시':'교안 화면 기준',C.dim,{sz:13,al:'right'});g.globalAlpha=1}});
 
 // 13 2-5 MINI PRACTICE
 const MAN=[['● Web Search("반도체 뉴스 2026년 9월")',C.text,600],[''],['Tool use','#A9A6F5',700],[''],['  Web Search("반도체 뉴스 2026년 9월")',C.text],['  │ Claude wants to search the web for: 반도체 뉴스 2026년 9월',C.mid],[''],['Do you want to proceed?',C.text],['❯ 1. Yes','#A9A6F5',600],["  2. Yes, and don't ask again for Web Search commands in ~\\Deskto…"],['  3. No'],[''],['Esc to cancel · Tab to amend',C.dim]];
@@ -493,14 +493,14 @@ S({code:'2-5',title:'[미니실습] Manual Mode로 웹 서칭 시키기',group:'
   {t:'링크에 접속할 때마다 이렇게 허락을 구합니다.'},
   {t:'이번엔 Auto Mode on으로 세팅하고 동일한 프롬프트를 입력해 봅니다.',say:'이번엔 오토 모드 온으로 세팅하고, 동일한 프롬프트를 입력해 봅니다.'},
   {t:'이후 실습은 Model = Opus, Effort = Medium, auto mode on으로 진행합니다.',say:'이후 실습은 모델 오퍼스, 에포트 미디엄, 오토 모드 온으로 진행합니다.'}],
- draw(g,P){const pr='웹에서 반도체 관련 기사 5개만 찾아줘';panel(g,460,190,1000,70,{r:14,fill:'#0A0D12',stroke:hexA(C.amber,.5)});T(g,'❯ '+tw(pr,clamp(P.sec(0)/1.6)),490,236,{sz:24,c:C.text});
+ draw(g,P){const pr='웹에서 반도체 관련 기사 5개만 찾아줘';panel(g,460,190,1000,70,{r:14,fill:'#0C1522',stroke:hexA(C.amber,.5)});T(g,'❯ '+tw(pr,clamp(P.sec(0)/1.6)),490,236,{sz:24,c:C.text});
   const la=P.at(0,1.4,.5);g.save();g.globalAlpha=la;term(g,110,290,820,560,'Manual mode',MAN,{sz:17,lh:33,top:80,tc:C.m1,tag:'교안 화면 기준',a:i=>P.at(0,1.6+i*.05,.3)});
   if(P.i>=1){const n=P.i===1?1+Math.floor(clamp(P.c(1))*4.99):5;const sh=P.i===1?Math.sin(P.ls*30)*3*(P.c(1)*5%1<.2?1:0):0;chip(g,520+sh,820,'링크마다 승인 요청 · 허락을 구함',C.m1,{sz:18,al:'center'})}g.restore();
   const ra=P.at(2,0,.6);if(ra>0){g.save();g.globalAlpha=ra;winFrame(g,990,290,820,560,'auto mode on',{tc:C.amber,tag:'예시 · 진행 모습'});
    const L=['● Web Search("반도체 뉴스 2026년 9월")','● Fetch  기사 1','● Fetch  기사 2','● Fetch  기사 3','● Fetch  기사 4','● Fetch  기사 5'];
    L.forEach((s,k)=>{const f=clamp((P.sec(2)-.6-k*.55)/.4);if(f<=0)return;g.globalAlpha=ra*f;T(g,s,1020,380+k*54,{sz:19,f:FM});check(g,1760,372+k*54,20,C.ok,f)});
    const d=P.at(2,4.2,.4);if(d>0){g.globalAlpha=ra*d;chip(g,1400,730,'승인 없이 5개 기사 정리까지 진행',C.amber,{sz:19,al:'center'})}g.restore()}
-  const fa=P.at(3,.2,.5);if(fa>0){g.globalAlpha=fa;g.fillStyle='rgba(7,8,12,.86)';g.fillRect(100,280,1720,590);T(g,'📌 이후 실습 설정',960,430,{sz:30,w:700,al:'center',c:C.amber});
+  const fa=P.at(3,.2,.5);if(fa>0){g.globalAlpha=fa;g.fillStyle='rgba(10,22,40,.86)';g.fillRect(100,280,1720,590);T(g,'📌 이후 실습 설정',960,430,{sz:30,w:700,al:'center',c:C.amber});
    [['Model','Opus',COL.model],['Effort','Medium',C.ok],['Mode','auto mode on',C.amber]].forEach(([k,v,c],j)=>{const x=420+j*540;panel(g,x-230,480,460,150,{r:18,fill:hexA(c,.08),stroke:hexA(c,.7),lw:2});T(g,k,x,530,{sz:22,f:FM,al:'center',c:C.mid});T(g,v,x,595,{sz:36,f:FM,w:700,al:'center',c})});g.globalAlpha=1}}});
 
 // 14 3-1 PLAN MODE (climax)
@@ -512,7 +512,7 @@ S({code:'3-1',title:'Plan Mode로 목표와 계획 확인하기',group:'3 · 실
   {t:'Context 확인 — sales.xlsx와 sales_new.xlsx, 각 120건, 같은 9개 컬럼과 기간, 합계까지 확인.',say:'컨텍스트 확인. 세일즈 엑셀과 세일즈 뉴 엑셀, 각 120건, 같은 9개 컬럼 구조와 기간, 합계까지 확인합니다.'},
   {t:'계획 수립과 도구 선택 — Python·pandas로 병합·집계하고 JSON을 거쳐 HTML로, 차트는 Chart.js.',say:'계획 수립과 도구 선택. 파이썬과 판다스로 병합, 집계하고, 제이슨을 거쳐 HTML로 만듭니다. 차트는 차트 제이에스입니다.'},
   {t:'산출물은 단일 HTML 하나, 검증 기준은 연간 합계 660,680,000원 일치와 차트 표시 확인입니다.',say:'산출물은 단일 HTML 하나. 검증 기준은 연간 합계 6억 6천 68만 원 일치와, 차트 표시 확인입니다.'}],
- draw(g,P){panel(g,110,180,1700,104,{r:14,fill:'#0A0D12',stroke:hexA(C.amber,.5)});chip(g,130,214,'/plan',C.amber,{sz:18,f:FM});
+ draw(g,P){panel(g,110,180,1700,104,{r:14,fill:'#0C1522',stroke:hexA(C.amber,.5)});chip(g,130,214,'/plan',C.amber,{sz:18,f:FM});
   const pr='이 폴더의 자료를 활용해서 매출 현황을 한눈에 볼 수 있는 대시보드를 단일 html 파일로 만들어줘. 너무 오래걸리지 않게 단순하게 구성해줘.';const f=clamp(P.sec(0)/2.4);
   g.font=`500 21px ${FK}`;const L=wrapLines(g,tw(pr,f),1520);L.forEach((l,i)=>T(g,l,240,222+i*34,{sz:21}));
   if(P.i===0&&f>=1){g.globalAlpha=P.at(0,2.6,.4);chip(g,960,340,'◇ plan mode — 실행 전 계획 제안',C.m4,{sz:18,al:'center'});g.globalAlpha=1}
@@ -520,7 +520,7 @@ S({code:'3-1',title:'Plan Mode로 목표와 계획 확인하기',group:'3 · 실
   const act=k=>(k===0&&P.i===1)||(k===1&&P.i===2)||(k>=2&&k<4&&P.i===3)||(k>=4&&P.i===4);
   PLANR.forEach(([n,c,v],k)=>{const y=310+k*92,a=on(k);g.save();g.globalAlpha=Math.max(a,P.i>=1?.25:0);if(g.globalAlpha<=0){g.restore();return}const hi=act(k)?1:0;
    panel(g,110,y,1060,80,{r:14,fill:hexA(c,.04+.08*hi*a),stroke:hexA(c,.2+.7*a*(hi?1:.5)),lw:1.5+hi});chip(g,130,y+40,n,c,{sz:18});
-   if(a>0){g.globalAlpha=a;g.font=`500 20px ${FK}`;const nl=wrapLines(g,v,790).length;para(g,v,360,y+(nl>1?33:48),790,{sz:20,lh:30,c:hi?C.text:'#C4C7CF'})}g.restore()});
+   if(a>0){g.globalAlpha=a;g.font=`500 20px ${FK}`;const nl=wrapLines(g,v,790).length;para(g,v,360,y+(nl>1?33:48),790,{sz:20,lh:30,c:hi?C.text:'#C3CEDD'})}g.restore()});
   // loop stripe
   if(P.i>=1){const k=Math.min(5,[0,0,1,3,5][P.i]),cy=310+k*92+40;g.fillStyle=hexA(C.amber,.25);g.beginPath();g.arc(96,cy,14,0,7);g.fill();g.fillStyle=C.amber;g.beginPath();g.arc(96,cy,6,0,7);g.fill()}
   // right: real files
@@ -541,26 +541,26 @@ S({code:'3-2',title:'계획 수정 후 실행하기',group:'3 · 실습 — Clau
   {t:'다 실행되면 결과 HTML을 열고 sales.xlsx를 올립니다. 상반기 데이터로 대시보드가 채워집니다.',say:'다 실행되면 결과 HTML을 열고, 세일즈 엑셀을 올립니다. 상반기 데이터로 대시보드가 채워집니다.'},
   {t:'sales_new.xlsx를 올리면, 대시보드 전체가 하반기 데이터로 바뀌는지 확인합니다.',say:'세일즈 뉴 엑셀을 올리면, 대시보드 전체가 하반기 데이터로 바뀌는지 확인합니다.'}],
  draw(g,P){const x=110,y=200,w=800,h=660;winFrame(g,x,y,w,h,'Claude Code · plan',{tag:'교안 화면 기준'});
-  const sel=P.i===0?2:P.i===1?2:0;OPTS.forEach((s,k)=>T(g,(sel===k?'❯ ':'  ')+s,x+30,y+96+k*40,{sz:21,f:FM,w:sel===k?600:400,c:sel===k?'#A9A6F5':'#C9CCD4'}));
+  const sel=P.i===0?2:P.i===1?2:0;OPTS.forEach((s,k)=>T(g,(sel===k?'❯ ':'  ')+s,x+30,y+96+k*40,{sz:21,f:FM,w:sel===k?600:400,c:sel===k?'#A9A6F5':'#C9D3E1'}));
   T(g,'   shift+tab to approve with this feedback',x+30,y+216,{sz:18,f:FM,c:C.dim});
   const pr='sales.xlsx 또는 sales_new.xlsx를 화면에서 업로드하면, 업로드한 파일의 데이터로 대시보드가 바뀌도록 수정해줘.';const f=clamp((P.sec(0)-.5)/2.5);
-  if(P.sec(0)>=0){panel(g,x+30,y+250,w-60,130,{r:10,fill:'#10141C',stroke:hexA(C.amber,P.i===0?.7:.3)});g.font=`500 20px ${FK}`;wrapLines(g,tw(pr,f),w-110).forEach((l,i)=>T(g,l,x+50,y+290+i*32,{sz:20,c:P.i===0?C.text:C.mid}))}
+  if(P.sec(0)>=0){panel(g,x+30,y+250,w-60,130,{r:10,fill:'#111E30',stroke:hexA(C.amber,P.i===0?.7:.3)});g.font=`500 20px ${FK}`;wrapLines(g,tw(pr,f),w-110).forEach((l,i)=>T(g,l,x+50,y+290+i*32,{sz:20,c:P.i===0?C.text:C.mid}))}
   if(P.i>=2){const r=P.sec(2);const L=[['● 실행 중 · auto mode',C.amber],['● Python으로 두 파일 읽기 · 집계',C.mid],['● HTML에 업로드 기능 추가',C.mid],['✓ 대시보드 HTML 생성 완료',C.ok]];L.forEach(([s,c],k)=>{const a=clamp((r-.8-k*.8)/.4);if(a<=0)return;g.globalAlpha=a;T(g,s,x+30,y+440+k*44,{sz:19,f:FM,c});g.globalAlpha=1});chip(g,x+w-20,y+h-30,'진행 로그는 예시',C.dim,{sz:13,al:'right'})}
   const X=960,Y=200,WW=850,HH=660;
   if(P.i===1||P.i===2){g.save();g.globalAlpha=P.at(1,0,.5);winFrame(g,X,Y,WW,HH,'수정된 계획 · Context',{tc:C.m1,tag:'교안 화면 기준'});
    const tx='폴더의 sales.xlsx(2026-01~06, 120건)와 sales_new.xlsx(2026-07~12, 120건)는 같은 구조(시트 Sales: 주문번호, 주문일자, 지역, 담당자, 채널, 제품, 단가, 수량, 매출액)입니다.';
-   para(g,tx,X+30,Y+100,WW-60,{sz:21,lh:36,c:'#C9CCD4'});const hl=P.at(1,1.2,.6);panel(g,X+20,Y+300,WW-40,150,{r:10,fill:hexA(C.amber,.1*hl),stroke:hexA(C.amber,.8*hl)});
+   para(g,tx,X+30,Y+100,WW-60,{sz:21,lh:36,c:'#C9D3E1'});const hl=P.at(1,1.2,.6);panel(g,X+20,Y+300,WW-40,150,{r:10,fill:hexA(C.amber,.1*hl),stroke:hexA(C.amber,.8*hl)});
    para(g,'화면에서 엑셀 파일 1개를 업로드하면 그 파일의 데이터로 대시보드 전체가 바뀌는 단순한 단일 HTML을 만듭니다.',X+40,Y+345,WW-80,{sz:22,lh:36,w:600});
    para(g,'(예: sales.xlsx 업로드 → 상반기, sales_new.xlsx 업로드 → 하반기)',X+30,Y+500,WW-60,{sz:20,lh:32,c:C.mid});if(hl>0){g.globalAlpha*=hl;chip(g,X+WW/2,Y+600,'✓ 요청 사항 반영됨',C.ok,{sz:20,al:'center'})}g.restore()}
   if(P.i>=3){const sw=P.i===4?eIO3(clamp((P.sec(4)-1)/1)):0,a=P.at(3,0,.6);g.save();g.globalAlpha=a;panel(g,X,Y,WW,HH,{r:14,fill:'#F3F4F6',stroke:null});
-   const dk='#111827',gr='#6B7280',bl='#2563EB';T(g,'매출 현황 대시보드',X+30,Y+52,{sz:28,w:700,c:dk});T(g,sw<.5?'sales.xlsx · 2026-01 ~ 2026-06 · 120건':'sales_new.xlsx · 2026-07 ~ 2026-12 · 120건',X+30,Y+84,{sz:17,c:gr});
+   const dk='#14253A',gr='#6B7280',bl='#2563EB';T(g,'매출 현황 대시보드',X+30,Y+52,{sz:28,w:700,c:dk});T(g,sw<.5?'sales.xlsx · 2026-01 ~ 2026-06 · 120건':'sales_new.xlsx · 2026-07 ~ 2026-12 · 120건',X+30,Y+84,{sz:17,c:gr});
    rrect(g,X+WW-200,Y+30,170,46,10);g.fillStyle=bl;g.fill();T(g,'엑셀 업로드',X+WW-115,Y+60,{sz:18,w:700,al:'center',c:'#fff'});
    KPN.forEach((n,k)=>{const kx=X+30+k*200;panel(g,kx,Y+110,185,96,{r:12,fill:'#fff',stroke:'#E5E7EB'});T(g,n,kx+16,Y+140,{sz:15,c:gr});T(g,sw<.5?KP1[k]:KP2[k],kx+16,Y+184,{sz:26,w:700,c:dk})});
    panel(g,X+30,Y+226,WW-60,410,{r:12,fill:'#fff',stroke:'#E5E7EB'});T(g,'월별 매출 추이',X+50,Y+262,{sz:18,w:700,c:dk});
    const gy=Y+600,sc=320/110,grow=a;for(let v=0;v<=100;v+=20){g.strokeStyle='#EEF0F3';g.lineWidth=1;line(g,X+110,gy-v*sc,X+WW-50,gy-v*sc);T(g,v===0?'0':v===100?'1억':(v*100).toLocaleString()+'만',X+100,gy-v*sc+5,{sz:13,al:'right',c:gr})}
    for(let k=0;k<6;k++){const v=lerp(MON1[k],MON2[k],sw)*grow,bx=X+130+k*110;g.fillStyle=bl;g.fillRect(bx,gy-v*sc,80,v*sc);T(g,(sw<.5?k+1:k+7)+'월',bx+40,gy+24,{sz:15,al:'center',c:gr})}
-   if(P.i===4){const fl=clamp(P.sec(4)/1);if(fl<1){const cx=lerp(X+200,X+WW-115,eIO3(fl)),cy=lerp(Y+HH+40,Y+54,eIO3(fl));chip(g,cx,cy,'sales_new.xlsx',C.ok,{sz:16,al:'center',fill:'#0D1118'})}}
-   else{const fl=clamp((P.sec(3)-.4)/1);if(fl<1){const cx=lerp(X+200,X+WW-115,eIO3(fl)),cy=lerp(Y+HH+40,Y+54,eIO3(fl));chip(g,cx,cy,'sales.xlsx',C.ok,{sz:16,al:'center',fill:'#0D1118'})}}
+   if(P.i===4){const fl=clamp(P.sec(4)/1);if(fl<1){const cx=lerp(X+200,X+WW-115,eIO3(fl)),cy=lerp(Y+HH+40,Y+54,eIO3(fl));chip(g,cx,cy,'sales_new.xlsx',C.ok,{sz:16,al:'center',fill:'#0F1A2A'})}}
+   else{const fl=clamp((P.sec(3)-.4)/1);if(fl<1){const cx=lerp(X+200,X+WW-115,eIO3(fl)),cy=lerp(Y+HH+40,Y+54,eIO3(fl));chip(g,cx,cy,'sales.xlsx',C.ok,{sz:16,al:'center',fill:'#0F1A2A'})}}
    g.restore();chip(g,X+WW,182,'값: 실습자료 엑셀 기준 (하반기 화면은 실제 파일로 계산)',C.dim,{sz:13,al:'right'})}}});
 
 // 16 3-3 VERIFY
@@ -573,7 +573,7 @@ S({code:'3-3',title:'결과 검증 방식 확인하기',group:'3 · 실습 — C
   {t:'확인한 것 — 각 120건, 1~6월 334,570,000원, 7~12월 326,110,000원. Python과 Node 결과 일치.',say:'확인한 것. 두 파일 각 120건, 1월에서 6월 3억 3천 457만 원, 7월에서 12월 3억 2천 611만 원. 파이썬과 노드 결과가 같았습니다.'},
   {t:'확인하지 않은 것도 밝힙니다 — 업로드와 차트 표시가 실제로 되는지는 확인하지 못했습니다.'},
   {t:'남은 확인 방법 — 두 파일을 차례로 올려 3.35억원, 3.26억원으로 바뀌는지 직접 확인하면 됩니다.',say:'남은 확인 방법. 두 파일을 차례로 올려, 3.35억 원과 3.26억 원으로 바뀌는지 직접 확인하면 됩니다.'}],
- draw(g,P){panel(g,110,185,1700,70,{r:14,fill:'#0A0D12',stroke:hexA(C.amber,.5)});T(g,'❯ '+tw('방금 만든 결과를 어떤 방식으로 검증했는지 설명해줘.',clamp(P.sec(0)/1.5)),140,230,{sz:23});
+ draw(g,P){panel(g,110,185,1700,70,{r:14,fill:'#0C1522',stroke:hexA(C.amber,.5)});T(g,'❯ '+tw('방금 만든 결과를 어떤 방식으로 검증했는지 설명해줘.',clamp(P.sec(0)/1.5)),140,230,{sz:23});
   let qx=110;VQ.forEach((s,j)=>{const a=P.at(0,1.6+j*.4,.4);g.globalAlpha=a;qx+=chip(g,qx,295,'확인할 점 · '+s,C.mid,{sz:16})+14;g.globalAlpha=1});
   VC.forEach(([t,c,L],k)=>{const x=110+k*580,y=340,a=P.at(k+1,0,.6);g.save();g.globalAlpha=Math.max(a,.15);panel(g,x,y,540,520,{r:18,fill:hexA(c,.05*a),stroke:hexA(c,.2+.7*a),lw:1.5+a});
    T(g,t,x+28,y+50,{sz:26,w:700,c});if(k===0)check(g,x+500,y+40,26,c,a);if(k===0)chip(g,x+400,y+40,'교안 화면 기준',C.dim,{sz:12,al:'right'});
@@ -585,7 +585,7 @@ S({code:'4-1',title:'Claude Code에서 세션이란?',group:'4 · Claude Code �
  caps:[{t:'세션(Session)은 Claude와 하나의 작업을 이어가는 대화 단위입니다.',say:'세션은 클로드와 하나의 작업을 이어가는 대화 단위입니다.'},
   {t:'한 세션 안에서는 대화와 작업 과정이 이어지므로, 앞의 내용을 참고하면서 다음 작업을 계속할 수 있습니다.'},
   {t:'같은 업무를 이어서 수정할 때는 기존 세션을, 전혀 다른 업무를 시작할 때는 새 세션을 여는 것이 좋습니다.'}],
- draw(g,P){const a0=P.at(0,0,.6);g.globalAlpha=a0;panel(g,110,200,1000,660,{r:20,fill:'#0B0E14',stroke:hexA(C.amber,.55),lw:2});chip(g,140,238,'세션 · 매출 대시보드 (3장 실습)',C.amber,{sz:17});chip(g,1090,238,'교안 프롬프트 · 요약',C.dim,{sz:13,al:'right'});g.globalAlpha=1;
+ draw(g,P){const a0=P.at(0,0,.6);g.globalAlpha=a0;panel(g,110,200,1000,660,{r:20,fill:'#0D1725',stroke:hexA(C.amber,.55),lw:2});chip(g,140,238,'세션 · 매출 대시보드 (3장 실습)',C.amber,{sz:17});chip(g,1090,238,'교안 프롬프트 · 요약',C.dim,{sz:13,al:'right'});g.globalAlpha=1;
   const ys=[];let y=290;SB.forEach(([u,s],k)=>{const a=k<3?P.at(0,.4+k*.45,.4):P.at(1,(k-3)*.5,.4);ys.push(y);if(a>0){g.save();g.globalAlpha=a;const h=u?bubble(g,1080,y,560,s,C.text,{right:1}):bubble(g,140,y,560,s,C.amber,{c:'#E9D9B8'});g.restore()}y+=88});
   const rf=P.at(1,1.6,.6);if(rf>0){g.globalAlpha=rf;g.strokeStyle=hexA(C.amber,.7);g.lineWidth=2;g.setLineDash([5,6]);[0,2].forEach(k=>{g.beginPath();g.moveTo(1090,ys[4]+30);g.quadraticCurveTo(1180,(ys[4]+ys[k])/2,1090,ys[k]+30);g.stroke()});g.setLineDash([]);
    chip(g,1150,ys[4]-190,'앞의 내용을 참고',C.amber,{sz:16});g.globalAlpha=1}
@@ -616,11 +616,11 @@ S({code:'4-3',title:'/resume · /rename · /clear  (4-3 ~ 4-5)',group:'4 · Clau
  draw(g,P){const X=[110,690,1270],Wd=540,Y=200,Hh=560,cols=[C.m1,C.m3,C.m5],cmd=['/resume','/rename 매출 대시보드 만들기','/clear'],tags=['4-3 · 목록은 예시','4-4','4-5 · 예시'];
   X.forEach((x,k)=>{const a=P.at(Math.min(k,P.i),0,.5)*(P.i>=k?1:.3)+(P.i<k?.3:0);const on=P.i===k||(P.i===3&&k!==1);g.save();g.globalAlpha=P.i>=k?1:.28;
    winFrame(g,x,Y,Wd,Hh,cmd[k].split(' ')[0],{tc:cols[k],tag:tags[k],stroke:on?hexA(cols[k],.7):C.line});
-   panel(g,x+20,Y+64,Wd-40,52,{r:8,fill:'#10141C',stroke:null});const s=P.sec(k);T(g,'> '+tw(cmd[k],clamp(s/1.2)),x+36,Y+98,{sz:19,f:FM,c:cols[k]});
+   panel(g,x+20,Y+64,Wd-40,52,{r:8,fill:'#111E30',stroke:null});const s=P.sec(k);T(g,'> '+tw(cmd[k],clamp(s/1.2)),x+36,Y+98,{sz:19,f:FM,c:cols[k]});
    if(k===0){const L=['매출 대시보드 만들기 · 방금 전','회의록 Action Item 정리 · 어제','보고서 초안 작성 · 2일 전'];const cur=s<1.5?1:s<2.2?2:0;
     L.forEach((t,j)=>{const yy=Y+170+j*62,la=clamp((s-1.2-j*.15)/.3);if(la<=0)return;g.globalAlpha=la*(P.i>=k?1:.28);if(cur===j&&s>1.2){rrect(g,x+20,yy-30,Wd-40,50,8);g.fillStyle=hexA(C.m1,.16);g.fill()}T(g,(cur===j?'❯ ':'  ')+t,x+34,yy+2,{sz:19,c:cur===j?C.text:C.mid})});
     const ok=clamp((s-3)/.5);if(ok>0){g.globalAlpha=ok;chip(g,x+Wd/2,Y+400,'✓ 세션 다시 열림 · 대화 이어짐',C.ok,{sz:18,al:'center'})}}
-   else if(k===1){const ren=clamp((s-1.6)/.4);panel(g,x+20,Y+170,Wd-40,110,{r:12,fill:'#0D1119',stroke:hexA(C.m3,.3+.6*ren)});T(g,'현재 세션 이름',x+40,Y+206,{sz:16,c:C.dim});
+   else if(k===1){const ren=clamp((s-1.6)/.4);panel(g,x+20,Y+170,Wd-40,110,{r:12,fill:'#0F1B2B',stroke:hexA(C.m3,.3+.6*ren)});T(g,'현재 세션 이름',x+40,Y+206,{sz:16,c:C.dim});
     T(g,ren<.5?'(이름 없음)':'매출 대시보드 만들기',x+40,Y+250,{sz:26,w:700,c:ren<.5?C.dim:C.m3});if(ren>=1){g.globalAlpha=P.at(1,2,.5);para(g,'업무명 · 결과물 이름으로 정해두면 /resume 목록에서 찾기 쉬움',x+30,Y+340,Wd-60,{sz:19,lh:30,c:C.mid})}}
    else{const cl=clamp((s-1.4)/.8);for(let j=0;j<4;j++){const yy=Y+160+j*46;g.globalAlpha=(1-cl)*(P.i>=k?1:.28);panel(g,x+(j%2?210:30),yy,300,36,{r:12,fill:hexA(j%2?C.amber:C.text,.08),stroke:hexA(j%2?C.amber:C.text,.3)})}
     g.globalAlpha=P.i>=k?1:.28;if(cl>=1)T(g,'(대화 비움 · 새 대화처럼 시작)',x+Wd/2,Y+250,{sz:19,al:'center',c:C.dim});
@@ -634,16 +634,16 @@ S({code:'4-6',title:'세션이 바뀌어도 남길 지시사항은 파일로 저
  caps:[{t:'새로운 세션을 시작하면 이전 세션의 대화 내용은 그대로 이어지지 않습니다.'},
   {t:'하지만 작업 폴더의 파일은 남습니다. 계속 참고할 업무 기준은 CLAUDE.md 파일로 저장해 둡니다.',say:'하지만 작업 폴더의 파일은 남습니다. 계속 참고할 업무 기준은 클로드 엠디 파일로 저장해 둡니다.'},
   {t:'새 세션에서 “대시보드 작성 기준을 알려줘” — 저장한 파일을 읽고 같은 기준으로 작업을 이어갑니다.',say:'새 세션에서, 대시보드 작성 기준을 알려줘, 라고 입력하면, 저장한 파일을 읽고 같은 기준으로 작업을 이어갑니다.'}],
- draw(g,P){const s1=P.at(0,0,.5);g.globalAlpha=s1;panel(g,110,200,640,300,{r:18,fill:'#0B0E14',stroke:hexA(C.m3,.55)});chip(g,130,234,'세션 1',C.m3,{sz:17});chip(g,730,234,'교안 프롬프트 · 요약',C.dim,{sz:13,al:'right'});
+ draw(g,P){const s1=P.at(0,0,.5);g.globalAlpha=s1;panel(g,110,200,640,300,{r:18,fill:'#0D1725',stroke:hexA(C.m3,.55)});chip(g,130,234,'세션 1',C.m3,{sz:17});chip(g,730,234,'교안 프롬프트 · 요약',C.dim,{sz:13,al:'right'});
   if(P.i<1){bubble(g,720,270,440,'/plan 매출 대시보드 만들어줘',C.text,{right:1});bubble(g,140,350,440,'계획 · 실행 · 검증 완료',C.amber,{c:'#E9D9B8'})}
   else{const h=bubble(g,720,262,560,'아래 내용을 CLAUDE.md 파일로 저장해줘. # 대시보드 작성 기준 …',C.text,{right:1,sz:18});g.globalAlpha=s1*P.at(1,2,.4);bubble(g,140,262+h+16,380,'✓ CLAUDE.md 저장',C.ok,{c:C.ok,sz:18})}
-  g.globalAlpha=1;const s2=P.at(0,.8,.5);g.globalAlpha=s2;panel(g,110,560,640,300,{r:18,fill:'#0B0E14',stroke:hexA(C.amber,.55)});chip(g,130,594,'새 세션',C.amber,{sz:17});
+  g.globalAlpha=1;const s2=P.at(0,.8,.5);g.globalAlpha=s2;panel(g,110,560,640,300,{r:18,fill:'#0D1725',stroke:hexA(C.amber,.55)});chip(g,130,594,'새 세션',C.amber,{sz:17});
   if(P.i===0){T(g,'(이전 대화 없음)',430,720,{sz:22,al:'center',c:C.dim});g.strokeStyle=hexA(C.bad,.7);g.lineWidth=2.5;g.setLineDash([6,6]);line(g,430,500,430,560);g.setLineDash([]);cross(g,430,530,22,C.bad);chip(g,460,530,'대화는 이어지지 않음',C.bad,{sz:15})}
   if(P.i>=2){const h=bubble(g,720,622,420,'대시보드 작성 기준을 알려줘',C.text,{right:1,sz:19});const aa=P.at(2,2.4,.5);if(aa>0){g.globalAlpha=s2*aa;bubble(g,140,622+h+14,560,'CLAUDE.md 기준: 단일 HTML · KPI는 상단 · 원본 데이터와 집계 결과 확인',C.amber,{c:'#E9D9B8',sz:18})}g.globalAlpha=1;
    const f=clamp((P.sec(2)-1.2)/1);packet(g,820,560,760,700,f,C.amber,'CLAUDE.md 읽기');if(aa>0){g.globalAlpha=aa;chip(g,730,594,'응답은 예시',C.dim,{sz:13,al:'right'})}}
   g.globalAlpha=1;const fa=P.at(0,1.2,.6);g.save();g.globalAlpha=fa;winFrame(g,820,200,990,660,'작업 폴더',{tc:C.mid,tag:'파일 내용: 교안 프롬프트 그대로'});
   const nf=P.at(1,2,.5);tree(g,860,290,[{n:'삼성전자_DS_실습자료/',d:0,dir:1},{n:'실습자료/',d:1,dir:1,tc:C.mid},{n:'CLAUDE.md',d:1,c:C.amber,tc:C.amber,a:nf,hi:nf*(P.i===1?1:.3),tag:'NEW'}],{w:900,lh:48,sz:21});
-  if(nf>0){g.globalAlpha=fa*nf;panel(g,850,460,930,370,{r:12,fill:'#0A0D12',stroke:hexA(C.amber,.4)});T(g,'CLAUDE.md',874,494,{sz:16,f:FM,c:C.amber});codeLines(g,880,560,CMD11,{lh:50,sz:24,w:880,a:i=>P.at(1,2.2+i*.2,.3),hi:i=>P.i===2&&i>=2?P.at(2,2.4,.5):0})}
+  if(nf>0){g.globalAlpha=fa*nf;panel(g,850,460,930,370,{r:12,fill:'#0C1522',stroke:hexA(C.amber,.4)});T(g,'CLAUDE.md',874,494,{sz:16,f:FM,c:C.amber});codeLines(g,880,560,CMD11,{lh:50,sz:24,w:880,a:i=>P.at(1,2.2+i*.2,.3),hi:i=>P.i===2&&i>=2?P.at(2,2.4,.5):0})}
   g.restore();if(P.i>=1&&P.i<2){packet(g,700,330,850,380,clamp((P.sec(1)-.8)/1.1),C.m3,'파일로 저장')}}});
 
 // 21 4-7 PARALLEL SESSIONS
@@ -676,7 +676,7 @@ S({code:'5',title:'교육용 계정 안내',group:'5 · 교육용 계정 안내'
    ['민감한 사내 정보','기밀 자료'].forEach((s,j)=>{const f=clamp((P.sec(1)-.4-j*.5)/1),x=lerp(250,640,eIO3(f)),y=380+j*200;doc(g,x,y,70,88,C.bad,{lines:3});T(g,s,x,y+70,{sz:18,al:'center',c:C.bad});if(f>=1)cross(g,x+46,y-40,22,C.bad)});g.globalAlpha=1}
   // anonymize (right)
   const r=P.at(2,0,.5);if(r>0){g.globalAlpha=r;T(g,'가공 · 익명화 후 사용',1500,250,{sz:24,w:700,al:'center',c:C.ok});chip(g,1780,250,'예시',C.dim,{sz:13,al:'right'});
-   [['회사명','A사'],['고객명','고객 1'],['수치','가공한 값'],['문서 내용','요지만 재작성']].forEach(([a,bv],j)=>{const y=320+j*90,f=P.at(2,.5+j*.5,.5);panel(g,1210,y,580,70,{r:12,fill:'#0D1119',stroke:hexA(C.ok,.2+.5*f)});T(g,a,1240,y+44,{sz:21,c:C.mid});
+   [['회사명','A사'],['고객명','고객 1'],['수치','가공한 값'],['문서 내용','요지만 재작성']].forEach(([a,bv],j)=>{const y=320+j*90,f=P.at(2,.5+j*.5,.5);panel(g,1210,y,580,70,{r:12,fill:'#0F1B2B',stroke:hexA(C.ok,.2+.5*f)});T(g,a,1240,y+44,{sz:21,c:C.mid});
     arrow(g,1400,y+35,1400+100*f,y+35,C.ok,1,{hs:9});if(f>0){g.globalAlpha=r*f;T(g,bv,1530,y+44,{sz:22,w:700,c:C.ok})}g.globalAlpha=r});g.globalAlpha=1}
   const w=P.at(3,0,.5);if(w>0){g.globalAlpha=w;panel(g,210,720,1500,120,{r:18,fill:hexA(C.bad,.06),stroke:hexA(C.bad,.6),lw:2});T(g,'입력 금지',260,790,{sz:24,w:700,c:C.bad});
    let x=420;BLK.forEach((s,j)=>{const f=P.at(3,.3+j*.3,.4);g.globalAlpha=w*f;x+=chip(g,x,780,'✗ '+s,C.bad,{sz:21})+20});g.globalAlpha=1}}});
@@ -702,7 +702,7 @@ function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;retu
 /* ================= composite ================= */
 const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,0.55)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
 function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
-  g.fillStyle='#10141C';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.fillStyle='#111E30';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
   g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
 function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
   g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
@@ -711,7 +711,7 @@ function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.global
   T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
   g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
   const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
-   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(7,8,12,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(10,22,40,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
    L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
 function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
   if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
@@ -789,7 +789,7 @@ document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('b
 
 {const pp=(typeof POSTER!=='undefined'?POSTER:[SC.length-1,0,.9]),ps=SC[Math.min(pp[0],SC.length-1)],pc=Math.min(pp[1],ps.capT.length-1);t=ps.start+ps.capT[pc]+ps.capD[pc]*pp[2];tAbs=t}
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
-['400 20px "Michroma"','500 20px "JetBrains Mono"','600 20px "IBM Plex Sans KR"','700 20px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+['400 20px "Syne"','500 20px "IBM Plex Mono"','600 20px "Gothic A1"','700 20px "Gothic A1"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
 voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}/* ---- playback speed ---- */
 let SPEED=1;
 function setSpeed(r){if(playing){tAbs=anchorT+(clk()-anchorClock)*SPEED}SPEED=r;if(playing)reanchor();
