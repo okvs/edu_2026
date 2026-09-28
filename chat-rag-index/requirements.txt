@@ -1,0 +1,5 @@
+numpy>=1.26
+# Only for --backend local (runs the model in-process, ~2GB download):
+# sentence-transformers>=3.0
+# Only for --backend voyage:
+# voyageai>=0.3
