@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Multi-Agent 이해</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07080C; --panel:#0E1117; --line:#1C212C; --line2:#2A3140;
+  --dim:#6E7688; --soft:#A9ADB8; --text:#ECE8DE; --amber:#FFB547;
+  --fd:"Michroma","Eurostile","Arial Black",sans-serif;
+  --fm:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --fb:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+[hidden]{display:none!important}
+body{font-family:var(--fb);font-size:15px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px;display:grid;gap:20px}
+.hd{display:grid;grid-template-columns:auto 1fr;gap:10px 48px;align-items:end}
+.eyebrow{font:500 11px/1.4 var(--fm);letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin:0 0 12px}
+h1{font:400 clamp(24px,4vw,38px)/1.1 var(--fd);letter-spacing:.12em;margin:0}
+h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft);margin-top:10px}
+.lede{margin:0;max-width:60ch;color:var(--soft);justify-self:end;text-wrap:pretty}
+.screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
+.screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
+canvas{display:block;width:100%;height:100%;object-fit:contain}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(255,181,71,.55);background:rgba(7,8,12,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay:hover{border-color:var(--amber)}
+.bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
+.bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
+.btn:hover{border-color:var(--line2)}
+.btn[aria-pressed="true"]{border-color:rgba(255,181,71,.55);color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:16px;height:16px;fill:currentColor}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
+.seg{position:relative;background:#10141B;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,181,71,.2);width:0}
+.seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
+.seg.on span{color:var(--amber)}
+.head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
+.tc{font:500 13px var(--fm);font-variant-numeric:tabular-nums;min-width:112px;text-align:right;color:var(--soft)}
+.tc b{color:var(--text);font-weight:500}
+.note{font:400 12px var(--fm);color:var(--dim);margin:8px 0 0}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:18px}
+.sh h2{font:500 12px var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0}
+.sh p{margin:0;font:400 12px var(--fm);color:var(--dim)}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.shot{border-bottom:1px solid var(--line)}
+.shot button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:52px 1fr auto;gap:2px 14px;padding:14px 4px;width:100%;cursor:pointer}
+.shot button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.shot button:hover .t{color:var(--amber)}
+.shot .n{font:400 14px/1.9 var(--fd);color:var(--dim);grid-row:1/3}
+.shot.on .n,.shot.on .t{color:var(--amber)}
+.shot .t{font:600 15px/1.6 var(--fb)}
+.shot .r{font:400 12px/1.9 var(--fm);color:var(--dim);font-variant-numeric:tabular-nums}
+.shot .d{grid-column:2/4;color:var(--soft);font-size:14px;line-height:1.65}
+.foot{display:flex;flex-wrap:wrap;gap:8px 22px;color:var(--dim);font:400 12px var(--fm);margin-top:6px}
+kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--soft)}
+@media (max-width:760px){
+  .hd{grid-template-columns:1fr}.lede{justify-self:start}
+  .seg span{display:none}.track{flex-basis:100%;order:5}
+  .shots{grid-template-columns:1fr}
+  .bigplay{padding:8px 16px 8px 8px;font-size:13px}.bigplay .ic{width:34px;height:34px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hd">
+    <div>
+      <p class="eyebrow">Lesson video · Chapter 02 · 1920×1080</p>
+      <h1>MULTI-AGENT<small>멀티 에이전트 이해</small></h1>
+    </div>
+    <p class="lede">교안 「02. Multi-Agent 이해」를 장면 18개로 옮긴 모션그래픽 강의 영상입니다. Context와 Context Window에서 시작해 멀티 에이전트가 필요한 네 가지 이유, Head·Sub 구조와 폴더, 실제 실행 흐름, 실습 순서까지 교안 순서 그대로 따라갑니다.</p>
+  </header>
+
+  <section aria-label="강의 영상 플레이어">
+    <div class="screen" id="screen">
+      <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
+      <button class="bigplay" id="bigplay" type="button">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#07080C"/></svg></span>
+        <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="play" type="button" aria-label="재생"><svg viewBox="0 0 16 16" id="playic"><path d="M4 2l10 6-10 6z"/></svg></button>
+      <button class="btn" id="voice" type="button" aria-pressed="false">음성 해설 꺼짐</button>
+      <button class="btn" id="music" type="button" aria-pressed="false">배경음 꺼짐</button>
+      <div class="track" id="track" role="slider" tabindex="0" aria-label="타임라인" aria-valuemin="0" aria-valuenow="0"><div class="head" id="head"></div></div>
+      <span class="tc" id="tc"></span>
+      <button class="btn" id="fs" type="button" aria-label="전체 화면"><svg viewBox="0 0 16 16"><path d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg></button>
+    </div>
+    <p class="note" id="vnote"></p>
+  </section>
+
+  <section aria-label="장면과 대본">
+    <div class="sh"><h2>장면 · 대본</h2><p id="meta"></p></div>
+    <ol class="shots" id="shots"></ol>
+    <div class="foot">
+      <span><kbd>Space</kbd> 재생/일시정지</span><span><kbd>←</kbd><kbd>→</kbd> 자막 단위 이동</span><span><kbd>V</kbd> 음성 해설</span><span><kbd>F</kbd> 전체 화면</span>
+      <span>파일 내용 · /context 수치 · 프롬프트는 교안과 Ch2_완성본 실습자료 기준입니다.</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+'use strict';
+/* ================= core ================= */
+const W=1920,H=1080;
+const cv=document.getElementById('stage');cv.width=W;cv.height=H;
+const ctx=cv.getContext('2d');
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const scratch=mk(W,H),sctx=scratch.getContext('2d');
+const C={bg:'#07080C',grid:'#141925',line:'#232A38',dim:'#6E7688',mid:'#9AA3B5',text:'#ECE8DE',amber:'#FFB547',
+  m1:'#4C8DFF',m2:'#FF4FA3',m3:'#2FE3C4',m4:'#B98CFF',m5:'#FF7A45',ok:'#3DDC84',bad:'#FF5A5F',card:'#0F131B'};
+const FD='"Michroma","Eurostile","Arial Black",sans-serif',FM='"JetBrains Mono",ui-monospace,Consolas,monospace',FK='"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const _ha=new Map();
+function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
+const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
+const eO3=t=>1-Math.pow(1-t,3),eIO3=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,eOB=t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+const pad2=n=>String(n).padStart(2,'0');
+
+/* ================= drawing kit ================= */
+function line(g,x0,y0,x1,y1){g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()}
+function rrect(g,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function panel(g,x,y,w,h,o={}){rrect(g,x,y,w,h,o.r??14);g.fillStyle=o.fill??C.card;g.fill();if(o.stroke!==null){g.strokeStyle=o.stroke??C.line;g.lineWidth=o.lw??1.5;if(o.dash)g.setLineDash(o.dash);g.stroke();g.setLineDash([])}}
+function T(g,s,x,y,o={}){g.font=`${o.w??500} ${o.sz??24}px ${o.f??FK}`;g.fillStyle=o.c??C.text;g.textAlign=o.al??'left';g.textBaseline=o.bl??'alphabetic';g.fillText(s,x,y);return g.measureText(s).width}
+function wrapLines(g,s,max){const out=[];let cur='';for(const w of s.split(' ')){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}if(cur)out.push(cur);return out}
+function chip(g,x,y,s,col,o={}){const sz=o.sz??18;g.font=`${o.w??600} ${sz}px ${o.f??FK}`;const w=g.measureText(s).width+sz*1.4,h=sz*1.9;const x0=o.al==='center'?x-w/2:o.al==='right'?x-w:x;
+  rrect(g,x0,y-h/2,w,h,h/2);g.fillStyle=o.fill??hexA(col,.14);g.fill();g.strokeStyle=hexA(col,.75);g.lineWidth=1.3;g.stroke();g.fillStyle=o.tc??col;g.textAlign='center';g.textBaseline='middle';g.fillText(s,x0+w/2,y+1);return w}
+function polyLen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L}
+function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length&&rem>0;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],d=Math.hypot(dx,dy);if(rem>=d){g.lineTo(p[i][0],p[i][1]);rem-=d}else{const k=rem/d;g.lineTo(p[i-1][0]+dx*k,p[i-1][1]+dy*k);rem=0}}}
+function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
+function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
+function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#131824';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
+  const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
+  if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
+  if(o.head){T(g,o.head,x0+w*.14,y0+f*.8,{sz:Math.max(11,w*.1),f:FM,w:600,c:col})}
+  if(o.title)T(g,o.title,x,y0+h+(o.tsz??18)+8,{sz:o.tsz??18,w:600,al:'center',c:o.tc??C.text});
+  if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
+function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
+  if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
+  g.fillStyle='#0D1118';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
+  const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
+  g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
+  if(o.name){const sz=o.nsz??20;if(o.side)T(g,o.name,x+r+16,y+(o.role?-2:7),{sz,w:600,f:o.nf??FM});else T(g,o.name,x,y+r+sz+12,{sz,w:600,al:'center',f:o.nf??FM})}
+  if(o.role){const sz=o.nsz??20;if(o.side)T(g,o.role,x+r+16,y+22,{sz:16,c:C.dim});else T(g,o.role,x,y+r+sz+38,{sz:16,al:'center',c:C.dim})}
+  g.restore()}
+function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,s*.3,0,7);g.fill();g.beginPath();g.moveTo(x-s*.6,y+s*.62);g.quadraticCurveTo(x-s*.6,y,x,y);g.quadraticCurveTo(x+s*.6,y,x+s*.6,y+s*.62);g.closePath();g.fill();
+  if(o.name)T(g,o.name,x,y+s*.62+30,{sz:20,w:600,al:'center'})}
+function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
+function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
+  if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0D1118'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#161B26';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+  T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
+function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
+function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
+function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const xx=x+r.d*34,yy=y+i*lh;
+  if(r.hi){rrect(g,x-14,yy-lh/2+4,o.w??680,lh-8,8);g.fillStyle=hexA(r.hc??C.amber,.12*r.hi);g.fill();g.strokeStyle=hexA(r.hc??C.amber,.6*r.hi);g.lineWidth=1.3;g.stroke()}
+  if(r.d>0){g.strokeStyle=hexA(C.text,.15);g.lineWidth=1;line(g,xx-20,yy-lh/2,xx-20,yy);line(g,xx-20,yy,xx-6,yy)}
+  (r.dir?folder:fileIc)(g,xx,yy,r.c??(r.dir?C.mid:C.text));
+  T(g,r.n,xx+32,yy+8,{sz:o.sz??22,f:FM,w:r.dir?600:500,c:r.tc??C.text});
+  if(r.tag){g.font=`500 ${o.sz??22}px ${FM}`;const w=g.measureText(r.n).width;chip(g,xx+48+w,yy,r.tag,r.hc??C.amber,{sz:15})}
+  g.restore()})}
+function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
+  if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9CCD4';
+  const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
+  if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
+  else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+30,w,14);
+  T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
+
+/* ================= scenes ================= */
+const SC=[];
+const S=(o)=>SC.push(o);
+const FLOWSTEPS=[];
+
+// 0 TITLE
+S({code:'02',title:'Multi-Agent 이해',group:'CHAPTER',hideHead:1,
+ caps:[{t:'Chapter 02, Multi-Agent 이해 — Context에서 시작해 에이전트 팀을 직접 실행하기까지.',say:'챕터 2. 멀티 에이전트 이해. 컨텍스트에서 시작해, 에이전트 팀을 직접 실행하기까지 따라가 봅니다.'}],
+ draw(g,P){const t=P.ls,cx=960,cy=470,la=P.at(0,0,1.2),cols=[C.m3,C.m2,C.m4,C.m3,C.m1,C.m5];
+  for(let k=0;k<6;k++){const an=k/6*Math.PI*2+t*.12,x=cx+Math.cos(an)*600,y=cy+Math.sin(an)*270;g.globalAlpha=la*.45;g.strokeStyle=hexA(C.amber,.5);g.lineWidth=1.2;g.setLineDash([4,9]);line(g,cx,cy,x,y);g.setLineDash([]);g.globalAlpha=1;agent(g,x,y,28,cols[k],{a:la*.85})}
+  const rg=g.createRadialGradient(cx,cy+30,40,cx,cy+30,560);rg.addColorStop(0,'rgba(7,8,12,0.96)');rg.addColorStop(1,'rgba(7,8,12,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8),a4=P.at(0,1.3,.8);
+  g.globalAlpha=a1;T(g,'CHAPTER 02',cx,380,{sz:22,f:FM,w:500,al:'center',c:C.amber});
+  g.globalAlpha=a2;T(g,'Multi-Agent',cx,530+(1-a2)*30,{sz:118,f:FD,w:400,al:'center'});
+  g.globalAlpha=a3;T(g,'멀티 에이전트 이해',cx,620,{sz:50,w:600,al:'center'});
+  g.globalAlpha=a4;T(g,'Context  ·  Head & Sub Agent  ·  CLAUDE.md  ·  .claude/agents/',cx,690,{sz:19,f:FM,al:'center',c:C.dim});g.globalAlpha=1}});
+
+// 1 OBJECTIVES
+const OBJ=['Context와 Context Window의 개념을 설명할 수 있다.','멀티 에이전트가 필요한 이유를 작업 공간 · 역할 전문화 · 독립적 검토 · 병렬 실행 관점에서 설명할 수 있다.','Head Agent와 Sub Agent의 역할, 그리고 CLAUDE.md와 .claude/agents/의 구조를 이해할 수 있다.','Sub Agent와 CLAUDE.md를 구성해 멀티 에이전트 팀을 직접 실행할 수 있다.'];
+S({code:'00',title:'학습 목표',group:'CHAPTER 02',
+ caps:[{t:'이번 챕터의 학습 목표는 네 가지입니다.'},{t:'Context 이해, 멀티 에이전트가 필요한 이유, Head와 Sub의 구조, 그리고 직접 실행해 보기.',say:'컨텍스트 이해, 멀티 에이전트가 필요한 이유, 헤드와 서브의 구조, 그리고 직접 실행해 보기입니다.'}],
+ draw(g,P){OBJ.forEach((s,k)=>{const a=P.at(0,.2+k*.25,.6),y=270+k*140;if(a<=0)return;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   const ck=eO3(clamp((P.sec(1)-.3-k*.9)/.45));panel(g,300,y-10,1320,112,{fill:ck>0?hexA(C.amber,.05):C.card,stroke:ck>0?hexA(C.amber,.45):C.line});
+   rrect(g,340,y+22,48,48,10);g.strokeStyle=ck>0?C.amber:C.mid;g.lineWidth=2.5;g.stroke();check(g,364,y+46,30,C.amber,ck);
+   g.font=`500 28px ${FK}`;const L=wrapLines(g,s,1150);L.forEach((l,i)=>T(g,l,420,y+(L.length>1?38:56)+i*40,{sz:28,w:500,c:ck>0?C.text:'#C4C7CF'}));g.restore()})}});
+
+// 2 CONTEXT
+const DESK={x:330,y:330,w:1260,h:500};
+const CITEMS=[{x:610,y:545,k:'chat',n:'사용자 대화',from:[-300,300]},{x:910,y:590,k:'file',n:'읽은 파일',from:[900,1300]},{x:1170,y:535,k:'instr',n:'지시사항',from:[1500,-200]},{x:1420,y:630,k:'tool',n:'Tool 실행 결과',from:[2300,700]}];
+function drawCItem(g,it,x,y,hl){g.save();if(hl>0){g.strokeStyle=hexA(C.amber,.8*hl);g.lineWidth=3;rrect(g,x-170,y-110,340,220,18);g.stroke()}
+  if(it.k==='chat'){panel(g,x-150,y-80,300,160,{fill:'#121722'});panel(g,x-130,y-60,170,44,{r:22,fill:'#1B2130',stroke:null});T(g,'보고서 써줘',x-112,y-31,{sz:18});panel(g,x-40,y+2,170,44,{r:22,fill:hexA(C.amber,.18),stroke:null});T(g,'자료부터 볼게요',x-24,y+31,{sz:17,c:C.amber})}
+  else if(it.k==='file')doc(g,x,y,130,166,C.m1,{head:'data.pdf',lines:5});
+  else if(it.k==='instr')doc(g,x,y,130,166,C.amber,{head:'CLAUDE.md',lines:5});
+  else{panel(g,x-140,y-72,280,144,{fill:'#0A0D12',stroke:hexA(C.m3,.5)});T(g,'Tool · web_search',x-122,y-42,{sz:15,f:FM,c:C.m3});T(g,'> AI 반도체 시장',x-122,y-8,{sz:17,f:FM});T(g,'✓ 결과 8건',x-122,y+24,{sz:17,f:FM,c:C.ok})}
+  T(g,it.n,x,y+(it.k==='file'||it.k==='instr'?120:108),{sz:21,w:600,al:'center',c:hl>0?C.amber:C.text});g.restore()}
+S({code:'1-1',title:'Context란?',group:'1 · Context와 Context Window',
+ caps:[{t:'Claude는 현재 대화만 보지 않고, 작업에 필요한 여러 정보를 함께 참고합니다.',say:'클로드는 현재 대화만 보지 않고, 작업에 필요한 여러 정보를 함께 참고합니다.'},{t:'대화, 읽은 파일, 지시사항, Tool 실행 결과 — 이것이 Context입니다.',say:'대화, 읽은 파일, 지시사항, 툴 실행 결과. 이것이 컨텍스트입니다.'},{t:'쉽게 말해 Claude가 지금 책상 위에 펼쳐놓고 보는 작업 자료입니다.',say:'쉽게 말해, 클로드가 지금 책상 위에 펼쳐놓고 보는 작업 자료입니다.'}],
+ draw(g,P){const da=P.at(0,0,.6),glow=P.at(2,0,.8);panel(g,DESK.x,DESK.y,DESK.w,DESK.h,{r:24,fill:'#0D1119',stroke:hexA(C.m1,.35+.4*glow),lw:2});
+  g.globalAlpha=da;chip(g,DESK.x+24,DESK.y+34,glow>0?'Context = 책상 위 작업 자료':'책상',glow>0?C.amber:C.m1,{sz:18});g.globalAlpha=1;
+  agent(g,960,205,48,C.amber,{a:da,name:'Claude',nf:FK,glow:glow,side:1});
+  const k1=P.sec(1)>=0&&P.c(1)<1?Math.floor(P.c(1)*4):-1;
+  CITEMS.forEach((it,i)=>{const f=eO3(clamp((P.sec(0)-.4-i*.45)/.7));if(f<=0)return;const x=lerp(it.from[0],it.x,f),y=lerp(it.from[1],it.y,f);
+   const hl=k1===i?1:0;if(hl){g.strokeStyle=hexA(C.amber,.7);g.lineWidth=2;g.setLineDash([6,8]);line(g,960,255,x,y-100);g.setLineDash([])}drawCItem(g,it,x,y,hl||glow*.35)})}});
+
+// 3 CONTEXT WINDOW
+const CTXV=[{hd:'728.1k/1m tokens (73%)',cells:[['#8A8F99',5],['#4FD1C5',1],['#9CC9F5',1],['#F2998E',1],['#F2D544',1],['#B69CF0',141],['free',43],['buf',7]],
+  leg:[['System prompt','2.7k (0.3%)','#8A8F99'],['System tools','20k (2.0%)','#8A8F99'],['MCP tools','1.5k (0.1%)','#4FD1C5'],['Custom agents','314 (0.0%)','#9CC9F5'],['Memory files','186 (0.0%)','#F2998E'],['Skills','6.1k (0.6%)','#F2D544'],['Messages','703.7k (70.4%)','#B69CF0'],['Free space','232.4k (23.2%)','free'],['Autocompact buffer','33k (3.3%)','buf']]},
+ {hd:'90.2k/1m tokens (9%)',cells:[['#8A8F99',5],['#9CC9F5',1],['#F2998E',1],['#F2D544',1],['#B69CF0',12],['free',173],['buf',7]],
+  leg:[['System prompt','4k (0.4%)','#8A8F99'],['System tools','20k (2.0%)','#8A8F99'],['Custom agents','314 (0.0%)','#9CC9F5'],['Memory files','186 (0.0%)','#F2998E'],['Skills','6.1k (0.6%)','#F2D544'],['Messages','59.6k (6.0%)','#B69CF0'],['Free space','876.8k (87.7%)','free'],['Autocompact buffer','33k (3.3%)','buf']]}];
+function ctxCell(g,x,y,c,s){if(c==='free'){g.strokeStyle='#4A5162';g.lineWidth=1.5;g.setLineDash([4,3]);g.strokeRect(x+2,y+2,s-4,s-4);g.setLineDash([])}
+  else if(c==='buf'){g.strokeStyle='#8A8F99';g.lineWidth=1.5;g.strokeRect(x+2,y+2,s-4,s-4);line(g,x+2,y+2,x+s-2,y+s-2);line(g,x+s-2,y+2,x+2,y+s-2)}else{rrect(g,x+1,y+1,s-2,s-2,6);g.fillStyle=c;g.fill()}}
+function ctxPanel(g,x,y,w,h,rv,mode){const V=CTXV[mode];winFrame(g,x,y,w,h,'> /context',{tc:C.amber,tag:'교안 화면 기준'});
+  T(g,'Context Usage',x+28,y+84,{sz:20,f:FM,w:700});T(g,'Opus 5 (1M)  ·  '+V.hd,x+w-28,y+84,{sz:16,f:FM,al:'right',c:C.mid});
+  const seq=[];V.cells.forEach(([c,k])=>{for(let i=0;i<k;i++)seq.push(c)});const n=Math.floor(seq.length*rv);
+  seq.forEach((c,i)=>{if(i>=n)return;ctxCell(g,x+30+(i%20)*29.5,y+106+Math.floor(i/20)*29,c,25)});
+  V.leg.forEach(([a,b,c],i)=>{const xx=x+30+Math.floor(i/5)*310,yy=y+430+(i%5)*26;ctxCell(g,xx,yy-15,c,17);T(g,a,xx+26,yy,{sz:14,f:FM,c:C.text});T(g,b,xx+290,yy,{sz:14,f:FM,al:'right',c:C.mid})})}
+const CTYPES=[['요청',C.m1],['응답',C.amber],['Tool 결과',C.m3],['응답',C.amber]];
+function cards(g,x0,y0,cols,cw,chh,gap,n,o={}){const nf=Math.floor(n),fr=n-nf;for(let i=0;i<Math.ceil(n);i++){const c=i%cols,r=Math.floor(i/cols),x=x0+c*(cw+gap),y=y0+r*(chh+gap);
+  const s=i<nf?1:eOB(fr);const[lab,col]=CTYPES[i%4];const fx=o.fly?o.fly(i):null;g.save();
+  if(fx){g.globalAlpha=fx.a;g.translate(lerp(x+cw/2,fx.x,fx.f),lerp(y+chh/2,fx.y,fx.f));g.scale(lerp(1,.2,fx.f),lerp(1,.2,fx.f))}else{g.translate(x+cw/2,y+chh/2);g.scale(s,s)}
+  panel(g,-cw/2,-chh/2,cw,chh,{r:10,fill:hexA(col,o.dim?.06:.12),stroke:hexA(col,o.dim?.3:.6)});T(g,lab,-cw/2+14,-chh/2+30,{sz:17,w:600,c:o.dim?C.dim:col});
+  g.fillStyle=hexA(col,.3);g.fillRect(-cw/2+14,-chh/2+44,cw*.6,4);g.fillRect(-cw/2+14,-chh/2+56,cw*.4,4);g.restore()}}
+S({code:'1-2',title:'Context Window',group:'1 · Context와 Context Window',
+ caps:[{t:'하지만 한 번에 참고할 수 있는 양은 무한하지 않습니다. 이 범위가 Context Window — 책상의 크기입니다.',say:'하지만 한 번에 참고할 수 있는 양은 무한하지 않습니다. 이 범위가 컨텍스트 윈도우, 책상의 크기입니다.'},{t:'요청, 응답, Tool 결과가 이어질수록 책상은 점점 채워집니다.',say:'요청, 응답, 툴 결과가 이어질수록 책상은 점점 채워집니다.'},{t:'/context 명령어로 지금 무엇이 얼마나 차지하는지 직접 확인할 수 있습니다.',say:'슬래시 컨텍스트 명령어로, 지금 무엇이 얼마나 차지하는지 직접 확인할 수 있습니다.'}],
+ draw(g,P){const dx=140,dy=250,dw=920,dh=560;panel(g,dx,dy,dw,dh,{r:22,fill:'#0D1119',stroke:hexA(C.m1,.5),lw:2});
+  const da=P.at(0,.3,.8);g.globalAlpha=da;g.strokeStyle=C.amber;g.lineWidth=2;line(g,dx,dy-30,dx+dw,dy-30);line(g,dx,dy-40,dx,dy-20);line(g,dx+dw,dy-40,dx+dw,dy-20);
+  T(g,'Context Window  =  책상의 크기 (한계)',dx+dw/2,dy-44,{sz:21,w:600,al:'center',c:C.amber});g.globalAlpha=1;
+  const n=P.sec(1)<0?1+2*P.c(0):3+23*eIO3(P.c(1));cards(g,dx+16,dy+18,6,140,94,12,n);gauge(g,dx,dy+dh+44,dw,n/30,n/30>.8?C.m5:C.m1,'Context 사용량');
+  const ta=P.at(2,0,.6);if(ta>0){g.save();g.globalAlpha=ta;g.translate((1-ta)*50,0);const x=1130,y=250,w=660,h=560;ctxPanel(g,x,y,w,h,eO3(clamp(P.sec(2)/1.4)),0);g.restore()}}});
+
+// 4 COMPACT
+S({code:'1-4',title:'Context가 많이 찼다면? — /compact',group:'1 · Context와 Context Window',
+ caps:[{t:'Context가 많이 쌓였다고 해서 매번 새 대화를 시작할 필요는 없습니다.',say:'컨텍스트가 많이 쌓였다고 해서, 매번 새 대화를 시작할 필요는 없습니다.'},{t:'/compact는 지금까지의 대화를 요약해, 중요한 맥락은 유지하면서 Context 사용량을 줄여줍니다.',say:'슬래시 컴팩트는 지금까지의 대화를 요약해, 중요한 맥락은 유지하면서 컨텍스트 사용량을 줄여줍니다.'}],
+ draw(g,P){const dx=360,dy=300,dw=1200,dh=470,c1=P.sec(1),shake=P.sec(1)<0?Math.sin(P.ls*40)*2*P.at(0,.8,.4):0;
+  g.save();g.translate(shake,0);panel(g,dx,dy,dw,dh,{r:22,fill:'#0D1119',stroke:hexA(c1<0?C.m5:C.m1,.55),lw:2});
+  const fl=i=>{if(c1<0)return null;const f=eIO3(clamp((c1-.4-(i%9)*.05)/1.1));return{f,a:1-inv(.75,1,f),x:960,y:dy+dh/2}};
+  cards(g,dx+22,dy+22,7,150,100,14,28,{fly:fl});
+  const sa=eOB(clamp((c1-1.3)/.6));if(sa>0){g.save();g.translate(960,dy+dh/2);g.scale(sa,sa);panel(g,-240,-110,480,220,{r:18,fill:'#12161F',stroke:C.amber,lw:2});
+   T(g,'대화 요약',-210,-62,{sz:24,w:700,c:C.amber});['• 목표: AI 반도체 시장조사 보고서','• 지금까지의 결정 · 진행 상황','• 중요한 맥락은 그대로 유지'].forEach((s,i)=>T(g,s,-210,-18+i*40,{sz:20}));g.restore()}g.restore();
+  const pk=c1<0?0:eIO3(clamp((c1-.4)/1.4)),v=lerp(.73,.09,pk);gauge(g,dx,dy+dh+50,dw,v,v>.6?C.m5:C.m1,`Context 사용량 · ${lerp(728.1,90.2,pk).toFixed(1)}k / 1M tokens`);
+  if(c1>=0){const ta=eO3(clamp(c1/.4));g.globalAlpha=ta;panel(g,760,190,400,70,{r:12,fill:'#0A0D12',stroke:hexA(C.amber,.6)});const cmd='> /compact';T(g,cmd.slice(0,Math.ceil(cmd.length*clamp(c1/.5))),784,236,{sz:24,f:FM,w:600,c:C.amber});
+   const pr=clamp((c1-.4)/1.4);rrect(g,960,218,176,10,5);g.fillStyle='#1A1F2A';g.fill();rrect(g,960,218,176*pr,10,5);g.fillStyle=pr>=1?C.ok:C.amber;g.fill();T(g,pr>=1?'완료':'Compacting…',1136,210,{sz:14,f:FM,al:'right',c:pr>=1?C.ok:C.mid});g.globalAlpha=1}}});
+
+// 5 WORKSPACE
+const PILE=['지시서','참고자료 A','팀원 보고 1','중간 계산','초안 v1','참고자료 B','팀원 보고 2','중간 계산 2','초안 v2','참고자료 C'];
+S({code:'2-1',title:'작업공간 — 자료가 많아도 놓치지 않습니다',group:'2 · 멀티 에이전트의 필요성',
+ caps:[{t:'싱글 에이전트는 지시서, 참고자료, 팀원 보고, 중간 계산, 초안이 한 대화창에 전부 쌓입니다.'},{t:'가득 차면 오래된 내용이 요약되며, 앞부분의 세부 정보를 놓칠 수 있습니다.'},{t:'멀티 에이전트는 담당자마다 자기 책상에서 자기 자료만 봅니다. 총괄에게는 결과만 넘어옵니다.',say:'멀티 에이전트는 담당자마다 자기 책상에서 자기 자료만 봅니다. 총괄에게는 결과만 넘어오니 총괄의 대화창도 가볍게 유지됩니다.'}],
+ draw(g,P){g.strokeStyle=C.line;g.lineWidth=1.5;line(g,960,200,960,860);
+  T(g,'싱글 에이전트',500,238,{sz:30,w:700,al:'center'});T(g,'멀티 에이전트',1440,238,{sz:30,w:700,al:'center',c:P.at(2,0,.5)>0?C.text:C.dim});
+  const dx=140,dy=270,dw=720,dh=570;panel(g,dx,dy,dw,dh,{r:20,fill:'#0D1119',stroke:hexA(P.sec(1)>=0?C.m5:C.m1,.5),lw:2});
+  const n=P.sec(1)<0?1+7*P.c(0):8+2*eO3(clamp(P.sec(1)/1.5)),col=eIO3(clamp((P.sec(1)-.8)/1.2));
+  let y=dy+18;
+  if(col>0){const hh=52*col;g.globalAlpha=col;panel(g,dx+18,y,dw-36,hh,{r:10,fill:hexA(C.m5,.1),stroke:hexA(C.m5,.6),dash:[6,6]});if(col>.6)T(g,'⚠ 앞부분 요약됨 — 세부 정보 일부 손실',dx+40,y+34,{sz:19,w:600,c:C.m5});g.globalAlpha=1;y+=hh+10*col}
+  for(let i=0;i<Math.ceil(n);i++){let hh=52,a=i<Math.floor(n)?1:n%1;if(i<3&&col>0){hh=52*(1-col);a*=1-col;
+     for(let p=0;p<6;p++){const s=(i*6+p)*.37%1;g.fillStyle=hexA(C.mid,(1-col)*.6);g.fillRect(dx+60+s*560-col*200*(1+s),y+hh/2+Math.sin(p+i)*20*col,6,6)}}
+    if(hh<2){continue}g.globalAlpha=a;const c=[C.amber,C.m1,C.m3,C.m4,C.m2][i%5];panel(g,dx+18,y,dw-36,hh,{r:10,fill:hexA(c,.08),stroke:hexA(c,.45)});if(hh>30)T(g,PILE[i],dx+40,y+hh/2+7,{sz:20,w:600,c});g.globalAlpha=1;y+=hh+10}
+  const ra=P.at(2,0,.8);if(ra>0){g.save();g.globalAlpha=ra;panel(g,1260,280,360,120,{r:16,fill:'#12161F',stroke:hexA(C.amber,.6)});agent(g,1318,340,34,C.amber);T(g,'총괄 (Head)',1372,332,{sz:22,w:700});T(g,'결과만 받음',1372,362,{sz:16,c:C.dim});
+   [1110,1440,1770].forEach((x,i)=>{const c=[C.m3,C.m2,C.m4][i];panel(g,x-140,560,280,270,{r:16,fill:'#0D1119',stroke:hexA(c,.45)});agent(g,x,620,30,c);doc(g,x-50,730,64,82,c,{lines:3});doc(g,x+40,730,64,82,c,{lines:3});
+    const f=clamp((P.sec(2)-.8-i*.3)/1);arrow(g,x,548,lerp(x,1440,.55),412,hexA(c,.7),1,{dash:[5,6]});packet(g,x,548,1440,410,f,c,'결과');
+    if(f>=1){rrect(g,1560+i*22-60,368,18,24,3);g.fillStyle=c;g.fill()}});g.restore()}}});
+
+// 6 SPECIALIZATION
+const PD=[['시장 규모',0],['성장 전망',0],['시장 기준',0],['공급사 점유율',1],['공급사 동향',1],['공급 기준',1],['수요처 목록',2],['응용 분야',2],['수요 기준',2],['회의록',-1],['사내 공지',-1]];
+const PDP=[[260,330],[430,300],[600,350],[300,520],[480,490],[660,540],[250,710],[440,690],[620,720],[790,420],[800,640]];
+S({code:'2-2',title:'역할 전문화 — 필요한 자료와 지시사항에 집중',group:'2 · 멀티 에이전트의 필요성',
+ caps:[{t:'역할이 다르면 필요한 자료와 지시사항도 달라집니다.'},{t:'각 Agent에게는 자기 역할에 필요한 자료와 기준만 — 불필요한 정보에 방해받지 않고 맡은 일에 집중합니다.',say:'각 에이전트에게는 자기 역할에 필요한 자료와 기준만 줍니다. 불필요한 정보에 방해받지 않고, 맡은 일에 집중할 수 있습니다.'}],
+ draw(g,P){const cols=[C.m3,C.m2,C.m4],names=['시장 분석','공급사 분석','수요 분석'];
+  names.forEach((n,i)=>{const y=280+i*200,a=P.at(0,.2+i*.15,.6);g.globalAlpha=a;panel(g,1160,y,640,170,{r:18,fill:'#0D1119',stroke:hexA(cols[i],.5)});agent(g,1240,y+85,38,cols[i]);T(g,n,1300,y+60,{sz:24,w:700,c:cols[i]});T(g,'Agent의 Context',1300,y+90,{sz:15,f:FM,c:C.dim});g.globalAlpha=1});
+  const cnt=[0,0,0];PD.forEach(([n,ci],k)=>{const a=P.at(0,.1+k*.08,.4);if(a<=0)return;const f=eIO3(clamp((P.sec(1)-.2-k*.18)/.9));let[x,y]=PDP[k];let al=a,s=1;
+   if(ci>=0){const slot=PD.slice(0,k).filter(d=>d[1]===ci).length;const tx=1520+slot*92,ty=280+ci*200+85;x=lerp(x,tx,f);y=lerp(y,ty,f);s=lerp(1,.62,f)}else{al*=1-.75*f}
+   g.save();g.globalAlpha=al;g.translate(x,y);g.scale(s,s);const c=ci>=0?cols[ci]:C.dim;doc(g,0,0,100,128,c,{lines:3});if(f<.5)T(g,n,0,94,{sz:17,w:600,al:'center',c});g.restore();
+   if(ci<0&&f>.5){g.globalAlpha=inv(.5,1,f);chip(g,x,y+90,'제외',C.dim,{sz:15,al:'center'});g.globalAlpha=1}})}});
+
+// 7 REVIEW
+S({code:'2-3',title:'객관적 검증 — 같은 Context vs 분리된 Context',group:'2 · 멀티 에이전트의 필요성',
+ caps:[{t:'같은 Context에서 스스로 검토하면, 결과를 만들 때의 판단과 해석을 그대로 이어서 보기 쉽습니다.',say:'같은 컨텍스트에서 스스로 검토하면, 결과를 만들 때의 판단과 해석을 그대로 이어서 보기 쉽습니다.'},{t:'멀티 에이전트는 작성 Agent와 검토 Agent가 서로 다른 Context에서 작업합니다.',say:'멀티 에이전트는 작성 에이전트와 검토 에이전트가 서로 다른 컨텍스트에서 작업합니다.'},{t:'검토 Agent에게 결과물과 검토 기준만 전달하면, 독립적인 관점으로 다시 확인할 수 있습니다.',say:'검토 에이전트에게 결과물과 검토 기준만 전달하면, 독립적인 관점으로 다시 확인할 수 있습니다.'}],
+ draw(g,P){const a0=P.at(0,0,.6);g.globalAlpha=a0;panel(g,120,250,760,590,{r:20,fill:'#0D1119',stroke:hexA(C.mid,.5),dash:[8,8]});chip(g,144,280,'하나의 Context',C.mid,{sz:16});
+  agent(g,300,450,44,C.m2,{name:'작성',nf:FK});doc(g,600,450,110,140,C.m2,{lines:4,title:'초안'});
+  const tr=clamp(P.sec(0)/2);for(let i=0;i<14;i++){const f=i/13;if(f>tr)break;const x=lerp(300,440,f)+Math.sin(f*6)*120,y=lerp(500,690,f);g.fillStyle=hexA(C.amber,.55);g.beginPath();g.arc(x,y,4,0,7);g.fill()}
+  agent(g,440,700,40,C.m2,{a:inv(.4,.8,tr),name:'같은 Agent가 검토',nf:FK,side:1});
+  if(tr>.8){g.globalAlpha=a0*inv(.8,1,tr);chip(g,500,800,'만들 때의 판단을 그대로 이어감',C.amber,{sz:17,al:'center'})}g.globalAlpha=1;
+  const b=P.at(1,0,.7);if(b>0){g.save();g.globalAlpha=b;panel(g,960,250,380,590,{r:20,fill:'#0D1119',stroke:hexA(C.m2,.5)});chip(g,984,280,'Context A · 작성',C.m2,{sz:16});agent(g,1150,430,44,C.m2);doc(g,1150,640,110,140,C.m2,{lines:4,title:'결과물'});
+   panel(g,1440,250,380,590,{r:20,fill:'#0D1119',stroke:hexA(C.m4,.5)});chip(g,1464,280,'Context B · 검토',C.m4,{sz:16});agent(g,1630,430,44,C.m4);g.restore()}
+  const c2=P.sec(2);if(c2>=0){const f=clamp(c2/1.3);packet(g,1210,560,1570,560,f,C.amber,'결과물 + 검토 기준');
+   if(f>=1){const m=eO3(clamp((c2-1.3)/1));doc(g,1630,640,110,140,C.m4,{lines:5,marks:m,title:'독립 검토'});if(m>.6){g.globalAlpha=inv(.6,1,m);chip(g,1630,800,'✓ 독립적인 검토 관점',C.ok,{sz:17,al:'center'});g.globalAlpha=1}}}}});
+
+// 8 PARALLEL
+S({code:'2-4',title:'병렬 실행 — 줄 서서 처리 vs 동시에 처리',group:'2 · 멀티 에이전트의 필요성',
+ caps:[{t:'싱글 에이전트는 한 줄로 순서대로 처리합니다. 할 일이 늘면 걸리는 시간도 그만큼 늘어납니다.'},{t:'멀티 에이전트는 서로의 결과가 필요 없는 일을 동시에 처리합니다. 같은 자료도 여러 관점으로 볼 수 있습니다.'},{t:'단, 업무 순서상 앞의 결과가 필요한 일은 멀티 에이전트도 직렬로 작업합니다.'}],
+ draw(g,P){const x0=420,U=260,jobs=[['시장 조사',C.m3],['공급사 조사',C.m3],['수요 조사',C.m3],['보고서 작성',C.m2]];
+  g.strokeStyle=C.line;g.lineWidth=1;for(let k=0;k<=4;k++){g.setLineDash([3,7]);line(g,x0+k*U,250,x0+k*U,850);g.setLineDash([]);T(g,`${k}`,x0+k*U,240,{sz:15,f:FM,al:'center',c:C.dim})}
+  T(g,'싱글',170,345,{sz:26,w:700});T(g,'한 줄로 순서대로',170,375,{sz:16,c:C.dim});T(g,'멀티',170,640,{sz:26,w:700});T(g,'독립 작업은 동시에',170,670,{sz:16,c:C.dim});
+  const blk=(x,y,w,f,lab,col,hi)=>{panel(g,x,y-28,w-8,56,{r:10,fill:'#10141C',stroke:hexA(col,hi?.95:.35),lw:hi?2.5:1.5});if(f>0){rrect(g,x,y-28,(w-8)*f,56,10);g.fillStyle=hexA(col,.28);g.fill()}T(g,lab,x+16,y+7,{sz:19,w:600,c:f>0?C.text:C.dim})};
+  const ts=4*eIO3(clamp(P.sec(0)/Math.max(.1,P.dur0*.85)));jobs.forEach(([l,c],k)=>blk(x0+k*U,340,U,clamp(ts-k),l,c));if(ts>=4)chip(g,x0+4*U+20,340,'4 단위',C.m5,{sz:17});
+  const tm=P.sec(1)<0?0:2*eIO3(clamp(P.sec(1)/Math.max(.1,P.dur1*.8)));const hi=P.at(2,0,.5);
+  [560,630,700].forEach((y,k)=>blk(x0,y,U,clamp(tm),jobs[k][0],jobs[k][1]));blk(x0+U,790,U,clamp(tm-1),jobs[3][0],jobs[3][1],hi>0);if(tm>=2)chip(g,x0+2*U+20,790,'2 단위',C.ok,{sz:17});
+  if(hi>0){g.globalAlpha=hi;g.strokeStyle=C.amber;g.lineWidth=2;[560,630,700].forEach(y=>{g.beginPath();g.moveTo(x0+U-8,y);g.bezierCurveTo(x0+U+30,y,x0+U-30,790,x0+U+4,790);g.stroke()});
+   chip(g,x0+2*U+140,790,'앞 결과가 필요 → 직렬',C.amber,{sz:17});g.globalAlpha=1}}});
+
+// 9 STRUCTURE
+const SUBS=[['market-analyst',C.m3],['supplier-analyst',C.m3],['demand-analyst',C.m3],['report-writer',C.m2],['report-reviewer',C.m4]];
+S({code:'3-1',title:'총괄 1명 + 담당자 여러 명',group:'3 · 멀티 에이전트의 구조',
+ caps:[{t:'대표적인 구조는 전체 업무를 조율하는 Head Agent 한 명과 여러 Sub Agent의 협업입니다.',say:'대표적인 구조는 전체 업무를 조율하는 헤드 에이전트 한 명과, 여러 서브 에이전트의 협업입니다.'},{t:'Head는 목표와 자료 위치, 금지사항을 파악하고, 어떤 Sub Agent를 부를지 정해 결과를 취합합니다.',say:'헤드는 목표와 자료 위치, 금지사항을 파악하고, 어떤 서브 에이전트를 부를지 정해 결과를 취합합니다.'},{t:'Sub Agent는 호출되면 자기 담당 업무만 하고, 결과를 넘긴 뒤 사라집니다.',say:'서브 에이전트는 호출되면 자기 담당 업무만 하고, 결과를 넘긴 뒤 사라집니다.'}],
+ draw(g,P){const hx=540,hy=540,a0=P.at(0,0,.6);g.globalAlpha=a0;person(g,170,540,64,C.text,{name:'나 (사람)'});arrow(g,220,540,hx-84,540,hexA(C.text,.5),1,{dash:[6,6]});g.globalAlpha=1;
+  agent(g,hx,hy,74,C.amber,{a:a0,name:'Head Agent',role:'총괄 · CLAUDE.md',glow:P.at(1,0,.6)});
+  SUBS.forEach(([n,c],i)=>{const y=250+i*145,a=P.at(0,.4+i*.12,.5);if(a<=0)return;const lf=P.at(0,.6+i*.12,.6);const[x0,y0,x1,y1]=edge(hx,hy,1000,y,78,40);
+   g.globalAlpha=a*.5;g.strokeStyle=hexA(c,.8);g.lineWidth=2;g.beginPath();polyPartial(g,[[x0,y0],[x1,y1]],lf);g.stroke();
+   let sa=.6,work=0,st='대기';const L=P.sec(2)-i*.45;if(i<3&&L>=0){const f=L/2.4;packet(g,x0,y0,x1,y1,clamp(f/.3),C.amber,i===1?'프롬프트':null);if(f>.3&&f<.65){work=.5;sa=1;st='작업 중'}
+     if(f>=.3&&f<.9)sa=1;packet(g,x1,y1,x0,y0,clamp((f-.65)/.25),c,i===1?'결과':null);if(f>=.9){sa=lerp(1,.22,clamp((f-.9)/.15));st='종료'}}
+   g.globalAlpha=a;agent(g,1000,y,38,c,{a:sa,work,spin:P.ls*5,name:n,side:1});T(g,st,1000+56,y+30,{sz:15,c:st==='작업 중'?c:C.dim});g.globalAlpha=1});
+  const b1=P.at(1,.2,.6);if(b1>0){g.globalAlpha=b1;panel(g,1380,250,440,300,{r:16,fill:'#10141C',stroke:hexA(C.amber,.45)});T(g,'Head Agent',1406,292,{sz:24,w:700,c:C.amber});
+   ['폴더 전체의 목표 이해','자료 위치 · 금지사항 파악','어떤 Sub Agent를 부를지 결정','결과 취합 → 사람에게 보고'].forEach((s,i)=>T(g,'· '+s,1406,340+i*46,{sz:20}))}
+  const b2=P.at(2,.2,.6);if(b2>0){g.globalAlpha=b2;panel(g,1380,580,440,250,{r:16,fill:'#10141C',stroke:hexA(C.m3,.45)});T(g,'Sub Agent',1406,622,{sz:24,w:700,c:C.m3});
+   ['필요할 때 호출됨','자기 담당 업무만 수행','결과를 호출한 Agent에게 전달','전달 후 사라짐'].forEach((s,i)=>T(g,'· '+s,1406,668+i*42,{sz:20}))}g.globalAlpha=1}});
+
+// 10 FOLDERS
+const CLMD=['# CLAUDE.md','이 프로젝트는 AI 반도체(HBM, GPU, NPU 등) 시장조사 보고서를 작성합니다.','## 범위 제한','- 반드시 현재 폴더 내부에서만 작업 · 상위 폴더(..) 접근 절대 금지','## 작업 가이드','- 시장 규모 → 주요 기업 → 기술 동향 → 전망 순 · 수치는 출처 명시','## 스타일','- 한국어 · 간결하고 객관적인 문체','## 서브에이전트 위임 규칙','1. market / supplier / demand-analyst 동시에 병렬 호출 → data/*.md','2. 셋이 모두 끝난 뒤 report-writer → report/*.md 작성','3. 이어서 report-reviewer → 검토 · 피드백 1개 전달','4. report-writer 피드백 반영 수정(1회) 후 종료'];
+const AGMD=['---','name: market-analyst','description: AI 반도체 시장 규모와 성장 전망(CAGR 등)을','  웹에서 조사하는 담당자. 시장 규모/전망 리서치가 필요할 때 사용.','tools: WebSearch, WebFetch, Read, Write','---','당신은 AI 반도체 시장 규모 및 성장 전망 조사 담당자입니다.','## 조사 범위','- 현재 규모, 향후 성장 전망(CAGR 등)을 웹에서 조사','## 공통 규칙','- 웹 출처 최대 5개 · 모든 수치에 출처 · 못 찾으면 "못 찾음"','- 결과는 data/market-analysis.md 로 저장'];
+S({code:'3-2',title:'폴더 구조 — CLAUDE.md와 .claude/agents/',group:'3 · 멀티 에이전트의 구조',
+ caps:[{t:'폴더 맨 위의 CLAUDE.md는 Claude가 항상 참고하는 공통 Context와 작업 규칙입니다. 파일명은 반드시 대문자로.',say:'폴더 맨 위의 클로드 엠디는, 클로드가 항상 참고하는 공통 컨텍스트와 작업 규칙입니다. 파일명은 반드시 대문자로 씁니다.'},{t:'범위 제한, 작업 가이드, 스타일 — 그리고 멀티 에이전트 팀에만 있는 서브에이전트 위임 규칙.'},{t:'.claude/agents/ 폴더의 md 파일 하나하나가 Sub Agent의 지시서입니다.',say:'닷 클로드 슬래시 에이전츠 폴더의 엠디 파일 하나하나가, 서브 에이전트의 지시서입니다.'},{t:'가장 중요한 건 description. Head는 이 한 문장을 읽고 부를지 말지 정합니다. "~할 때 사용합니다" 형태로.',say:'가장 중요한 건 디스크립션입니다. 헤드는 이 한 문장을 읽고 부를지 말지 정합니다. 무엇 무엇을 할 때 사용합니다, 형태로 씁니다.'},{t:'본문은 하는 일 / 정리 형식 / 하지 않는 일, 세 덩어리로 쓰면 역할이 새지 않습니다.',say:'본문은 하는 일, 정리 형식, 하지 않는 일. 이렇게 세 덩어리로 쓰면 역할이 새지 않습니다.'}],
+ draw(g,P){panel(g,110,220,740,630,{r:16,fill:'#0B0E14'});T(g,'탐색기',136,258,{sz:16,f:FM,c:C.dim});
+  const r2=i=>P.at(2,i*.15,.4),onAg=P.sec(2)>=0;
+  tree(g,150,320,[{n:'Ch2_완성본/',d:0,dir:1},{n:'CLAUDE.md',d:1,c:C.amber,tc:C.amber,tag:'Head Agent',hi:onAg?0:P.at(0,.3,.5),a:P.at(0,.2,.4)},{n:'.claude/',d:1,dir:1,a:r2(0)},{n:'agents/',d:2,dir:1,a:r2(1)},
+   ...SUBS.map(([n,c],i)=>({n:n+'.md',d:3,c,a:r2(2+i*.6),hi:i===0?P.at(2,1.6,.5):0,hc:C.m3,tag:i===0&&onAg?'Sub Agent':null}))],{w:700});
+  const ed=onAg?AGMD:CLMD,tab=onAg?'.claude/agents/market-analyst.md':'CLAUDE.md';winFrame(g,920,220,890,630,tab,{tc:onAg?C.m3:C.amber,tag:'Ch2_완성본 실제 파일 · 일부 요약'});
+  const base=onAg?2:0,rv=i=>eO3(clamp((P.sec(base)-.2-i*.14)/.3));
+  codeLines(g,950,300,ed,{lh:onAg?42:40,sz:19,w:850,a:rv,hi:i=>onAg?(i>=2&&i<=3?P.at(3,0,.5)*(1-P.at(4,0,.4)):i>=6?P.at(4,0,.5)*.6:0):(i>=8?P.at(1,0,.5)*(i===8?1:.55):0)});
+  const hc=P.at(3,.5,.6)*(1-P.at(4,0,.4));if(onAg&&hc>0){g.globalAlpha=hc;chip(g,1365,826,'Head는 이 한 문장으로 호출 여부를 결정',C.amber,{sz:17,al:'center'});g.globalAlpha=1}
+  const bc=P.at(4,.4,.6);if(onAg&&bc>0){g.globalAlpha=bc;chip(g,1365,826,'본문 = 하는 일 · 정리 형식 · 하지 않는 일',C.amber,{sz:17,al:'center'});g.globalAlpha=1}}});
+
+// 10b SUB AGENT SETTINGS (3-4 · 3-5)
+const PM=['이 폴더의 Sub Agent에 model을 설정해줘.','- market-analyst: sonnet','- supplier-analyst: sonnet','- demand-analyst: sonnet','- report-writer: opus','- report-reviewer: opus','model 설정 외의 내용은 수정하지 마.'];
+const PMEM=['market-analyst의 Memory를 설정해줘.','memory: project','본문에 기억 지침을 추가:','- 신뢰도가 높았던 출처','- 효과적이었던 검색 키워드','- 조사 과정에서 발견한 주의사항','그 외의 내용은 수정하지 마.'];
+S({code:'3-4',title:'Sub Agent 설정 추가 — model · memory',group:'3 · 멀티 에이전트의 구조',
+ caps:[{t:'Sub Agent마다 실행 설정을 다르게 줄 수 있습니다. 먼저 model — 조사 담당 셋은 sonnet, writer와 reviewer는 opus.',say:'서브 에이전트마다 실행 설정을 다르게 줄 수 있습니다. 먼저 모델입니다. 조사 담당 셋은 소넷, 라이터와 리뷰어는 오퍼스로 설정합니다.'},{t:'"model 설정 외의 내용은 수정하지 마" — 바꿀 범위를 분명히 적어 둡니다.',say:'모델 설정 외의 내용은 수정하지 말라고, 바꿀 범위를 분명히 적어 둡니다.'},{t:'다음은 memory. market-analyst에 memory: project를 설정합니다.',say:'다음은 메모리입니다. 마켓 애널리스트에 메모리 프로젝트를 설정합니다.'},{t:'설정만으로는 부족합니다. 신뢰 출처, 검색 키워드, 주의사항을 기억하라는 지침을 본문에 함께 넣습니다.',say:'설정만으로는 부족합니다. 신뢰도 높은 출처, 효과적인 검색 키워드, 주의사항을 기억하라는 지침을 본문에 함께 넣습니다.'}],
+ draw(g,P){g.save();g.globalAlpha=P.at(0,0,.5);winFrame(g,110,230,830,600,'> 프롬프트 ① model (교안 3-4)',{tc:C.m4,tag:'교안 프롬프트 · 요약'});
+  codeLines(g,150,330,PM,{lh:62,sz:21,w:760,a:j=>P.at(0,.3+j*.18,.35),hi:j=>j===6?P.at(1,0,.5):0});g.restore();
+  const b=P.at(2,0,.5);if(b>0){g.save();g.globalAlpha=b;winFrame(g,980,230,830,600,'> 프롬프트 ② memory (교안 3-5)',{tc:C.m3,tag:'교안 프롬프트 · 요약'});
+   codeLines(g,1020,330,PMEM,{lh:62,sz:21,w:760,a:j=>P.at(2,.3+j*.18,.35),hi:j=>j===1?P.at(2,1.6,.5)*(1-P.at(3,0,.4)):j>=3&&j<=5?P.at(3,0,.5):0});g.restore()}}});
+
+// 11 FOUR PARTS
+S({code:'3-6',title:'Agent의 4가지 구성요소',group:'3 · 멀티 에이전트의 구조',
+ caps:[{t:'우리가 만든 Sub Agent도 결국 Model, Instruction, Context와 Memory, Tool을 가진 하나의 Agent입니다.',say:'우리가 만든 서브 에이전트도 결국 모델, 인스트럭션, 컨텍스트와 메모리, 그리고 툴을 가진 하나의 에이전트입니다.'},{t:'model을 따로 정하지 않으면 Main Agent의 모델을 그대로 씁니다. 역할에 따라 바꿀 때만 지정하세요.',say:'모델을 따로 정하지 않으면 메인 에이전트의 모델을 그대로 씁니다. 역할에 따라 바꾸고 싶을 때만 지정하세요.'},{t:'memory 범위는 user, project, local. 무엇을 중심으로 기억할지는 지시서에 함께 적어야 합니다.',say:'메모리 범위는 유저, 프로젝트, 로컬 세 가지입니다. 무엇을 중심으로 기억할지는 지시서에 함께 적어야 합니다.'}],
+ draw(g,P){const cx=960,cy=480;agent(g,cx,cy,82,C.m3,{a:P.at(0,0,.5),name:'market-analyst',glow:.6});
+  const cards=[['Model','model: sonnet','조사 3명 sonnet · writer · reviewer opus',150,220,C.m4],['Instruction','지시서 본문','조사 범위 · 공통 규칙 · 저장 위치',1230,220,C.amber],['Context & Memory','입력 · 대화 맥락 + memory: project','신뢰 출처 · 검색 키워드 · 주의사항 기억',150,560,C.m3],['Tool','WebSearch · WebFetch · Read · Write','reviewer는 Read만 사용',1230,560,C.m2]];
+  cards.forEach(([t,a,b,x,y,c],i)=>{const al=P.at(0,.4+i*.35,.5);if(al<=0)return;g.save();g.globalAlpha=al;const hi=i===0?P.at(1,0,.5):i===2?P.at(2,0,.5):0;
+   g.strokeStyle=hexA(c,.5);g.lineWidth=2;g.setLineDash([5,6]);line(g,x<cx?x+540:x,y+85,cx+(x<cx?-86:86),cy+(y<cy?-30:30));g.setLineDash([]);
+   panel(g,x,y,540,170,{r:18,fill:hexA(c,.06+.06*hi),stroke:hexA(c,.5+.4*hi),lw:1.5+hi});T(g,t,x+28,y+50,{sz:26,f:FM,w:700,c});T(g,a,x+28,y+96,{sz:21,w:600});T(g,b,x+28,y+134,{sz:19,c:C.mid});
+   if(i===0&&hi>0){chip(g,x+512,y+50,'비워두면 → Main 모델 그대로',C.m4,{sz:15,al:'right'})}g.restore()});
+  const m=P.at(2,.3,.6);if(m>0){g.globalAlpha=m;[['user','다른 프로젝트에서도 계속',C.mid],['project','이 프로젝트 · 팀과 공유',C.m3],['local','이 프로젝트 · 나만',C.mid]].forEach(([k,d,c],i)=>{const x=150+i*550;panel(g,x,775,520,78,{r:39,fill:hexA(c,k==='project'?.14:.05),stroke:hexA(c,k==='project'?.9:.4),lw:k==='project'?2.5:1.5});
+   T(g,'memory: '+k,x+30,x?822:822,{sz:20,f:FM,w:700,c:k==='project'?C.m3:C.text});T(g,d,x+492,822,{sz:17,al:'right',c:C.mid})});g.globalAlpha=1}}});
+
+// 12 MARKDOWN
+S({code:'3-7',title:'.md 파일과 Markdown',group:'3 · 멀티 에이전트의 구조',
+ caps:[{t:'Markdown은 #, **, -, | 같은 간단한 기호만으로 제목, 굵은 글씨, 목록, 표를 표현합니다.',say:'마크다운은 샵, 별표, 하이픈, 세로선 같은 간단한 기호만으로, 제목과 굵은 글씨, 목록과 표를 표현합니다.'},{t:'일반 텍스트처럼 가볍지만 구조가 명확해 사람과 AI 모두 파악하기 좋습니다. 그래서 Agent 지시서에 적합합니다.',say:'일반 텍스트처럼 가볍지만 구조가 명확해서, 사람과 AI 모두 파악하기 좋습니다. 그래서 에이전트 지시서에 적합합니다.'}],
+ draw(g,P){const cols=[[160,'TXT',C.mid],[720,'Markdown (.md)',C.amber],[1280,'Word (.docx)',C.m1]];
+  cols.forEach(([x,t,c],i)=>{const a=P.at(0,i*.2,.5);g.globalAlpha=a;panel(g,x,220,480,500,{r:18,fill:'#0B0E14',stroke:hexA(c,i===1?.7:.35),lw:i===1?2:1.5});T(g,t,x+240,264,{sz:24,f:FM,w:700,al:'center',c})});g.globalAlpha=P.at(0,0,.5);
+  ['AI 반도체 시장 핵심 요약 시장 규모는','매년 성장 중이며 성장 전망은 밝다 주요','기업 점유율 A사 40 B사 25 C사 15 ...','','→ 어디가 제목이고 어디가 표인지','   직접 구분해야 합니다'].forEach((s,i)=>T(g,s,190,330+i*40,{sz:19,c:i>3?C.dim:'#C4C7CF'}));
+  ['<w:p>','  <w:r>','    <w:rPr>','      <w:b/>','      <w:sz w:val="32"/>','    </w:rPr>','    <w:t>시장조사 보고서</w:t>','  </w:r>','</w:p>'].forEach((s,i)=>T(g,s,1310,330+i*36,{sz:17,f:FM,c:'#8C96AE'}));T(g,'→ .docx 내부 XML: 글자 하나에도 서식 정보',1306,672,{sz:16,c:C.dim});
+  const raw=[['# ','AI 반도체 시장'],['**','핵심 요약','**'],['- ','시장 규모'],['- ','성장 전망'],['| ','기업 | 점유율 |']];const rv=P.at(0,.8,1.2);
+  raw.forEach((p,i)=>{if(i/raw.length>rv)return;let x=750;g.font=`500 21px ${FM}`;p.forEach((s,j)=>{const sym=j!==1;g.fillStyle=sym?C.amber:C.text;g.font=`${sym?700:500} 21px ${sym?FM:FK}`;g.textAlign='left';g.fillText(s,x,330+i*38);x+=g.measureText(s).width})});
+  const rd=P.at(0,2.4,.8);if(rd>0){g.globalAlpha=rd;g.strokeStyle=C.amber;g.lineWidth=2;arrow(g,960,530,960,556,C.amber,1,{hs:9});T(g,'AI 반도체 시장',750,592,{sz:26,w:700});T(g,'핵심 요약',750,626,{sz:19,w:700,c:C.amber});T(g,'•  시장 규모   •  성장 전망',900,626,{sz:18,c:C.mid});
+   g.strokeStyle=C.line;g.lineWidth=1;g.strokeRect(750,648,420,54);line(g,960,648,960,702);line(g,750,675,1170,675);T(g,'기업',766,668,{sz:16,w:600});T(g,'점유율',976,668,{sz:16,w:600});}
+  g.globalAlpha=1;const v=P.at(1,.2,.6);if(v>0){g.globalAlpha=v;T(g,'Agent 지시서로는?',960,772,{sz:20,w:600,al:'center',c:C.mid});
+   chip(g,400,822,'가능 — 구조는 직접 구분',C.mid,{sz:18,al:'center'});chip(g,960,822,'✓ 적합 — 구조 파악에 유리',C.ok,{sz:19,al:'center'});chip(g,1520,822,'적합하지 않음 — 불필요한 서식',C.bad,{sz:18,al:'center'});g.globalAlpha=1}}});
+
+// 13 FLOW
+const FN={me:[160,230],head:[960,230],a:[[560,540],[800,540],[1040,540]],w:[1380,540],r:[1660,540]};
+const ACOL=C.m3;
+S({code:'4-1',title:'Head – Sub Agent 실행 흐름',group:'4 · 멀티 에이전트의 실행 프로세스',
+ caps:[{t:'나: "AI 반도체 시장조사 보고서 만들어줘"',say:'내가 요청합니다. AI 반도체 시장조사 보고서 만들어줘.'},{t:'Head가 CLAUDE.md의 위임 규칙에 따라 시장, 공급사, 수요 조사 담당을 병렬로 호출합니다.',say:'헤드는 클로드 엠디의 위임 규칙에 따라, 시장, 공급사, 수요 조사 담당을 병렬로 호출합니다.'},{t:'세 명이 각자 조사해 결과를 만들고, Head는 세 결과가 모두 완료됐는지 확인합니다.',say:'세 명이 각자 조사해 결과를 만들고, 헤드는 세 결과가 모두 완료됐는지 확인합니다.'},{t:'report-writer가 세 조사 결과를 종합해 보고서 초안을 작성합니다.',say:'리포트 라이터가 세 조사 결과를 종합해, 보고서 초안을 작성합니다.'},{t:'report-reviewer가 수치 · 출처 · 근거를 검토해 가장 중요한 문제 1개를 피드백합니다.',say:'리포트 리뷰어가 수치와 출처, 근거를 검토해, 가장 중요한 문제 한 개를 피드백합니다.'},{t:'writer가 피드백을 반영해 1회 수정하고 종료 — 최종 보고서가 나에게 전달됩니다.',say:'라이터가 피드백을 반영해 한 번 수정하고 종료합니다. 최종 보고서가 나에게 전달됩니다.'},{t:'Ch2_완성본에서 Claude를 실행해 같은 요청을 입력하면, 이 흐름을 직접 볼 수 있습니다.',say:'챕터2 완성본 폴더에서 클로드를 실행해 같은 요청을 입력하면, 이 흐름을 직접 볼 수 있습니다.'},{t:'서브에이전트를 클릭해 맨 위로 올리면 보이는 회색 프롬프트 — Head가 Sub에게 말로 시킨 지시입니다.',say:'하단의 서브 에이전트를 클릭해 맨 위로 올리면 회색 프롬프트가 보입니다. 헤드가 서브에게 보낸 지시입니다. 사람처럼 말로 일을 시키는 것입니다.'}],
+ draw(g,P){const c=i=>P.c(i),sp=P.ls*5,H0=FN.head;
+  const L=(p,r1)=>edge(H0[0],H0[1],p[0],p[1],66,r1);
+  // base lines
+  g.lineWidth=2;[...FN.a,FN.w,FN.r].forEach((p,i)=>{g.strokeStyle=hexA([ACOL,ACOL,ACOL,C.m2,C.m4][i],.28);const[a,b,x,y]=L(p,48);line(g,a,b,x,y)});
+  g.strokeStyle=hexA(C.text,.25);line(g,FN.me[0]+60,FN.me[1],H0[0]-70,H0[1]);
+  // me
+  person(g,FN.me[0],FN.me[1],64,C.text,{name:'나'});
+  const bub=P.at(0,0,.4);if(bub>0){g.globalAlpha=bub;panel(g,50,330,500,74,{r:16,fill:'#12161F',stroke:hexA(C.text,.4)});T(g,'"AI 반도체 시장조사 보고서 만들어줘"',300,376,{sz:21,w:600,al:'center'});g.globalAlpha=1}
+  packet(g,FN.me[0]+60,FN.me[1],H0[0]-70,H0[1],clamp((c(0)-.25)/.6),C.text,'요청');
+  // head
+  const hg=Math.max(P.at(1,0,.3)*(1-inv(.5,1,c(1))),0);agent(g,H0[0],H0[1],66,C.amber,{name:'Head Agent',glow:.4+hg,side:0});
+  doc(g,H0[0]+110,H0[1]-40,50,64,C.amber,{lines:3,a:.5+.5*hg});T(g,'CLAUDE.md',H0[0]+110,H0[1]+14,{sz:14,f:FM,al:'center',c:C.amber});
+  if(P.sec(1)>=0&&c(1)<1){g.globalAlpha=P.at(1,.3,.4);chip(g,800,400,'병렬 호출',C.amber,{sz:17,al:'center'});g.globalAlpha=1}
+  // analysts
+  const names=['market-analyst','supplier-analyst','demand-analyst'],res=['data/market-analysis.md','data/supplier-analysis.md','data/demand-analysis.md'];
+  FN.a.forEach((p,i)=>{const[a,b,x,y]=L(p,48);packet(g,a,b,x,y,clamp((c(1)-.3)/.55),C.amber,i===1?'프롬프트':null);
+   const working=c(1)>.85||P.sec(2)>=0?(c(2)<.6?1:0):0;agent(g,p[0],p[1],44,ACOL,{work:working?.5:0,spin:sp+i,name:names[i],nsz:16});
+   if(working){for(let k=0;k<3;k++){const on=c(2)>k*.18;g.fillStyle=on?ACOL:hexA(ACOL,.25);g.beginPath();g.arc(p[0]-16+k*16,p[1]-62,4,0,7);g.fill()}}
+   const dp=eOB(clamp((c(2)-.55)/.15));if(dp>0){g.save();g.translate(p[0],740);g.scale(dp,dp);doc(g,0,0,64,80,ACOL,{lines:3,title:res[i],tsz:13});g.restore()}
+   packet(g,x,y,a,b,clamp((c(2)-.7)/.22),ACOL,null);
+   if(c(2)>.92)check(g,H0[0]-44+i*44,H0[1]-96,26,C.ok,clamp((c(2)-.92)/.08))});
+  // writer
+  const[wa,wb,wx,wy]=L(FN.w,52);packet(g,wa,wb,wx,wy,clamp(c(3)/.35),C.amber,'세 결과');
+  const wWork=(c(3)>.35&&c(3)<.75)||(c(5)>.36&&c(5)<.6);agent(g,FN.w[0],FN.w[1],50,C.m2,{work:wWork?.5:0,spin:sp,name:'report-writer',nsz:16});
+  const draft=eOB(clamp((c(3)-.75)/.15)),fin=c(5)>=.6;if(draft>0){g.save();g.translate(FN.w[0],740);g.scale(draft,draft);doc(g,0,0,72,90,fin?C.ok:C.m2,{lines:4,title:fin?'최종 보고서 (1회 수정)':'report/ 보고서 초안',tsz:14});g.restore()}
+  packet(g,wx,wy,wa,wb,clamp(c(4)/.25),C.m2,'초안');
+  // reviewer
+  const[ra,rb,rx,ry]=L(FN.r,48);packet(g,ra,rb,rx,ry,clamp((c(4)-.25)/.25),C.amber,null);
+  const rWork=c(4)>.5&&c(4)<.8;agent(g,FN.r[0],FN.r[1],46,C.m4,{work:rWork?.5:0,spin:sp,name:'report-reviewer',nsz:16});
+  const fb=eOB(clamp((c(4)-.8)/.15));if(fb>0){g.save();g.translate(FN.r[0],740);g.scale(fb,fb);doc(g,0,0,64,80,C.m4,{lines:4,marks:1,title:'가장 중요한 문제 1개',tsz:14});g.restore()}
+  packet(g,rx,ry,ra,rb,clamp(c(5)/.18),C.m4,'피드백');packet(g,wa,wb,wx,wy,clamp((c(5)-.18)/.18),C.amber,null);
+  packet(g,wx,wy,wa,wb,clamp((c(5)-.6)/.15),C.ok,'최종');packet(g,H0[0]-70,H0[1],FN.me[0]+60,FN.me[1],clamp((c(5)-.75)/.17),C.ok,'최종 보고서');
+  const got=clamp((c(5)-.92)/.08);if(got>0){doc(g,FN.me[0]+150,FN.me[1]-10,60,76,C.ok,{lines:3,a:got});check(g,FN.me[0]+150,FN.me[1]+54,24,C.ok,got)}
+  const ov=P.at(6,0,.6);if(ov>0){g.save();g.globalAlpha=ov*.94;g.fillStyle=C.bg;g.fillRect(0,0,W,H);g.globalAlpha=ov;const x=300,y=200,w=1320,h=640;winFrame(g,x,y,w,h,'터미널 · Ch2_완성본',{tc:C.amber,tag:'교안 화면 기준 · 요약'});
+   const gp=P.at(7,0,.6);panel(g,x+30,y+66,w-60,196,{r:8,fill:'#2A2E36',stroke:gp>0?hexA(C.amber,.35+.55*gp):null,lw:2});
+   ['❯ AI 반도체 시장 규모와 성장 전망(CAGR 등)을 웹에서 조사하세요.','   - 모든 수치에 출처(기관명, 발표 시기, URL)를 명시하세요.','   - 결과를 한국어 markdown으로 data/ 폴더에 저장하세요.','   완료 후 핵심 수치를 간단히 요약해 보고하세요.'].forEach((s,k)=>T(g,s,x+54,y+110+k*42,{sz:20,c:'#D6D9E0'}));
+   T(g,'● Web Search("AI chip market size 2025 2026 forecast CAGR ...")',x+54,y+316,{sz:18,f:FM,c:C.mid});
+   if(gp>0){rrect(g,x+40,y+414,w-80,42,8);g.fillStyle=hexA(C.m3,.12*gp);g.fill()}
+   ['○ main','● market-analyst     AI 반도체 시장 규모 조사','○ supplier-analyst   AI 반도체 공급사 조사','○ demand-analyst     AI 반도체 수요처 조사'].forEach((s,k)=>T(g,s,x+54,y+400+k*42,{sz:19,f:FM,c:k===1?C.m3:C.dim}));
+   if(gp>0){g.globalAlpha=ov*gp;chip(g,x+w-40,y+442,'① 클릭 → ② 맨 위로 스크롤',C.m3,{sz:16,al:'right'});chip(g,x+w-40,y+230,'회색 프롬프트 = Head가 Sub에게 보낸 지시',C.amber,{sz:17,al:'right'});
+    T(g,'사람처럼 말로 일을 시킵니다',x+w/2,y+h-30,{sz:24,w:700,al:'center',c:C.amber})}g.restore()}}});
+
+// 14 MEMORY
+S({code:'4-3',title:'market-analyst의 Memory 확인하기',group:'4 · 멀티 에이전트의 실행 프로세스',
+ caps:[{t:'memory: project를 설정한 market-analyst가 한 번 작업하면, 기존에 없던 agent-memory 폴더가 생깁니다.',say:'메모리 프로젝트를 설정한 마켓 애널리스트가 한 번 작업하면, 기존에 없던 에이전트 메모리 폴더가 생깁니다.'},{t:'MEMORY.md에는 다음 작업에서 참고할 핵심이, 주제별 파일에는 검색 키워드와 출처 정보가 정리됩니다.',say:'메모리 엠디에는 다음 작업에서 참고할 핵심이, 주제별 파일에는 검색 키워드와 출처 정보가 정리됩니다.'},{t:'Memory는 대화 기록 그대로가 아니라, 다음 작업에서도 활용할 만한 정보와 경험입니다.',say:'메모리는 대화 기록을 그대로 저장한 것이 아니라, 다음 작업에서도 활용할 만한 정보와 경험을 정리한 것입니다.'}],
+ draw(g,P){panel(g,110,220,760,630,{r:16,fill:'#0B0E14'});T(g,'탐색기',136,258,{sz:16,f:FM,c:C.dim});const nw=P.at(0,.6,.5),f1=i=>P.at(1,i*.3,.4);
+  tree(g,150,320,[{n:'Ch2_완성본/',d:0,dir:1},{n:'CLAUDE.md',d:1,c:C.amber},{n:'.claude/',d:1,dir:1},{n:'agents/',d:2,dir:1,tc:C.mid},{n:'agent-memory/',d:2,dir:1,c:C.ok,tc:C.ok,a:nw,hi:nw*(P.sec(1)<0?1:.4),hc:C.ok,tag:'NEW'},
+   {n:'market-analyst/',d:3,dir:1,c:C.m3,a:P.at(0,1,.5)},{n:'MEMORY.md',d:4,c:C.amber,a:f1(0),hi:f1(0)*.8},{n:'search-keywords.md',d:4,a:f1(1)},{n:'sources_reliability.md',d:4,a:f1(2)}],{w:720,sz:21});
+  const ca=P.at(1,0,.6);if(ca>0){g.save();g.globalAlpha=ca;winFrame(g,940,220,870,380,'.claude/agent-memory/market-analyst/',{tc:C.amber,tag:'예시 · 3-5 지시 항목'});
+   codeLines(g,970,310,['# MEMORY.md — 다음 작업에서 참고할 핵심','- 신뢰도가 높았던 출처','- 효과적이었던 검색 키워드','- 조사 과정에서 발견한 주의사항','','각 파일 Frontmatter에 어떤 기억인지 기록'],{lh:44,sz:20});
+   [['search-keywords.md','효과적이었던 검색 키워드'],['sources_reliability.md','조사하며 파악한 출처 정보']].forEach(([n,d],i)=>{const x=940+i*445,a=P.at(1,.6+i*.3,.5);g.globalAlpha=ca*a;panel(g,x,625,425,120,{r:14,fill:'#0B0E14',stroke:hexA(C.m3,.5)});T(g,n,x+22,668,{sz:18,f:FM,w:600,c:C.m3});T(g,d,x+22,708,{sz:19})});g.restore()}
+  const cc=P.at(2,.2,.6);if(cc>0){g.globalAlpha=cc;chip(g,1150,808,'✗ 대화 기록 그대로',C.bad,{sz:18,al:'center'});chip(g,1570,808,'✓ 다음에 쓸 정보 · 경험',C.ok,{sz:18,al:'center'});g.globalAlpha=1}}});
+
+// 15 PRACTICE
+const STEPS=[['담당자 편성','누구를 몇 명, 어떻게 나눌지 먼저 정하기'],['Sub Agent 만들기','.claude/agents/ 에 md 5개'],['CLAUDE.md 작성','목표 · 공통 규칙 · 위임 순서 (20줄 이내)'],['재실행 후 실행','결과: report/report.html']];
+const ROLES=[['market-analyst','시장 규모 · 성장 전망','웹 검색 ≤3','동시'],['supplier-analyst','주요 공급사 · 점유율','웹 검색 ≤3','동시'],['demand-analyst','수요처 · 응용 분야','웹 검색 ≤3','동시'],['report-writer','셋의 결과로 HTML 보고서','검색 안 함','나중에'],['report-reviewer','검토 · 피드백 1개','검색 안 함','나중에']];
+const P52=['아래 담당자 5명을 .claude/agents/ 에 만들어줘.','- 그 외 폴더나 파일은 생성하지 마','- report-writer: HTML 보고서 → report/report.html','[조사 Agent 공통 규칙]','- 웹 출처 최대 3개 · 모든 수치에 출처','- 못 찾은 내용은 "못 찾음" · 결과는 data/*.md','[작성·검토 규칙]','- reviewer는 수치·출처·근거만 검토','- 가장 중요한 문제 1개만 피드백','- 검토 1회 → 수정 1회 후 종료'];
+const P53=['AI 반도체 시장조사 보고서 프로젝트의 CLAUDE.md를 만들어줘.','- 20줄 이내로 간단하게','- 포함: 프로젝트 목표 · 공통 작업 규칙 · Sub Agent 위임 규칙','위임 순서','1. market · supplier · demand-analyst 동시에 조사','2. 셋이 모두 끝나면 report-writer가 작성','3. 작성이 끝나면 report-reviewer가 검토','4. 피드백이 있으면 writer가 1회 수정 후 종료','상위 폴더는 절대 접근하지 마.'];
+S({code:'5',title:'실습 — 빈 폴더에서 에이전트 팀 만들기',group:'5 · 실습',
+ caps:[{t:'실습: Ch2_실습용 빈 폴더에서 멀티 에이전트 팀을 처음부터 만들어 봅니다.',say:'실습입니다. 챕터2 실습용 빈 폴더에서, 멀티 에이전트 팀을 처음부터 만들어 봅니다.'},{t:'먼저 담당자를 몇 명, 어떻게 나눌지 정합니다. 이 단계를 건너뛰면 Claude가 임의로 나눠 버립니다.',say:'먼저 담당자를 몇 명, 어떻게 나눌지 정합니다. 이 단계를 건너뛰면 클로드가 임의로 나눠 버립니다.'},{t:'담당자 5명은 프롬프트 하나로 만듭니다. 그 외 파일 생성 금지, 출처 3개, 모든 수치에 출처, 결과는 data/.',say:'담당자 다섯 명은 프롬프트 하나로 만듭니다. 그 외 파일은 만들지 않고, 출처는 세 개까지, 모든 수치에는 출처를 달고, 결과는 데이터 폴더에 저장합니다.'},{t:'.claude/agents/에 md 5개가 생겼는지 확인하고, 하나를 열어 description을 읽어 보세요.',say:'닷 클로드 슬래시 에이전츠 폴더에 엠디 파일 다섯 개가 생겼는지 확인하고, 하나를 열어 디스크립션을 읽어 보세요.'},{t:'이어서 CLAUDE.md에 목표, 공통 규칙, 누구를 언제 부를지 적습니다. 20줄 이내, 상위 폴더 접근은 금지.',say:'이어서 클로드 엠디에 목표와 공통 규칙, 누구를 언제 부를지 적습니다. 스무 줄 이내로, 상위 폴더 접근은 금지합니다.'},{t:'새로 만든 Sub Agent는 바로 인식되지 않을 수 있습니다. Claude를 재실행한 뒤 실행하세요.',say:'새로 만든 서브 에이전트는 바로 인식되지 않을 수 있습니다. 클로드를 재실행한 뒤 실행하세요.'},{t:'조사, 작성, 검토, 수정이 모두 끝나면 report/report.html이 완성됩니다.',say:'조사, 작성, 검토, 수정이 모두 끝나면, 리포트 폴더에 리포트 html 파일이 완성됩니다.'},{t:'이 네 줄이 오후에 그대로 반복됩니다. 다른 건 단 하나 — 시장 조사 대신 내 업무가 들어갑니다.',say:'이 네 줄이 오후에 그대로 반복됩니다. 다른 건 단 하나. 시장 조사 대신, 내 업무가 들어갑니다.'}],
+ draw(g,P){const i=P.i,act=[0,0,1,1,2,3,3,4][i]??0,done=k=>i>=7||(i===6&&P.c(6)>.6)||k<act;
+  g.strokeStyle=C.line;g.lineWidth=2;line(g,170,300,170,720);
+  STEPS.forEach(([t,d],k)=>{const y=300+k*140,on=k===act,dn=done(k);const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0D1118';g.beginPath();g.arc(170,y,30,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
+   if(dn)check(g,170,y+2,26,C.ok,1);else T(g,String(k+1),170,y+9,{sz:24,f:FD,al:'center',c:col});T(g,t,225,y-4,{sz:28,w:700,c:on||dn?C.text:C.mid});T(g,d,225,y+32,{sz:19,c:C.dim,f:k===1||k===3?FM:FK})});
+  const x=960,y=230,w=850,h=620,a=P.at(i,0,.5);g.save();g.globalAlpha=a;
+  if(i===0){winFrame(g,x,y,w,h,'Ch2_실습용/');tree(g,x+40,y+110,[{n:'Ch2_실습용/',d:0,dir:1},{n:'samples/',d:1,dir:1,tc:C.dim,tag:'다음 시간용'}],{w:760});T(g,'그 외에는 아무것도 없습니다',x+w/2,y+400,{sz:26,w:600,al:'center',c:C.dim})}
+  else if(i===1){winFrame(g,x,y,w,h,'담당자 편성 (교안 5-1)');const cx=[x+30,x+300,x+560,x+730];['담당자','맡는 일','직접 찾기','언제'].forEach((s,j)=>T(g,s,cx[j],y+96,{sz:17,w:600,c:C.dim}));
+   ROLES.forEach((r,k)=>{const yy=y+160+k*86,ra=P.at(1,.3+k*.2,.4);g.globalAlpha=a*ra;g.strokeStyle=C.line;g.lineWidth=1;line(g,x+24,yy-46,x+w-24,yy-46);const c=k<3?C.m3:k===3?C.m2:C.m4;
+    T(g,r[0],cx[0],yy,{sz:18,f:FM,w:600,c});T(g,r[1],cx[1],yy,{sz:18});T(g,r[2],cx[2],yy,{sz:16,c:C.mid});chip(g,cx[3],yy-6,r[3],k<3?C.amber:C.mid,{sz:15})})}
+  else if(i===2){winFrame(g,x,y,w,h,'> 프롬프트 · 담당자 5명 (교안 5-2)',{tc:C.amber,tag:'교안 프롬프트 · 요약'});codeLines(g,x+34,y+100,P52,{lh:44,sz:19,w:w-50,a:j=>P.at(2,.2+j*.12,.3)});
+   g.globalAlpha=a*P.at(2,1.8,.5);chip(g,x+w/2,y+h-44,'※ Ch2_완성본 지시서는 출처 최대 5개 — 실습 프롬프트는 3개',C.mid,{sz:16,al:'center'})}
+  else if(i===3){winFrame(g,x,y,w,h,'Ch2_실습용/');const r=j=>P.at(3,.2+j*.2,.4);tree(g,x+40,y+110,[{n:'Ch2_실습용/',d:0,dir:1},{n:'.claude/agents/',d:1,dir:1,a:r(0)},...SUBS.map(([n,c],j)=>({n:n+'.md',d:2,c,a:r(1+j),tag:j===0?'description 읽어보기':'NEW',hc:j===0?C.amber:c,hi:j===0?P.at(3,1.8,.5):0})),{n:'samples/',d:1,dir:1,tc:C.dim}],{w:760,lh:54});
+   g.globalAlpha=a*P.at(3,1.2,.5);chip(g,x+w/2,y+h-60,'✓ md 5개 생성 확인',C.ok,{sz:18,al:'center'})}
+  else if(i===4){winFrame(g,x,y,w,h,'> 프롬프트 · CLAUDE.md (교안 5-3)',{tc:C.amber,tag:'교안 프롬프트 · 요약'});codeLines(g,x+34,y+104,P53,{lh:50,sz:19,w:w-50,a:j=>P.at(4,.2+j*.12,.3),hi:j=>j===1||j===8?P.at(4,1.6,.5):0})}
+  else if(i===5){winFrame(g,x,y,w,h,'터미널',{tag:'교안 화면 기준 · 요약'});const L=[['> AI 반도체 시장조사 보고서 만들어줘',C.text],['● Sub Agent가 아직 세션에 등록되지 않아(재시작 필요),',C.m5],['   general-purpose 에이전트로 정의 파일을 따르게 해 진행',C.m5],['',C.dim],['해결: 새 Sub Agent는 재실행해야 인식됩니다',C.text],['→ 터미널을 끄고',C.mid],['→ Ch2_실습용 폴더에서 Claude 다시 실행',C.mid],['→ 같은 프롬프트 다시 입력',C.mid]];
+   L.forEach(([s,c],k)=>{const la=P.at(5,.2+k*.4,.3);if(la<=0)return;g.globalAlpha=a*la;T(g,s,x+34,y+110+k*58,{sz:21,f:/[가-힣]/.test(s)&&!/^[$>]/.test(s)?FK:FM,c,w:k===1||k===4?600:400})})}
+  else if(i===6){winFrame(g,x,y,w,h,'report/report.html',{tc:C.ok,tag:'예시 · 교안 5-2 구성'});T(g,'AI 반도체 시장조사 보고서',x+50,y+116,{sz:32,w:700});
+   [['핵심 요약',C.amber],['시장 규모',C.m3],['주요 공급사',C.m3],['수요 전망',C.m3],['시사점',C.m2],['출처',C.mid]].forEach(([s,c],k)=>{const la=P.at(6,.2+k*.18,.4);g.globalAlpha=a*la;T(g,s,x+50,y+184+k*64,{sz:22,w:600,c});g.fillStyle=hexA(C.text,.12);g.fillRect(x+50,y+202+k*64,640,6);g.fillRect(x+50,y+214+k*64,440,6)});
+   g.globalAlpha=a*P.at(6,1.4,.5);chip(g,x+w/2,y+h-40,'조사 → 작성 → 검토 → 수정 완료',C.ok,{sz:18,al:'center'})}
+  else{panel(g,x,y,w,h,{r:18,fill:'#0D1119',stroke:hexA(C.amber,.5),lw:2});T(g,'방금 한 일 — 네 줄',x+w/2,y+150,{sz:24,w:600,al:'center',c:C.mid});T(g,'이 네 줄이 오후에 그대로 반복됩니다.',x+w/2,y+250,{sz:30,w:700,al:'center'});
+   g.globalAlpha=a*P.at(7,1.2,.6);T(g,'시장 조사 대신 —',x+w/2,y+370,{sz:42,w:700,al:'center',c:C.amber});T(g,'내 업무가 들어갑니다.',x+w/2,y+440,{sz:42,w:700,al:'center',c:C.amber})}
+  g.restore()}});
+
+// 16 SUMMARY
+const SUM=['Context는 Agent가 참고하는 정보이며, Context Window에는 한계가 있습니다.','역할별로 Context를 나누면 작업 공간 분리 · 역할 집중 · 독립 검토 · 병렬 작업이 가능합니다.','Head Agent가 전체 흐름을 조율하고, Sub Agent가 각자의 역할을 맡습니다.','Sub Agent → CLAUDE.md → 실행까지, 직접 만들어 보았습니다.'];
+S({code:'요약',title:'이번 챕터 요약',group:'CHAPTER 02',
+ caps:[{t:'Context는 유한합니다. 역할별로 나누면 집중, 독립 검토, 병렬 실행이 가능해집니다.',say:'컨텍스트는 유한합니다. 역할별로 나누면, 집중과 독립 검토, 병렬 실행이 가능해집니다.'},{t:'Head가 흐름을 조율하고, Sub Agent가 각자의 역할을 맡습니다.',say:'헤드가 흐름을 조율하고, 서브 에이전트가 각자의 역할을 맡습니다.'},{t:'Context를 나누고, 역할을 나누고, 팀으로 실행하기 — 이것이 이번 챕터의 핵심입니다.',say:'컨텍스트를 나누고, 역할을 나누고, 팀으로 실행하기. 이것이 이번 챕터의 핵심입니다.'}],
+ draw(g,P){SUM.forEach((s,k)=>{const a=k<2?P.at(0,.3+k*.5,.6):P.at(1,(k-2)*.5,.6);if(a<=0)return;const y=270+k*118;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   T(g,pad2(k+1),240,y+34,{sz:30,f:FD,c:C.amber});g.font=`500 28px ${FK}`;const L=wrapLines(g,s,1320);L.forEach((l,i)=>T(g,l,340,y+(L.length>1?20:34)+i*40,{sz:28}));g.restore()});
+  const f=P.at(2,.3,.8);if(f>0){g.globalAlpha=f;g.fillStyle=C.amber;g.fillRect(240,760,1440*f,2);T(g,'나누어 맡기고, 팀으로 실행합니다.',960,830,{sz:44,w:700,al:'center',c:C.amber});g.globalAlpha=1}}});
+
+/* ================= timing ================= */
+const capDur=c=>{const n=Math.max(c.t.replace(/\s/g,'').length,(c.say||'').replace(/\s/g,'').length);return clamp(1.0+n*.112,3.2,10)};
+let DUR=0;const CAPS=[];
+SC.forEach((s,si)=>{s.start=DUR;s.capT=[];s.capD=[];let acc=0;s.caps.forEach((c,ci)=>{const d=capDur(c)+(si===0?1.2:0);s.capT.push(acc);s.capD.push(d);CAPS.push({si,ci,t:DUR+acc,d,text:c.t,say:c.say||c.t});acc+=d});s.dur=acc+(si===SC.length-1?1.2:.35);DUR+=s.dur});
+function makeP(si,ls){const s=SC[si];let i=0;for(let k=0;k<s.capT.length;k++)if(ls>=s.capT[k])i=k;
+  return{ls,u:ls/s.dur,i,dur:s.dur,dur0:s.capD[0],dur1:s.capD[1]||1,sec:k=>ls-(s.capT[k]??1e9),c:k=>s.capT[k]===undefined?0:clamp((ls-s.capT[k])/s.capD[k]),at:(k,d=0,du=.5)=>s.capT[k]===undefined?0:eO3(clamp((ls-s.capT[k]-d)/du))}}
+function sceneAt(t){let si=0;for(let k=0;k<SC.length;k++)if(t>=SC[k].start)si=k;return si}
+function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;return k}
+
+/* ================= composite ================= */
+const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,0.55)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
+function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#10141C';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
+function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+  g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
+  if(!s.hideHead){const a=eO3(clamp(ls/.5));g.save();g.globalAlpha=a;g.translate(0,(1-a)*20);g.font=`400 34px ${FD}`;g.fillStyle=C.amber;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(s.code,M,M+44);
+   const cw=g.measureText(s.code).width;T(g,s.group,M+cw+26,M+14,{sz:15,f:FM,c:C.dim});T(g,s.title,M+cw+26,M+48,{sz:30,w:700});g.restore()}
+  T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
+  g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
+  const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(7,8,12,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
+function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
+  if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
+  else drawScene(g,si,ls);
+  if(si===SC.length-1){const f=inv(SC[si].dur-1,SC[si].dur,ls);if(f>0){g.fillStyle=`rgba(0,0,0,${f})`;g.fillRect(0,0,W,H)}}
+  g.drawImage(vig,0,0);hud(g,t,si,ls)}
+
+/* ================= audio bed ================= */
+const AU={ctx:null,on:false,bus:null,sched:0};
+function auInit(){const c=new(window.AudioContext||window.webkitAudioContext)();AU.ctx=c;const comp=c.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
+  AU.master=c.createGain();AU.master.gain.value=.5;AU.master.connect(comp);comp.connect(c.destination);
+  const len=Math.floor(c.sampleRate*3),ib=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  AU.rev=c.createConvolver();AU.rev.buffer=ib;const rg=c.createGain();rg.gain.value=.5;AU.rev.connect(rg);rg.connect(AU.master)}
+function newBus(){const c=AU.ctx,b={dry:c.createGain(),rev:c.createGain()};b.dry.connect(AU.master);b.rev.connect(AU.rev);AU.bus=b}
+function killBus(){const b=AU.bus;if(!b)return;const n=AU.ctx.currentTime;[b.dry,b.rev].forEach(x=>x.gain.setTargetAtTime(0,n,.02));setTimeout(()=>[b.dry,b.rev].forEach(x=>x.disconnect()),300);AU.bus=null}
+function send(node,dry,rv){const c=AU.ctx,b=AU.bus;[[dry,b.dry],[rv,b.rev]].forEach(([v,d])=>{if(!v)return;const x=c.createGain();x.gain.value=v;node.connect(x);x.connect(d)})}
+function pad(w,ch,dur,a){const c=AU.ctx,lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const g=c.createGain();g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(a,w+1.2);g.gain.setValueAtTime(a,w+Math.max(1.3,dur-1));g.gain.linearRampToValueAtTime(0,w+dur+.6);
+  ch.forEach(f=>[-7,7].forEach(dt=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(lp);o.start(w);o.stop(w+dur+.8)}));lp.connect(g);send(g,.5,.6)}
+function blip(w,f,a){const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,w);g.gain.exponentialRampToValueAtTime(a,w+.005);g.gain.exponentialRampToValueAtTime(.0001,w+.35);o.connect(g);send(g,.6,.5);o.start(w);o.stop(w+.4)}
+const CHORDS=[[146.83,174.61,220],[116.54,146.83,174.61],[174.61,220,261.63],[130.81,164.81,196]];
+const EV=[];SC.forEach((s,i)=>{EV.push({t:s.start,f:w=>pad(w,CHORDS[i%4],s.dur,.045)});EV.push({t:s.start,f:w=>blip(w,[880,988,1175,1319][i%4],.05)})});CAPS.forEach((c,i)=>{if(c.ci>0)EV.push({t:c.t,f:w=>blip(w,[1760,1976,2349][i%3],.025)})});EV.sort((a,b)=>a.t-b.t);
+
+/* ================= narration (Web Speech) ================= */
+const TTS={ok:'speechSynthesis' in window,on:false,voice:null,last:-1};
+function pickVoice(){if(!TTS.ok)return;const vs=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));TTS.voice=vs.find(v=>/Heami|SunHi|InJoon|Google/i.test(v.name))||vs[0]||null;voiceNote()}
+
+function speak(s){if(!TTS.ok)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='ko-KR';if(TTS.voice)u.voice=TTS.voice;u.rate=1.1;u.pitch=1;speechSynthesis.speak(u)}catch(e){}}
+function hush(){if(TTS.ok)try{speechSynthesis.cancel()}catch(e){}}
+
+/* ================= transport ================= */
+let t=0,tAbs=0,playing=false,anchorT=0,anchorClock=0,lastSrc='',dirty=true,scrubbing=false,started=false;
+const srcKey=()=>AU.on&&AU.ctx&&AU.ctx.state==='running'?'a':'p',clk=()=>srcKey()==='a'?AU.ctx.currentTime:performance.now()/1000;
+function reanchor(){anchorT=tAbs;anchorClock=clk();lastSrc=srcKey();if(AU.on&&AU.ctx){killBus();if(playing)newBus();AU.sched=tAbs}}
+function auTick(){if(!AU.on||!playing||scrubbing||!AU.bus||srcKey()!=='a')return;const c=AU.ctx;if(AU.sched<tAbs-.05)AU.sched=tAbs;const until=tAbs+.25;
+  for(const e of EV)if(e.t>=AU.sched&&e.t<until){const w=anchorClock+(e.t-anchorT);if(w>=c.currentTime-.01)e.f(Math.max(w,c.currentTime+.001))}AU.sched=until}
+function narrTick(){if(!TTS.on||!playing||scrubbing)return;const k=capAt(t);if(k!==TTS.last){TTS.last=k;if(t-CAPS[k].t<1)speak(CAPS[k].say)}}
+function play(){if(t>=DUR-.05){t=0}started=true;playing=true;tAbs=t;reanchor();bigplay.hidden=true;TTS.last=-1;const k=capAt(t);if(TTS.on&&t-CAPS[k].t>=1){TTS.last=k;speak(CAPS[k].say)}dirty=true;syncUI()}
+function pause(){playing=false;if(AU.bus)killBus();hush();dirty=true;syncUI()}
+function seek(nt){t=clamp(nt,0,DUR-1e-3);tAbs=t;hush();TTS.last=-1;if(playing)reanchor();dirty=true}
+async function setMusic(on){if(on){if(!AU.ctx)auInit();try{await AU.ctx.resume()}catch(e){}AU.on=true}else{AU.on=false;if(AU.bus)killBus()}if(playing)reanchor();syncUI()}
+function setVoice(on){if(!TTS.ok)return;TTS.on=on;if(!TTS.on)hush();TTS.last=-1;
+  if(TTS.on&&playing){const k=capAt(t);TTS.last=k;speak(CAPS[k].say)}if(AU.master&&AU.ctx)AU.master.gain.setTargetAtTime(TTS.on?.32:.5,AU.ctx.currentTime,.2);syncUI()}
+function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock);t=tAbs;if(t>=DUR){t=DUR-1e-3;playing=false;if(AU.bus)killBus();syncUI()}auTick();narrTick();dirty=true}
+  if(dirty){render(t);ui();dirty=false}requestAnimationFrame(frame)}
+
+/* ================= page UI ================= */
+const $=s=>document.querySelector(s),track=$('#track'),head=$('#head'),bigplay=$('#bigplay'),playBtn=$('#play'),voiceBtn=$('#voice'),musicBtn=$('#music'),tc=$('#tc'),shots=$('#shots');
+const fmt=s=>`${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
+SC.forEach((s,i)=>{const sg=document.createElement('div');sg.className='seg';sg.style.flex=`${s.dur} 1 0`;sg.innerHTML=`<i></i><span>${s.code}</span>`;track.insertBefore(sg,head);
+  const li=document.createElement('li');li.className='shot';li.innerHTML=`<button type="button"><span class="n">${s.code}</span><span class="t"></span><span class="r">${fmt(s.start)}–${fmt(s.start+s.dur)}</span><span class="d"></span></button>`;
+  li.querySelector('.t').textContent=s.title;li.querySelector('.d').textContent=s.caps.map(c=>c.t).join(' ');
+  li.querySelector('button').addEventListener('click',()=>{seek(s.start+.001);bigplay.hidden=true;if(!playing)play()});shots.appendChild(li)});
+track.setAttribute('aria-valuemax',DUR.toFixed(1));$('#meta').textContent=`${SC.length}개 장면 · 자막 ${CAPS.length}개 · ${fmt(DUR)}`;
+const segs=[...track.querySelectorAll('.seg')],shotEls=[...shots.children];let lastSi=-1;
+function ui(){const si=sceneAt(t);head.style.left=(t/DUR*100)+'%';segs.forEach((s,i)=>{const S0=SC[i];s.firstChild.style.width=(t>=S0.start+S0.dur?100:t<S0.start?0:(t-S0.start)/S0.dur*100)+'%'});
+  if(si!==lastSi){segs.forEach((s,i)=>s.classList.toggle('on',i===si));shotEls.forEach((s,i)=>s.classList.toggle('on',i===si));lastSi=si}
+  tc.innerHTML=`<b>${fmt(t)}</b> / ${fmt(DUR)}`;track.setAttribute('aria-valuenow',t.toFixed(1))}
+function voiceNote(){const n=$('#vnote');if(!TTS.ok){n.textContent='이 브라우저는 음성 합성을 지원하지 않아 자막으로만 재생됩니다.';voiceBtn.disabled=true;return}
+  n.textContent=TTS.voice?`음성 해설: ${TTS.voice.name}`:'한국어 음성을 찾는 중입니다. 없으면 기본 음성으로 읽습니다.'}
+function syncUI(){playBtn.setAttribute('aria-label',playing?'일시정지':'재생');$('#playic').innerHTML=playing?'<path d="M3 2h4v12H3zm6 0h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
+  voiceBtn.setAttribute('aria-pressed',String(TTS.on));voiceBtn.textContent=TTS.on?'음성 해설 켜짐':'음성 해설 꺼짐';musicBtn.setAttribute('aria-pressed',String(AU.on));musicBtn.textContent=AU.on?'배경음 켜짐':'배경음 꺼짐'}
+bigplay.addEventListener('click',async()=>{setVoice(true);await setMusic(true);seek(0);play()});
+playBtn.addEventListener('click',()=>{if(!started)seek(0);playing?pause():play()});
+voiceBtn.addEventListener('click',()=>setVoice(!TTS.on));musicBtn.addEventListener('click',()=>setMusic(!AU.on));
+$('#fs').addEventListener('click',()=>{const el=$('#screen');try{if(document.fullscreenElement)document.exitFullscreen();else el.requestFullscreen&&el.requestFullscreen().catch(()=>{})}catch(e){}});
+const scrubTo=e=>{const r=track.getBoundingClientRect();seek(clamp((e.clientX-r.left)/r.width)*DUR)};
+track.addEventListener('pointerdown',e=>{scrubbing=true;track.setPointerCapture(e.pointerId);started=true;bigplay.hidden=true;scrubTo(e)});
+track.addEventListener('pointermove',e=>{if(scrubbing)scrubTo(e)});
+const endScrub=()=>{if(!scrubbing)return;scrubbing=false;if(playing)reanchor()};track.addEventListener('pointerup',endScrub);track.addEventListener('pointercancel',endScrub);
+const jump=d=>{const k=capAt(t);let n=d>0?k+1:(t-CAPS[k].t<1.2?k-1:k);n=clamp(n,0,CAPS.length-1);seek(CAPS[n].t+.001)};
+track.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();jump(e.key==='ArrowRight'?1:-1)}});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+  if(e.key===' '){e.preventDefault();if(!started)seek(0);playing?pause():play()}else if(e.key==='ArrowRight')jump(1);else if(e.key==='ArrowLeft')jump(-1);
+  else if(e.key==='v'||e.key==='V')setVoice(!TTS.on);else if(e.key==='f'||e.key==='F')$('#fs').click()});
+
+const P13=SC[SC.findIndex(s=>s.code==='4-1')];const pk=Math.min(5,P13.capT.length-1);t=P13.start+P13.capT[pk]+P13.capD[pk]*.98;tAbs=t;
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
+['400 20px "Michroma"','500 20px "JetBrains Mono"','600 20px "IBM Plex Sans KR"','700 20px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}syncUI();requestAnimationFrame(frame);
+window.Lesson={render,SC,CAPS,DUR,canvas:cv};
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,702 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent 입력 처리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07080C; --panel:#0E1117; --line:#1C212C; --line2:#2A3140;
+  --dim:#6E7688; --soft:#A9ADB8; --text:#ECE8DE; --amber:#FFB547;
+  --fd:"Michroma","Eurostile","Arial Black",sans-serif;
+  --fm:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --fb:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+[hidden]{display:none!important}
+body{font-family:var(--fb);font-size:15px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px;display:grid;gap:20px}
+.hd{display:grid;grid-template-columns:auto 1fr;gap:10px 48px;align-items:end}
+.eyebrow{font:500 11px/1.4 var(--fm);letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin:0 0 12px}
+h1{font:400 clamp(24px,4vw,38px)/1.1 var(--fd);letter-spacing:.12em;margin:0}
+h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft);margin-top:10px}
+.lede{margin:0;max-width:60ch;color:var(--soft);justify-self:end;text-wrap:pretty}
+.screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
+.screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
+canvas{display:block;width:100%;height:100%;object-fit:contain}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(255,181,71,.55);background:rgba(7,8,12,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay:hover{border-color:var(--amber)}
+.bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
+.bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
+.btn:hover{border-color:var(--line2)}
+.btn[aria-pressed="true"]{border-color:rgba(255,181,71,.55);color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:16px;height:16px;fill:currentColor}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
+.seg{position:relative;background:#10141B;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,181,71,.2);width:0}
+.seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
+.seg.on span{color:var(--amber)}
+.head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
+.tc{font:500 13px var(--fm);font-variant-numeric:tabular-nums;min-width:112px;text-align:right;color:var(--soft)}
+.tc b{color:var(--text);font-weight:500}
+.note{font:400 12px var(--fm);color:var(--dim);margin:8px 0 0}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:18px}
+.sh h2{font:500 12px var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0}
+.sh p{margin:0;font:400 12px var(--fm);color:var(--dim)}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.shot{border-bottom:1px solid var(--line)}
+.shot button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:52px 1fr auto;gap:2px 14px;padding:14px 4px;width:100%;cursor:pointer}
+.shot button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.shot button:hover .t{color:var(--amber)}
+.shot .n{font:400 14px/1.9 var(--fd);color:var(--dim);grid-row:1/3}
+.shot.on .n,.shot.on .t{color:var(--amber)}
+.shot .t{font:600 15px/1.6 var(--fb)}
+.shot .r{font:400 12px/1.9 var(--fm);color:var(--dim);font-variant-numeric:tabular-nums}
+.shot .d{grid-column:2/4;color:var(--soft);font-size:14px;line-height:1.65}
+.foot{display:flex;flex-wrap:wrap;gap:8px 22px;color:var(--dim);font:400 12px var(--fm);margin-top:6px}
+kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--soft)}
+@media (max-width:760px){
+  .hd{grid-template-columns:1fr}.lede{justify-self:start}
+  .seg span{display:none}.track{flex-basis:100%;order:5}
+  .shots{grid-template-columns:1fr}
+  .bigplay{padding:8px 16px 8px 8px;font-size:13px}.bigplay .ic{width:34px;height:34px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hd">
+    <div>
+      <p class="eyebrow">Lesson video · Chapter 04 · 1920×1080</p>
+      <h1>AGENT INPUT<small>Agent 입력 처리</small></h1>
+    </div>
+    <p class="lede">교안 「04. Agent 입력 처리」를 장면 19개로 옮긴 모션그래픽 강의 영상입니다. 규칙이 명확한 입력을 Code로 처리하는 방법(이상 데이터 추출, 샘플링, 마스킹)과, 많은 문서에서 관련 부분만 찾아 Context에 넣는 RAG(Embedding, Chunk, rag.db, 검색 화면, Agent 연결)를 순서대로 따라갑니다.</p>
+  </header>
+
+  <section aria-label="강의 영상 플레이어">
+    <div class="screen" id="screen">
+      <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
+      <button class="bigplay" id="bigplay" type="button">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#07080C"/></svg></span>
+        <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="play" type="button" aria-label="재생"><svg viewBox="0 0 16 16" id="playic"><path d="M4 2l10 6-10 6z"/></svg></button>
+      <button class="btn" id="voice" type="button" aria-pressed="false">음성 해설 꺼짐</button>
+      <button class="btn" id="music" type="button" aria-pressed="false">배경음 꺼짐</button>
+      <div class="track" id="track" role="slider" tabindex="0" aria-label="타임라인" aria-valuemin="0" aria-valuenow="0"><div class="head" id="head"></div></div>
+      <span class="tc" id="tc"></span>
+      <button class="btn" id="fs" type="button" aria-label="전체 화면"><svg viewBox="0 0 16 16"><path d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg></button>
+    </div>
+    <p class="note" id="vnote"></p>
+  </section>
+
+  <section aria-label="장면과 대본">
+    <div class="sh"><h2>장면 · 대본</h2><p id="meta"></p></div>
+    <ol class="shots" id="shots"></ol>
+    <div class="foot">
+      <span><kbd>Space</kbd> 재생/일시정지</span><span><kbd>←</kbd><kbd>→</kbd> 자막 단위 이동</span><span><kbd>V</kbd> 음성 해설</span><span><kbd>F</kbd> 전체 화면</span>
+      <span>프롬프트 · 화면 수치는 교안 기준, 파일 내용 · 데이터 수치는 Ch4 실습자료 기준입니다. 그 밖의 값은 화면에 예시로 표시했습니다.</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+'use strict';
+/* ================= core ================= */
+const W=1920,H=1080;
+const cv=document.getElementById('stage');cv.width=W;cv.height=H;
+const ctx=cv.getContext('2d');
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const scratch=mk(W,H),sctx=scratch.getContext('2d');
+const C={bg:'#07080C',grid:'#141925',line:'#232A38',dim:'#6E7688',mid:'#9AA3B5',text:'#ECE8DE',amber:'#FFB547',
+  m1:'#4C8DFF',m2:'#FF4FA3',m3:'#2FE3C4',m4:'#B98CFF',m5:'#FF7A45',ok:'#3DDC84',bad:'#FF5A5F',card:'#0F131B'};
+const FD='"Michroma","Eurostile","Arial Black",sans-serif',FM='"JetBrains Mono",ui-monospace,Consolas,monospace',FK='"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const _ha=new Map();
+function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
+const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
+const eO3=t=>1-Math.pow(1-t,3),eIO3=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,eOB=t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+const pad2=n=>String(n).padStart(2,'0');
+
+/* ================= drawing kit ================= */
+function line(g,x0,y0,x1,y1){g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()}
+function rrect(g,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function panel(g,x,y,w,h,o={}){rrect(g,x,y,w,h,o.r??14);g.fillStyle=o.fill??C.card;g.fill();if(o.stroke!==null){g.strokeStyle=o.stroke??C.line;g.lineWidth=o.lw??1.5;if(o.dash)g.setLineDash(o.dash);g.stroke();g.setLineDash([])}}
+function T(g,s,x,y,o={}){g.font=`${o.w??500} ${o.sz??24}px ${o.f??FK}`;g.fillStyle=o.c??C.text;g.textAlign=o.al??'left';g.textBaseline=o.bl??'alphabetic';g.fillText(s,x,y);return g.measureText(s).width}
+function wrapLines(g,s,max){const out=[];let cur='';for(const w of s.split(' ')){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}if(cur)out.push(cur);return out}
+function chip(g,x,y,s,col,o={}){const sz=o.sz??18;g.font=`${o.w??600} ${sz}px ${o.f??FK}`;const w=g.measureText(s).width+sz*1.4,h=sz*1.9;const x0=o.al==='center'?x-w/2:o.al==='right'?x-w:x;
+  rrect(g,x0,y-h/2,w,h,h/2);g.fillStyle=o.fill??hexA(col,.14);g.fill();g.strokeStyle=hexA(col,.75);g.lineWidth=1.3;g.stroke();g.fillStyle=o.tc??col;g.textAlign='center';g.textBaseline='middle';g.fillText(s,x0+w/2,y+1);return w}
+function polyLen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L}
+function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length&&rem>0;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],d=Math.hypot(dx,dy);if(rem>=d){g.lineTo(p[i][0],p[i][1]);rem-=d}else{const k=rem/d;g.lineTo(p[i-1][0]+dx*k,p[i-1][1]+dy*k);rem=0}}}
+function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
+function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
+function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#131824';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
+  const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
+  if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
+  if(o.head){T(g,o.head,x0+w*.14,y0+f*.8,{sz:Math.max(11,w*.1),f:FM,w:600,c:col})}
+  if(o.title)T(g,o.title,x,y0+h+(o.tsz??18)+8,{sz:o.tsz??18,w:600,al:'center',c:o.tc??C.text});
+  if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
+function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
+  if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
+  g.fillStyle='#0D1118';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
+  const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
+  g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
+  if(o.name){const sz=o.nsz??20;if(o.side)T(g,o.name,x+r+16,y+(o.role?-2:7),{sz,w:600,f:o.nf??FM});else T(g,o.name,x,y+r+sz+12,{sz,w:600,al:'center',f:o.nf??FM})}
+  if(o.role){const sz=o.nsz??20;if(o.side)T(g,o.role,x+r+16,y+22,{sz:16,c:C.dim});else T(g,o.role,x,y+r+sz+38,{sz:16,al:'center',c:C.dim})}
+  g.restore()}
+function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,s*.3,0,7);g.fill();g.beginPath();g.moveTo(x-s*.6,y+s*.62);g.quadraticCurveTo(x-s*.6,y,x,y);g.quadraticCurveTo(x+s*.6,y,x+s*.6,y+s*.62);g.closePath();g.fill();
+  if(o.name)T(g,o.name,x,y+s*.62+30,{sz:20,w:600,al:'center'})}
+function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
+function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
+  if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0D1118'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#161B26';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+  T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
+function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
+function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
+function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const xx=x+r.d*34,yy=y+i*lh;
+  if(r.hi){rrect(g,x-14,yy-lh/2+4,o.w??680,lh-8,8);g.fillStyle=hexA(r.hc??C.amber,.12*r.hi);g.fill();g.strokeStyle=hexA(r.hc??C.amber,.6*r.hi);g.lineWidth=1.3;g.stroke()}
+  if(r.d>0){g.strokeStyle=hexA(C.text,.15);g.lineWidth=1;line(g,xx-20,yy-lh/2,xx-20,yy);line(g,xx-20,yy,xx-6,yy)}
+  (r.dir?folder:fileIc)(g,xx,yy,r.c??(r.dir?C.mid:C.text));
+  T(g,r.n,xx+32,yy+8,{sz:o.sz??22,f:FM,w:r.dir?600:500,c:r.tc??C.text});
+  if(r.tag){g.font=`500 ${o.sz??22}px ${FM}`;const w=g.measureText(r.n).width;chip(g,xx+48+w,yy,r.tag,r.hc??C.amber,{sz:15})}
+  g.restore()})}
+function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
+  if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9CCD4';
+  const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
+  if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
+  else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+30,w,14);
+  T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
+
+/* ================= scenes ================= */
+// Chapter 04 · Agent 입력 처리 — scenes
+const POSTER=[17,5,.98];
+const SC=[];
+const S=(o)=>SC.push(o);
+
+// ---------- helpers ----------
+const G0='0 · Agent에게 모든 데이터를 그대로 주면?',G1='1 · 규칙적인 처리 — Code',G2='2 · 많은 문서 중 관련된 부분만 입력하기 — RAG';
+const hasK=s=>/[가-힣]/.test(s);
+function tbl(g,x,y,ws,rows,o={}){const lh=o.lh??46,sz=o.sz??19,W0=ws.reduce((s,v)=>s+v,0);
+  rows.forEach((r,i)=>{const a=o.a?o.a(i):1;if(a<=0)return;const yy=y+i*lh;g.save();g.globalAlpha*=a;
+   if(i===0&&!o.nohead){rrect(g,x,yy,W0,lh,8);g.fillStyle='#161B26';g.fill()}else{g.strokeStyle=C.line;g.lineWidth=1;line(g,x,yy+lh,x+W0,yy+lh)}
+   const hi=o.hi?o.hi(i):0;if(hi>0){rrect(g,x,yy+2,W0,lh-4,6);g.fillStyle=hexA(o.hc??C.amber,.13*hi);g.fill();g.fillStyle=hexA(o.hc??C.amber,hi);g.fillRect(x,yy+2,3,lh-4)}
+   let xx=x;r.forEach((c,j)=>{const head=i===0&&!o.nohead;const col=head?C.mid:(o.cc?o.cc(i,j):C.text);
+    T(g,c,o.ar&&o.ar[j]?xx+ws[j]-14:xx+14,yy+lh/2+sz*.36,{sz:head?sz-2:sz,f:hasK(c)?FK:FM,w:head?600:(o.bw&&o.bw(i,j))?700:400,c:col,al:o.ar&&o.ar[j]?'right':'left'});xx+=ws[j]});g.restore()})}
+function promptBox(g,x,y,w,lines,o={}){const lh=o.lh??34,sz=o.sz??19,h=o.h??(lines.length*lh+74);winFrame(g,x,y,w,h,o.title??'Claude Code · 프롬프트',{tc:C.amber,tag:o.tag??'교안 프롬프트'});
+  const n=lines.length*(o.rv??1);lines.forEach((l,i)=>{const f=clamp(n-i);if(f<=0)return;g.save();g.globalAlpha*=f;T(g,l,x+28,y+80+i*lh,{sz,f:FK,c:o.hl&&o.hl(i)?C.amber:'#D6D9E0',w:o.hl&&o.hl(i)?600:400});g.restore()});return h}
+function gearBox(g,x,y,w,h,col,title,sub,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;panel(g,x,y,w,h,{r:14,fill:hexA(col,.08),stroke:hexA(col,.7),lw:2});
+  const cx=x+38,cy=y+h/2,sp=(o.spin||0);g.strokeStyle=col;g.lineWidth=3;g.beginPath();g.arc(cx,cy,13,0,7);g.stroke();for(let k=0;k<8;k++){const an=sp+k*Math.PI/4;line(g,cx+Math.cos(an)*15,cy+Math.sin(an)*15,cx+Math.cos(an)*21,cy+Math.sin(an)*21)}
+  T(g,title,x+72,cy+(sub?-4:7),{sz:o.sz??20,f:FM,w:600,c:col});if(sub)T(g,sub,x+72,cy+22,{sz:15,c:C.mid});g.restore()}
+function csvIc(g,x,y,w,h,col,name,sub,o={}){doc(g,x,y,w,h,col,{lines:4,a:o.a??1,title:name,tsz:o.tsz??17,sub,head:o.head})}
+function bubble(g,x,y,w,h,text,col,o={}){panel(g,x,y,w,h,{r:h/2>26?22:h/2,fill:o.fill??hexA(col,.12),stroke:hexA(col,.7)});T(g,text,x+w/2,y+h/2+(o.sz??21)*.36,{sz:o.sz??21,w:600,al:'center',c:o.tc??C.text})}
+function vec(g,x,y,vals,col,o={}){const s='['+vals.join(', ')+(o.more===false?']':', …]');T(g,s,x,y,{sz:o.sz??18,f:FM,c:col,al:o.al??'left'})}
+function mag(g,x,y,r,col){g.strokeStyle=col;g.lineWidth=5;g.beginPath();g.arc(x,y,r,0,7);g.stroke();g.lineCap='round';line(g,x+r*.7,y+r*.7,x+r*1.5,y+r*1.5);g.lineCap='butt'}
+
+// 0 TITLE ------------------------------------------------------------
+S({code:'04',title:'Agent 입력 처리',group:'CHAPTER',hideHead:1,
+ caps:[{t:'04. Agent 입력 처리 — 규칙적인 입력은 Code로, 많은 문서는 RAG로.',say:'챕터 사. 에이전트 입력 처리. 규칙적인 입력은 코드로, 많은 문서는 래그로 처리하는 방법을 살펴봅니다.'}],
+ draw(g,P){const cx=960,t=P.ls,la=P.at(0,0,1.2);
+  for(let r=0;r<18;r++){const y=240+r*34,ph=t*.6+r*.7;g.globalAlpha=la*.22;for(let k=0;k<28;k++){const x=120+k*62+(r%2)*31;const on=(Math.sin(ph+k*.9)+1)/2;g.fillStyle=on>.8?C.amber:'#2A3140';g.fillRect(x,y,34,6)}}
+  g.globalAlpha=1;const rg=g.createRadialGradient(cx,500,60,cx,500,640);rg.addColorStop(0,'rgba(7,8,12,0.97)');rg.addColorStop(1,'rgba(7,8,12,0.1)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8),a4=P.at(0,1.3,.8);
+  g.globalAlpha=a1;T(g,'CHAPTER 04',cx,380,{sz:22,f:FM,w:500,al:'center',c:C.amber});
+  g.globalAlpha=a2;T(g,'AGENT INPUT',cx,528+(1-a2)*30,{sz:104,f:FD,w:400,al:'center'});
+  g.globalAlpha=a3;T(g,'Agent 입력 처리',cx,622,{sz:52,w:600,al:'center'});
+  g.globalAlpha=a4;T(g,'Code 전처리  ·  마스킹  ·  Embedding  ·  Chunk  ·  rag.db  ·  RAG 검색',cx,694,{sz:19,f:FM,al:'center',c:C.dim});g.globalAlpha=1}});
+
+// 1 OBJECTIVES --------------------------------------------------------
+const OBJ=['Agent에게 많은 데이터를 그대로 전달했을 때 생기는 문제를 설명할 수 있습니다.','처리 규칙이 명확한 입력은 Code로 필요한 형태로 처리할 수 있습니다.','많은 문서에서는 RAG로 관련 있는 내용을 찾아 Agent가 참고하도록 구성할 수 있습니다.','업무 입력의 특성에 따라 적절한 처리 방법을 선택할 수 있습니다.'];
+S({code:'00',title:'학습 목표',group:'CHAPTER 04',
+ caps:[{t:'이번 챕터의 학습 목표는 네 가지입니다.'},{t:'데이터를 그대로 줄 때의 문제, Code 처리, RAG 구성, 그리고 입력에 맞는 방법 고르기.',say:'데이터를 그대로 줄 때의 문제, 코드로 처리하기, 래그 구성하기, 그리고 입력에 맞는 방법 고르기입니다.'}],
+ draw(g,P){OBJ.forEach((s,k)=>{const a=P.at(0,.2+k*.25,.6),y=260+k*140;if(a<=0)return;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   const ck=eO3(clamp((P.sec(1)-.3-k*1.1)/.45));panel(g,260,y-10,1400,112,{fill:ck>0?hexA(C.amber,.05):C.card,stroke:ck>0?hexA(C.amber,.45):C.line});
+   rrect(g,300,y+22,48,48,10);g.strokeStyle=ck>0?C.amber:C.mid;g.lineWidth=2.5;g.stroke();check(g,324,y+46,30,C.amber,ck);
+   T(g,s,380,y+56,{sz:28,w:500,c:ck>0?C.text:'#C4C7CF'});g.restore()})}});
+
+// 2 SECTION 0 ---------------------------------------------------------
+const RAWS=[['검사로그.csv','15,379행',C.m1],['설비센서로그.csv','15,379행',C.m1],['설비운영매뉴얼','통합본',C.m4],['이슈보고서','×2',C.m4],['품질회의록','×2',C.m4],['업무 메일','×3',C.m4]];
+S({code:'0',title:'Agent에게 모든 데이터를 그대로 주면?',group:G0,
+ caps:[{t:'분석할 데이터가 많아질수록, 모든 원본을 그대로 Context에 넣는 방식은 비효율적일 수 있습니다.',say:'에이전트가 분석할 데이터가 많아질수록, 모든 원본을 그대로 컨텍스트에 넣는 방식은 비효율적일 수 있습니다.'},
+  {t:'처리 규칙이 명확한 입력은 Code로 처리하고, 많은 문서는 질문과 관련된 부분만 RAG로 찾아 Context에 추가합니다.',say:'처리 규칙이 명확한 입력은 코드로 처리하고, 많은 문서는 질문과 관련된 부분만 래그로 찾아 컨텍스트에 추가합니다.'},
+  {t:'그러면 Agent는 모든 원본을 직접 처리하기보다, 필요한 정보에 집중해 분석하고 판단할 수 있습니다.',say:'그러면 에이전트는 모든 원본을 직접 처리하기보다, 필요한 정보에 집중해 분석하고 판단할 수 있습니다.'}],
+ draw(g,P){g.strokeStyle=C.line;g.lineWidth=1.5;line(g,960,200,960,860);
+  T(g,'원본을 그대로',520,236,{sz:30,w:700,al:'center'});T(g,'Code + RAG로 걸러서',1400,236,{sz:30,w:700,al:'center',c:P.at(1,0,.5)>0?C.text:C.dim});
+  // left
+  const bx=150,by=520,bw=740,bh=280;panel(g,bx,by,bw,bh,{r:18,fill:'#0D1119',stroke:hexA(P.c(0)>.6?C.m5:C.m1,.55),lw:2});chip(g,bx+20,by+28,'Agent의 Context',C.m1,{sz:16});
+  const n=RAWS.length;RAWS.forEach(([nm,sb,c],i)=>{const x0=210+i*110,y0=330,f=eIO3(clamp((P.sec(0)-.4-i*.35)/.9));
+   if(f<1){doc(g,x0,y0,70,88,c,{lines:3});T(g,nm,x0,y0+68,{sz:14,al:'center',c:C.mid});T(g,sb,x0,y0+88,{sz:14,f:FM,al:'center',c:C.dim})}
+   if(f>0){const tx=bx+60+(i%3)*230,ty=by+90+Math.floor(i/3)*100;g.save();g.globalAlpha=f;panel(g,tx,ty,210,80,{r:10,fill:hexA(c,.12),stroke:hexA(c,.55)});T(g,nm,tx+14,ty+34,{sz:18,w:600,c});T(g,sb+' 전체',tx+14,ty+62,{sz:15,f:FK,c:C.mid});g.restore()}});
+  const fl=clamp(P.sec(0)/(P.dur0*.9));gauge(g,bx,by+bh+44,bw,.12+.83*eIO3(fl),fl>.6?C.m5:C.m1,'Context 사용량 (개념도)');
+  if(fl>.8){g.globalAlpha=inv(.8,1,fl);chip(g,bx+bw-20,by+28,'⚠ 원본 전체를 직접 처리',C.m5,{sz:16,al:'right'});g.globalAlpha=1}
+  // right
+  const r1=P.at(1,0,.6);if(r1>0){g.save();g.globalAlpha=r1;const c1=P.sec(1);
+   doc(g,1070,330,70,88,C.m1,{lines:3});T(g,'CSV 원본',1070,398,{sz:15,al:'center',c:C.mid});
+   gearBox(g,1150,295,230,70,C.m3,'Code','규칙대로 처리',{spin:P.ls*2});arrow(g,1110,330,1146,330,C.m3,1);
+   doc(g,1070,470,70,88,C.m4,{lines:3});T(g,'많은 문서',1070,538,{sz:15,al:'center',c:C.mid});
+   panel(g,1150,435,230,70,{r:14,fill:hexA(C.m4,.08),stroke:hexA(C.m4,.7),lw:2});mag(g,1185,466,12,C.m4);T(g,'RAG',1222,462,{sz:20,f:FM,w:600,c:C.m4});T(g,'관련 부분만 검색',1222,488,{sz:15,c:C.mid});arrow(g,1110,470,1146,470,C.m4,1);
+   const bx2=1060,by2=650,bw2=700,bh2=150;panel(g,bx2,by2-80,bw2,bh2+80,{r:18,fill:'#0D1119',stroke:hexA(C.ok,.45),lw:2});chip(g,bx2+20,by2-52,'Agent의 Context',C.m1,{sz:16});
+   const p1=clamp((c1-.8)/1.2),p2=clamp((c1-1.6)/1.2);packet(g,1380,330,bx2+170,by2+20,p1,C.m3,null);packet(g,1380,470,bx2+520,by2+20,p2,C.m4,null);
+   if(p1>=1){panel(g,bx2+40,by2,280,86,{r:10,fill:hexA(C.m3,.12),stroke:hexA(C.m3,.6)});T(g,'처리된 데이터',bx2+56,by2+36,{sz:19,w:600,c:C.m3});T(g,'예) 이상 LOT만',bx2+56,by2+66,{sz:15,c:C.mid})}
+   if(p2>=1){panel(g,bx2+380,by2,280,86,{r:10,fill:hexA(C.m4,.12),stroke:hexA(C.m4,.6)});T(g,'관련 문서 조각',bx2+396,by2+36,{sz:19,w:600,c:C.m4});T(g,'질문과 관련된 부분만',bx2+396,by2+66,{sz:15,c:C.mid})}
+   const f2=P.at(2,0,.8);gauge(g,bx2,by2+bh2+44,bw2,.12+.14*clamp(c1/3),C.ok,'Context 사용량 (개념도)');
+   if(f2>0){g.globalAlpha=r1*f2;agent(g,bx2+bw2-70,by2-40,30,C.amber,{glow:f2});chip(g,bx2+bw2-30,by2+116,'필요한 정보에 집중 → 분석 · 판단',C.amber,{sz:17,al:'right'})}g.restore()}}});
+
+// 3 SECTION 1-1 -------------------------------------------------------
+const TASKS=[['Code로 처리하기 좋은 업무','예시'],['조건에 따라 분류·필터링','기준치를 넘은 이상 데이터만 추출'],['계산·집계','설비별 불량률 계산, 월별 실적 합계'],['여러 데이터를 규칙대로 결합','LOT_ID를 기준으로 검사·센서 데이터 연결'],['정해진 형식으로 변환','날짜 형식 통일, JSON → CSV 변환'],['패턴을 찾아 일괄 처리','이메일 주소 마스킹, 특정 문자열 치환'],['정해진 목록을 기준으로 처리','지정된 이름을 찾아 마스킹'],['반복되는 파일 처리','여러 파일에 동일한 변환 규칙 일괄 적용']];
+S({code:'1-1',title:'Code로 처리하기 좋은 업무',group:G1,
+ caps:[{t:'조건, 계산, 집계처럼 처리 규칙이 명확한 작업은 Code로 분리할 수 있습니다.',say:'조건, 계산, 집계처럼 처리 규칙이 명확한 작업은 코드로 분리할 수 있습니다.'},
+  {t:'한 번 Code로 만들어두면, 같은 형식의 데이터에 같은 규칙을 반복해서 적용할 수 있습니다.',say:'한 번 코드로 만들어두면, 같은 형식의 데이터에 같은 규칙을 반복해서 적용할 수 있습니다.'},
+  {t:'Agent가 매번 데이터를 직접 판단하는 대신, 정해진 Code를 실행해 처리된 데이터를 사용합니다.',say:'에이전트가 매번 데이터를 직접 판단하는 대신, 정해진 코드를 실행해서 처리된 데이터를 사용합니다.'}],
+ draw(g,P){tbl(g,110,220,[380,560],TASKS,{lh:62,sz:21,a:i=>P.at(0,.2+i*.18,.4),cc:(i,j)=>j===0?C.m3:'#C9CCD4',hi:i=>i===1||i===3||i===5?P.at(0,1.8,.5)*.8:0,hc:C.m3});
+  T(g,'교안 표 기준',110,760,{sz:15,f:FK,c:C.dim});
+  const x0=1140,cx=1480;const a1=P.at(1,0,.6);if(a1>0){g.save();g.globalAlpha=a1;
+   gearBox(g,cx-150,420,300,80,C.m3,'정해진 Code','같은 규칙',{spin:P.ls*2});
+   ['데이터 ①','데이터 ②','데이터 ③'].forEach((n,i)=>{const y=260,x=x0+60+i*170;doc(g,x,y,62,78,C.m1,{lines:3});T(g,n,x,y+64,{sz:15,al:'center',c:C.mid});
+    const f=clamp((P.sec(1)-.4-i*.5)/.9);packet(g,x,y+40,cx,418,f,C.m1,null);
+    const y2=640,f2=clamp((P.sec(1)-1.0-i*.5)/.9);packet(g,cx,500,x,y2-40,f2,C.m3,null);if(f2>=1){doc(g,x,y2,62,78,C.m3,{lines:3});check(g,x+34,y2+30,22,C.ok,1)}});
+   T(g,'같은 형식의 데이터 (개념도)',cx,200,{sz:16,al:'center',c:C.dim});g.restore()}
+  const a2=P.at(2,0,.6);if(a2>0){g.save();g.globalAlpha=a2;agent(g,x0+40,460,40,C.amber,{name:'Agent',nf:FM});
+   const f=clamp(P.sec(2)/1.2);arrow(g,x0+86,460,cx-156,460,C.amber,f,{dash:[6,6]});if(f>.5)chip(g,x0+160,420,'실행',C.amber,{sz:15});
+   panel(g,x0+30,760,640,70,{r:12,fill:hexA(C.amber,.08),stroke:hexA(C.amber,.5)});T(g,'Agent는 처리된 데이터로 분석 · 판단',x0+350,803,{sz:21,w:600,al:'center',c:C.amber});g.restore()}}});
+
+// 4 SECTION 1-2 -------------------------------------------------------
+const P1=['검사로그.csv와 설비센서로그.csv를 LOT_ID로 조인해','이상 LOT만 추출하는 scripts/preprocess.js를 만들어줘.','(외부 라이브러리 없이, BOM 제거)','','이상 기준(하나라도 해당하면 이상, 기준값은 상단 상수로):','1) 불량률(%) >= 3.0','2) 평균값이 \'정상범위\'("하한~상한")를 벗어남','3) 최대값/최소값이 정상범위를 (상한-하한)×0.6 넘게 벗어남','',"결과는 '이상사유' 열을 추가해 이상데이터.csv(BOM 포함 UTF-8)로",'저장하고, 설비ID별 이상 건수와 발생 기간을 출력해줘.','','코드는 생성만 하고 아직 실행하지 마.'];
+S({code:'1-2',title:'이상 데이터 처리 Code 생성하기',group:G1,
+ caps:[{t:'처리 기준이 명확한 작업은 Code로 분리합니다. 정해진 기준을 Code에 적용해 반복해서 처리합니다.',say:'처리 기준이 명확한 작업은 코드로 분리합니다. 정해진 기준을 코드에 적용해 반복해서 처리합니다.'},
+  {t:'검사로그.csv와 설비센서로그.csv를 LOT_ID로 조인해, 이상 LOT만 추출하는 preprocess.js를 만들게 합니다.',say:'검사로그 씨에스브이와 설비센서로그 씨에스브이를 랏 아이디로 조인해, 이상 랏만 추출하는 프리프로세스 제이에스를 만들게 합니다.'},
+  {t:'이상 기준 세 가지 — 불량률 3.0% 이상, 평균값이 정상범위 밖, 최대·최소값이 범위 폭의 0.6배 넘게 벗어남.',say:'이상 기준은 세 가지입니다. 불량률 3.0 퍼센트 이상, 평균값이 정상범위 밖, 그리고 최대 최소값이 범위 폭의 0.6배를 넘게 벗어난 경우입니다.'},
+  {t:'이 단계에서는 Code만 만들고, 아직 전체 데이터에는 실행하지 않습니다.',say:'이 단계에서는 코드만 만들고, 아직 전체 데이터에는 실행하지 않습니다.'}],
+ draw(g,P){const rv=P.sec(1)<0?0:clamp(P.sec(1)/2.2)+ (P.sec(2)>=0?1:0);
+  promptBox(g,110,210,830,P1,{lh:40,sz:19,rv:P.sec(2)>=0?1:clamp(P.at(0,.2,1)*.25+P.c(1)*.75),hl:i=>(i>=5&&i<=7&&P.at(2,0,.4)>0)||(i===12&&P.at(3,0,.4)>0)});
+  const x=1000,a0=P.at(0,.3,.6);g.globalAlpha=a0;
+  winFrame(g,x,210,810,170,'data/검사로그.csv',{tc:C.m1,tag:'실제 파일 · 일부 열'});
+  tbl(g,x+18,262,[190,170,170,240],[['LOT_ID','설비ID','불량률(%)','불량유형'],['LOT10001','ETCH-01','0.84','미세스크래치']],{lh:46,sz:18,nohead:0,hi:i=>i===0?0:0});
+  winFrame(g,x,400,810,170,'data/설비센서로그.csv',{tc:C.m1,tag:'실제 파일 · 일부 열'});
+  tbl(g,x+18,452,[150,130,110,110,110,170],[['LOT_ID','모니터링항목','평균값','최대값','최소값','정상범위'],['LOT10001','챔버온도','450.09','450.27','449.81','449.5~450.5']],{lh:46,sz:17});
+  g.globalAlpha=1;
+  const j=P.at(1,.4,.7);if(j>0){g.save();g.globalAlpha=j;g.strokeStyle=C.amber;g.lineWidth=2.5;g.setLineDash([6,6]);line(g,x+80,334,x+80,384);line(g,x+80,446,x+80,478);g.setLineDash([]);chip(g,x+405,390,'LOT_ID로 조인',C.amber,{sz:15,al:'center',fill:'#1A1508'});g.restore()}
+  const R=[['불량률(%) ≥ 3.0',C.m5],['평균값이 정상범위 밖',C.m5],['최대·최소 > 범위 밖 (폭×0.6)',C.m5]];
+  R.forEach(([s,c],i)=>{const a=P.at(2,.3+i*.5,.5);if(a<=0)return;g.globalAlpha=a;panel(g,x+i*272,600,256,80,{r:12,fill:hexA(c,.1),stroke:hexA(c,.6)});T(g,`${i+1}`,x+i*272+22,650,{sz:26,f:FD,c});T(g,s,x+i*272+52,648,{sz:17,w:600});g.globalAlpha=1});
+  const o=P.at(2,2,.6);if(o>0){g.globalAlpha=o;csvIc(g,x+110,782,64,80,C.m3,'',null);T(g,'이상데이터.csv',x+160,770,{sz:21,f:FK,w:700,c:C.m3});T(g,'+ 이상사유 열 · BOM 포함 UTF-8',x+160,800,{sz:16,c:C.mid});T(g,'+ 설비ID별 이상 건수 · 발생 기간 출력',x+160,826,{sz:16,c:C.mid});g.globalAlpha=1}
+  const s3=P.at(3,0,.5);if(s3>0){g.globalAlpha=s3;chip(g,x+800,790,'생성만 · 아직 실행 안 함',C.amber,{sz:18,al:'right'});g.globalAlpha=1}}});
+
+// 5 SECTION 1-3 -------------------------------------------------------
+const EQ=[['설비ID','이상 LOT','발생 기간'],['PVD-01','12','2024-06-10 ~ 06-21'],['CMP-01','10','2024-03-11 ~ 03-22'],['PHOTO-01','10','2024-12-09 ~ 12-18'],['IMP-01','10','2025-03-10 ~ 03-20'],['CLN-01','9','2024-09-09 ~ 09-19'],['INSP-01','9','2025-06-09 ~ 06-19'],['ETCH-03','9','2025-09-08 ~ 09-18'],['CVD-02','9','2026-02-10 ~ 02-19'],['ETCH-02','9','2026-07-08 ~ 07-17'],['CMP-02','8','2026-05-11 ~ 05-21'],['CVD-01','7','2026-08-04 ~ 08-13'],['ETCH-01','6','2025-10-22 ~ 10-29']];
+S({code:'1-3',title:'코드를 실행하고 분석하는 Sub Agent 생성하기',group:G1,
+ caps:[{t:'preprocess.js를 사람이 매번 직접 실행하지 않고, Agent가 업무를 시작할 때 먼저 실행하도록 연결합니다.',say:'프리프로세스 제이에스를 사람이 매번 직접 실행하지 않고, 에이전트가 업무를 시작할 때 먼저 실행하도록 연결합니다.'},
+  {t:'defect-analyst Sub Agent — 시작하면 preprocess.js를 실행하고, 생성된 이상데이터.csv를 읽습니다.',say:'디펙트 애널리스트 서브 에이전트는, 시작하면 프리프로세스 제이에스를 실행하고, 생성된 이상데이터 씨에스브이를 읽습니다.'},
+  {t:'Agent는 원본을 직접 처리하지 않고, Code가 걸러낸 결과로 이상 설비와 기간의 특징을 분석합니다.',say:'에이전트는 원본을 직접 처리하지 않고, 코드가 걸러낸 결과로 이상 설비와 기간의 특징을 분석합니다.'}],
+ draw(g,P){promptBox(g,110,200,1700,['이상 데이터를 분석하는 defect-analyst Sub Agent를 만들어줘.','업무를 시작하면 scripts/preprocess.js를 먼저 실행하고, 생성된 이상데이터.csv를 바탕으로 이상 설비와 기간의 특징을 정리하도록 해줘.'],{lh:36,sz:19,rv:P.at(0,.2,1.4)});
+  const c1=P.sec(1),y=620;
+  agent(g,560,430,42,C.m3,{a:P.at(0,1,.6),name:'defect-analyst',side:1,work:c1>=0&&c1<2.4?.5:0,spin:P.ls*5});
+  const a=P.at(1,0,.5);if(a>0){g.save();g.globalAlpha=a;
+   csvIc(g,180,y,64,80,C.m1,'검사로그.csv','15,379행',{tsz:15});csvIc(g,300,y+20,64,80,C.m1,'설비센서로그.csv','15,379행',{tsz:15});
+   gearBox(g,420,y-40,280,80,C.m3,'preprocess.js','이상 기준 3개 적용',{spin:c1>0?P.ls*3:0,sz:19});
+   const f0=clamp(c1/1);arrow(g,560,478,560,y-44,C.amber,f0,{dash:[6,6]});if(f0>.6)chip(g,632,522,'먼저 실행',C.amber,{sz:15});
+   arrow(g,346,y,414,y,C.m1,clamp((c1-.8)/.5));
+   const f1=clamp((c1-1.3)/.8);arrow(g,706,y,780,y,C.m3,f1);if(f1>=1){csvIc(g,840,y,64,80,C.m3,'이상데이터.csv','108행 (이상 LOT)',{tsz:16})}
+   const f2=clamp((c1-2.2)/1);packet(g,840,y-44,610,448,f2,C.m3,'읽기');g.restore()}
+  const b=P.at(2,0,.6);if(b>0){g.save();g.globalAlpha=b;winFrame(g,1000,390,810,470,'설비ID별 이상 건수 · 발생 기간 (12개 설비 · 108 LOT)',{tc:C.m3,tag:'실습 데이터에 교안 기준 적용 · 출력 형식 예시'});
+   tbl(g,1024,440,[260,160,360],EQ,{lh:31,sz:16,a:i=>P.at(2,.3+i*.08,.4),ar:[0,1,0],hi:i=>i===9||i===11?P.at(2,1.8,.5):0,hc:C.m3,cc:(i,j)=>j===0?C.m3:C.text});g.restore()}}});
+
+// 6 SECTION 1-4 -------------------------------------------------------
+S({code:'1-4',title:'[보너스] 데이터가 너무 많다면? — 먼저 샘플링하기',group:G1,
+ caps:[{t:'실제 업무에서는 원본이 너무 커서, Agent가 전체 데이터를 확인하기 어려울 수 있습니다.',say:'실제 업무에서는 원본이 너무 커서, 에이전트가 전체 데이터를 확인하기 어려울 수 있습니다.'},
+  {t:'전체를 직접 읽게 하지 않고, 전체 구간에서 약 500행을 고르게 추출해 data/sample/에 저장합니다.',say:'전체를 직접 읽게 하지 않고, 전체 구간에서 약 500행을 고르게 추출해 데이터 슬래시 샘플 폴더에 저장합니다.'},
+  {t:'샘플로 컬럼과 데이터 형태를 파악한 뒤, 전체 원본에 적용할 Code를 생성합니다.',say:'샘플로 컬럼과 데이터 형태를 파악한 뒤, 전체 원본에 적용할 코드를 생성합니다.'}],
+ draw(g,P){chip(g,1810,200,'예시 프롬프트 · 실습은 하지 않습니다',C.dim,{sz:15,al:'right'});
+  const x0=200,x1=1720,rows=[['data/검사로그.csv',300,'15,379행 · 검사일자 2024-01-01 ~ 2026-09-20'],['data/설비센서로그.csv',420,'15,379행']];
+  rows.forEach(([n,y,rng],r)=>{const a=P.at(0,.2+r*.3,.6);if(a<=0)return;g.save();g.globalAlpha=a;T(g,n,x0,y-26,{sz:19,f:FK,w:600,c:C.m1});T(g,rng,x1,y-26,{sz:16,f:FM,al:'right',c:C.mid});
+   for(let k=0;k<190;k++){const xx=x0+k*8;g.fillStyle=hexA(C.m1,.18+.12*((k*7)%5)/5);g.fillRect(xx,y,6,44)}
+   const s=P.sec(1);if(s>=0){const nk=Math.floor(clamp(s/1.4)*38);for(let k=0;k<nk;k++){const xx=x0+k*40+4;g.fillStyle=C.amber;g.fillRect(xx,y-4,6,52)}}
+   const sc=P.sec(2);if(sc>=1.2){const f=clamp((sc-1.2)/1.6);g.fillStyle=hexA(C.m3,.22);g.fillRect(x0,y,(x1-x0)*f,44);if(f>=1)check(g,x1+40,y+22,28,C.ok,1)}g.restore()});
+  const s=P.sec(1);if(s>0){const f=clamp((s-1.2)/.8);g.globalAlpha=f;[[560,'검사로그 샘플'],[1360,'설비센서로그 샘플']].forEach(([x,n],i)=>{arrow(g,x,480,x,556,C.amber,f);});
+   winFrame(g,200,570,1520,150,'data/sample/  ·  약 500행씩 고르게 추출',{tc:C.amber,tag:'컬럼명은 실제 파일 기준'});
+   T(g,'검사일자, 라인, 설비ID, 공정, LOT_ID, 검사수량, 불량수량, 불량률(%), 불량유형, 검사자',230,650,{sz:18,f:FK,c:'#D6D9E0'});
+   T(g,'LOT_ID, 설비ID, 라인, 공정, 가동시간(hr), 가동율(%), 모니터링항목, 평균값, 최대값, 최소값, 단위, 정상범위',230,692,{sz:18,f:FK,c:'#D6D9E0'});g.globalAlpha=1}
+  const c=P.at(2,0,.6);if(c>0){g.globalAlpha=c;gearBox(g,760,750,400,80,C.m3,'데이터 처리 Code','샘플로 구조 파악 → 전체에 적용',{spin:P.ls*2});
+   arrow(g,960,746,960,724,C.m3,1);g.strokeStyle=hexA(C.m3,.6);g.lineWidth=2;g.setLineDash([6,6]);g.beginPath();g.moveTo(1164,790);g.bezierCurveTo(1780,790,1800,560,1740,470);g.stroke();g.setLineDash([]);chip(g,1520,760,'전체 원본에 적용',C.m3,{sz:15});g.globalAlpha=1}}});
+
+// 7 SECTION 1-5 -------------------------------------------------------
+const MB=['보낸 사람: 한승우 (L1 야간 운영조) <sw.han@fab.example.com>','받는 사람: 정민재 (설비기술팀) <mj.jung@fab.example.com>','참조: L1 운영조 공용 <l1-ops@fab.example.com>','정민재 책임님, 안녕하세요. L1 야간 운영조 한승우입니다.'];
+const MA=['보낸 사람: 한*우 (L1 야간 운영조) <***@fab.example.com>','받는 사람: 정*재 (설비기술팀) <***@fab.example.com>','참조: L1 운영조 공용 <***@fab.example.com>','정*재 책임님, 안녕하세요. L1 야간 운영조 한*우입니다.'];
+const NAMES=['한승우','정민재','최유진','이서연','김도윤','오세훈','박지훈'];
+S({code:'1-5',title:'규칙이 명확한 텍스트도 Code로 처리하기',group:G1,
+ caps:[{t:'Code는 표 데이터뿐 아니라, 규칙을 명확하게 찾을 수 있는 텍스트도 처리할 수 있습니다.',say:'코드는 표 데이터뿐 아니라, 규칙을 명확하게 찾을 수 있는 텍스트도 처리할 수 있습니다.'},
+  {t:'이메일은 아이디 부분을 ***로, masking-list.txt의 이름은 가운데 글자를 *로 — 한승우는 한*우가 됩니다.',say:'이메일은 아이디 부분을 별표 세 개로, 마스킹 리스트 텍스트 파일에 있는 이름은 가운데 글자를 별표로 바꿉니다. 한승우는 한 별표 우가 됩니다.'},
+  {t:'원본은 수정하지 않고, 같은 규칙을 모든 메일에 반복 적용해 documents/ 폴더에 같은 이름으로 저장합니다.',say:'원본은 수정하지 않고, 같은 규칙을 모든 메일에 반복 적용해 도큐먼츠 폴더에 같은 이름으로 저장합니다.'},
+  {t:'이후 실제로 마스킹이 잘 됐는지 txt 파일을 열어 확인해봅니다.',say:'이후 실제로 마스킹이 잘 됐는지 텍스트 파일을 열어 확인해봅니다.'}],
+ draw(g,P){panel(g,110,210,660,650,{r:16,fill:'#0B0E14'});T(g,'불량원인분석_실습용',136,248,{sz:16,f:FK,c:C.dim});
+  const s2=P.at(2,0,.5);
+  tree(g,140,290,[{n:'documents/',d:0,dir:1},{n:'mails/',d:1,dir:1,hi:P.at(0,.8,.5)*(1-s2),hc:C.m4},{n:'메일_20260707_ETCH-02_냉각수유량알람.txt',d:2,c:C.m4},{n:'메일_20260811_CVD-01_파티클불량급증.txt',d:2,c:C.m4},{n:'메일_20260925_CLN-03_질소퍼지유량저하.txt',d:2,c:C.m4},
+   {n:'메일_… 3개 (마스킹본)',d:1,c:C.ok,tc:C.ok,a:s2,hi:s2,hc:C.ok,tag:'저장'},{n:'masking-list.txt',d:0,c:C.amber,tc:C.amber,hi:P.at(1,0,.5)*(1-s2)}],{w:630,lh:38,sz:15});
+  promptBox(g,120,560,640,['documents/mails/ 폴더의 업무 메일 txt 파일의 개인정보를','마스킹하는 scripts/mask-data.js를 만들어 실행해줘.','- 이메일: 아이디 부분을 ***로 변경','- 이름: @masking-list.txt와 일치하면 가운데 글자를 *로','- 메일의 나머지 내용은 변경하지 않기 · 원본 수정 금지','- 처리된 파일은 documents/ 폴더에 같은 이름으로 저장','출력: 처리한 파일 수 · 마스킹한 이메일 수 · 이름 수'],{lh:30,sz:16,tag:'교안 프롬프트 · 요약',rv:P.at(0,.4,1.6)});
+  const x=820,w=990;winFrame(g,x,210,w,236,'메일_20260707_ETCH-02_냉각수유량알람.txt  (원본)',{tc:C.m4,tag:'실제 파일 · 일부'});
+  MB.forEach((l,i)=>{const a=P.at(0,.3+i*.2,.4);if(a<=0)return;g.globalAlpha=a;T(g,l,x+26,286+i*42,{sz:19,f:FK,c:'#D6D9E0'});g.globalAlpha=1});
+  const m=P.sec(1);if(m>=0){gearBox(g,x+w/2-170,456,340,56,C.m3,'scripts/mask-data.js',null,{spin:P.ls*3,sz:18});
+   winFrame(g,x,522,w,236,'documents/메일_20260707_ETCH-02_냉각수유량알람.txt',{tc:C.ok,tag:'규칙 적용 결과'});
+   MA.forEach((l,i)=>{const f=clamp((m-.6-i*.45)/.4);if(f<=0)return;g.globalAlpha=f;T(g,l,x+26,598+i*42,{sz:19,f:FK,c:C.text});g.globalAlpha=1})}
+  const na=P.at(1,.2,.5);if(na>0){g.globalAlpha=na;T(g,'masking-list.txt',x,814,{sz:15,f:FM,c:C.amber});NAMES.forEach((n,i)=>chip(g,x+150+i*80,808,n,C.amber,{sz:14}));g.globalAlpha=1}
+  const c3=P.at(3,0,.6);if(c3>0){g.save();g.globalAlpha=c3;panel(g,x+w-230,780,230,58,{r:12,fill:'#10141C',stroke:hexA(C.ok,.6)});T(g,'처리한 파일 수  3',x+w-212,816,{sz:18,f:FK,w:700,c:C.ok});g.restore()}}});
+
+// 8 SECTION 2-1 -------------------------------------------------------
+const STORE=[['회의록',C.m4],['보고서',C.m4],['매뉴얼',C.m4],['회의록',C.m4],['보고서',C.m4],['매뉴얼',C.m4],['회의록',C.m4],['보고서',C.m4],['매뉴얼',C.m4],['회의록',C.m4],['보고서',C.m4],['매뉴얼',C.m4]];
+const HITS=[['"설비 온도 상승 이후 불량률 증가…"','0.92',1],['"고열 원인과 대책…"','0.87',4],['"설비 점검 주기…"','0.64',8]];
+S({code:'2-1',title:'RAG(Retrieval-Augmented Generation)란',group:G2,
+ caps:[{t:'회의록, 보고서, 매뉴얼처럼 문서가 많이 쌓이면, 필요한 내용을 매번 모두 읽기 어렵습니다.'},
+  {t:'RAG는 Retrieval Augmented Generation — 우리말로 검색 증강 생성입니다.',say:'래그는 리트리벌 어그멘티드 제너레이션의 약자로, 우리말로는 검색 증강 생성이라고 합니다.'},
+  {t:'검색(Retrieval) — 질문과 관련 있는 자료를 저장소에서 찾아냅니다.',say:'검색. 질문과 관련 있는 자료를 저장소에서 찾아냅니다.'},
+  {t:'증강(Augmented) — 검색한 자료를 질문과 함께 AI에 전달합니다. 참고할 정보를 추가하는 단계입니다.',say:'증강. 검색한 자료를 질문과 함께 에이아이에 전달합니다. 답변에 참고할 정보를 추가하는 단계입니다.'},
+  {t:'생성(Generation) — AI는 넘겨받은 자료를 근거로 답을 만듭니다.',say:'생성. 에이아이는 넘겨받은 자료를 근거로 답을 만듭니다.'},
+  {t:'모든 문서를 한꺼번에 주지 않고 필요한 자료만: 검색 → 필요한 내용만 Context에 추가 → AI가 참고해 답변.',say:'모든 문서를 한꺼번에 주지 않고 필요한 자료만 찾아서 전달합니다. 검색하고, 필요한 내용만 컨텍스트에 추가하고, 에이아이가 참고해 답변합니다.'}],
+ draw(g,P){const H3=[['검색','Retrieval',C.m4,390],['증강','Augmented',C.m1,960],['생성','Generation',C.amber,1530]];
+  H3.forEach(([k,e,c,x],i)=>{const a=P.at(1,.3+i*.3,.5);if(a<=0)return;const on=P.i===2+i||P.i===5;g.globalAlpha=a;chip(g,x,232,`${i+1}  ${k} · ${e}`,c,{sz:20,al:'center',fill:on?hexA(c,.28):hexA(c,.08)});g.globalAlpha=1;if(i<2){g.globalAlpha=a*.6;arrow(g,x+180,232,x+390,232,C.mid,1,{dash:[5,6]});g.globalAlpha=1}});
+  // store
+  panel(g,110,290,560,560,{r:18,fill:'#0D1119',stroke:hexA(C.m4,.4)});T(g,'문서 저장소',134,326,{sz:17,f:FK,c:C.dim});
+  const sh=P.sec(2);STORE.forEach(([n,c],i)=>{const a=P.at(0,.1+i*.08,.4);if(a<=0)return;const x=200+(i%4)*125,y=410+Math.floor(i/4)*150;const hi=HITS.findIndex(h=>h[2]===i);const lit=hi>=0&&sh>.8+hi*.4;const gone=hi>=0&&P.sec(3)>0;g.globalAlpha=a*(sh>0&&hi<0?.35:1)*(gone?.25:1);doc(g,x,y,70,90,lit?C.amber:c,{lines:3});T(g,n,x,y+70,{sz:15,al:'center',c:lit?C.amber:C.mid});g.globalAlpha=1});
+  if(sh>=0&&P.sec(3)<0){const t=clamp(sh/2.4),mx=lerp(220,560,t),my=410+Math.sin(t*6)*120+150;mag(g,mx,my,24,C.amber)}
+  // question
+  const q=P.at(0,.8,.6);if(q>0){g.globalAlpha=q;person(g,760,360,44,C.text);bubble(g,810,300,500,64,'"설비 온도 상승으로 불량이 발생한 사례가 있었나요?"',C.m1,{sz:18});g.globalAlpha=1}
+  // augmented package
+  const au=P.sec(3);if(au>=0){const pk=panel(g,740,440,440,400,{r:18,fill:'#0D1119',stroke:hexA(C.m1,.6),lw:2});T(g,'질문 + 찾은 자료',764,478,{sz:19,w:700,c:C.m1});
+   T(g,'Q. 설비 온도 상승으로 불량이 발생한 사례?',764,520,{sz:17,c:C.text});
+   HITS.forEach(([s,sc,i],k)=>{const f=clamp((au-.3-k*.35)/.7);if(f<=0)return;const sx=200+(i%4)*125,sy=410+Math.floor(i/4)*150,tx=764,ty=560+k*84;g.save();g.globalAlpha=f;const x=lerp(sx,tx,eIO3(f)),y=lerp(sy,ty,eIO3(f));panel(g,x,y,390,68,{r:10,fill:hexA(C.m4,.12),stroke:hexA(C.m4,.6)});T(g,s,x+14,y+30,{sz:16});T(g,'유사도 '+sc,x+14,y+56,{sz:14,f:FM,c:C.ok});g.restore()})}
+  const ge=P.sec(4);if(ge>=0){packet(g,1184,640,1420,560,clamp(ge/1),C.m1,'Context');agent(g,1530,540,70,C.amber,{glow:P.at(4,.8,.6),work:ge>0&&ge<1.2?.5:0,spin:P.ls*5,name:'AI',nf:FM});
+   const b=P.at(4,1,.6);if(b>0){g.globalAlpha=b;panel(g,1300,680,460,130,{r:18,fill:hexA(C.amber,.1),stroke:hexA(C.amber,.6)});T(g,'찾은 문서를 참고해',1530,736,{sz:22,w:600,al:'center'});T(g,'답변을 생성합니다.',1530,774,{sz:22,w:600,al:'center'});g.globalAlpha=1}}
+  if(P.i>=2){T(g,'교안 그림 기준',1810,866,{sz:14,f:FK,al:'right',c:C.dim})}}});
+
+// 9 SECTION 2-2 (concept) ---------------------------------------------
+S({code:'2-2',title:'Embedding Vector 만들기',group:G2,
+ caps:[{t:'Embedding 모델은 입력한 문장을 의미를 나타내는 숫자 Vector로 변환합니다.',say:'임베딩 모델은 입력한 문장을, 의미를 나타내는 숫자 벡터로 변환합니다.'},
+  {t:'Vector는 문장의 의미를 담고 있어서, 의미가 비슷한 문장끼리는 Vector 공간에서도 가깝게 위치합니다.',say:'벡터는 문장의 의미를 담고 있어서, 의미가 비슷한 문장끼리는 벡터 공간에서도 가깝게 위치합니다.'},
+  {t:'RAG는 문서와 질문을 같은 방식으로 Vector로 바꾼 뒤, 가까운 Vector를 찾아 관련 문서를 검색합니다.',say:'래그는 문서와 질문을 같은 방식으로 벡터로 바꾼 뒤, 서로 가까운 벡터를 찾아 관련 문서를 검색합니다.'},
+  {t:'로컬 모델도, Embedding API도 가능합니다. 이번 실습은 설치 없이 교육용 Embedding API를 호출합니다.',say:'로컬 모델을 직접 실행할 수도, 임베딩 에이피아이를 쓸 수도 있습니다. 이번 실습은 설치 없이 교육용 임베딩 에이피아이를 호출합니다.'}],
+ draw(g,P){const y=360;
+  const a0=P.at(0,0,.5);g.globalAlpha=a0;panel(g,110,250,330,220,{r:16,fill:'#10141C',stroke:hexA(C.m1,.5)});T(g,'입력 문장',134,286,{sz:16,c:C.dim});['"설비 온도가','상승하면서 불량률이','증가했습니다."'].forEach((s,i)=>T(g,s,134,336+i*40,{sz:23,w:600}));g.globalAlpha=1;
+  const tk=['설비','온도','상승','불량률','증가'];tk.forEach((s,i)=>{const a=P.at(0,.5+i*.12,.4);if(a<=0)return;g.globalAlpha=a;chip(g,560,262+i*48,s,C.m3,{sz:18,al:'center'});g.globalAlpha=1});
+  const na=P.at(0,1.2,.6);if(na>0){g.globalAlpha=na;const L=[[700,[290,350,410,470]],[790,[300,380,460]],[880,[320,390,440]]];for(let a=0;a<2;a++)L[a][1].forEach(y0=>L[a+1][1].forEach(y1=>{g.strokeStyle=hexA(C.m4,.25);g.lineWidth=1;line(g,L[a][0],y0,L[a+1][0],y1)}));
+   L.forEach(([x,ys])=>ys.forEach(yy=>{g.fillStyle='#0D1118';g.beginPath();g.arc(x,yy,12,0,7);g.fill();g.strokeStyle=C.m4;g.lineWidth=2.5;g.stroke()}));T(g,'Embedding 모델',790,520,{sz:17,f:FK,al:'center',c:C.m4});g.globalAlpha=1}
+  const va=P.at(0,1.8,.6);if(va>0){g.globalAlpha=va;arrow(g,920,380,970,380,C.m4,1);panel(g,990,300,380,160,{r:14,fill:'#10141C',stroke:hexA(C.amber,.5)});T(g,'[0.21, -0.08,',1020,354,{sz:24,f:FM,c:C.amber});T(g,' 0.44, 0.12, -0.03, …]',1020,396,{sz:24,f:FM,c:C.amber});T(g,'수백~수천 차원의 숫자 Vector',1180,440,{sz:15,al:'center',c:C.mid});T(g,'교안 그림 기준 (예시 값)',1370,490,{sz:14,f:FK,al:'right',c:C.dim});g.globalAlpha=1}
+  // vector space
+  const b=P.at(1,0,.6);if(b>0){g.save();g.globalAlpha=b;const ox=180,oy=830,sw=700,shh=300;g.strokeStyle=C.mid;g.lineWidth=2;arrow(g,ox,oy,ox+sw,oy,C.mid,1);arrow(g,ox,oy,ox,oy-shh,C.mid,1);T(g,'차원 1',ox+sw,oy+28,{sz:14,f:FK,al:'right',c:C.dim});T(g,'차원 2',ox+10,oy-shh-6,{sz:14,f:FK,c:C.dim});
+   const pts=[['설비 온도 상승',520,620,C.m1],['장비 과열 불량 증가',600,660,C.m3],['재고 수량 집계 완료',290,770,C.m4]];const m=clamp(P.sec(1)/1.6);
+   pts.forEach(([n,x,yy,c],i)=>{const px=lerp(ox+sw/2,x,eO3(m)),py=lerp(oy-shh/2,yy,eO3(m));g.fillStyle=c;g.beginPath();g.arc(px,py,11,0,7);g.fill();T(g,n,px+(i===2?20:i===0?-18:20),py+(i===0?-18:6),{sz:17,al:i===0?'right':'left',c})});
+   if(m>=1){g.strokeStyle=hexA(C.amber,.8);g.setLineDash([5,5]);g.lineWidth=2;g.beginPath();g.ellipse(560,640,90,50,.4,0,7);g.stroke();g.setLineDash([]);chip(g,660,712,'가까울수록 의미가 비슷함',C.amber,{sz:15})}
+   g.restore()}
+  const c=P.at(2,0,.6);if(c>0){g.save();g.globalAlpha=c;const ox=1060,oy=830;arrow(g,ox,oy,ox+330,oy-230,C.m1,clamp(P.sec(2)/.8));T(g,'질문 Vector',ox+340,oy-236,{sz:17,c:C.m1});
+   arrow(g,ox,oy,ox+360,oy-160,C.m3,clamp((P.sec(2)-.5)/.8));T(g,'문서 A (유사도 높음)',ox+370,oy-150,{sz:17,c:C.m3});arrow(g,ox,oy,ox+380,oy-20,C.m4,clamp((P.sec(2)-.8)/.8));T(g,'문서 B (유사도 낮음)',ox+390,oy-14,{sz:17,c:C.m4});
+   T(g,'cos(θ) = A·B / (|A||B|)',ox+620,oy-300,{sz:22,f:FM,w:600,al:'center',c:C.amber});T(g,'방향이 비슷할수록 유사도가 높음',ox+620,oy-264,{sz:16,al:'center',c:C.mid});g.restore()}
+  const d=P.at(3,0,.5);if(d>0){g.save();g.globalAlpha=d;g.fillStyle='rgba(7,8,12,.86)';g.fillRect(100,560,1720,310);
+   [['로컬 Embedding 모델','다운로드해 직접 실행',0],['Embedding API','OpenAI 등에서 제공',0],['교육용 Embedding API','이번 실습 · 설치 없이 원리 확인',1]].forEach(([t,s,on],i)=>{const x=170+i*560,a=P.at(3,.3+i*.3,.5);g.globalAlpha=d*a;panel(g,x,610,500,190,{r:18,fill:on?hexA(C.amber,.12):C.card,stroke:on?C.amber:C.line,lw:on?2.5:1.5});T(g,t,x+30,680,{sz:26,w:700,c:on?C.amber:C.text});T(g,s,x+30,724,{sz:19,c:C.mid});if(on)chip(g,x+470,760,'이번 실습',C.amber,{sz:15,al:'right'})});g.restore()}}});
+
+// 10 SECTION 2-2 (API) ------------------------------------------------
+const TE=['const API_URL = "https://defect-rag-embedding-api.vercel.app/api/embed";','process.loadEnvFile(ENV_PATH);   // .env 로드','const apiKey = process.env.EMBED_API_KEY;','','const res = await fetch(API_URL, {','  method: "POST",','  headers: { Authorization: `Bearer ${apiKey}` },','  body: JSON.stringify({ texts }),','});','const { model, dims, embeddings } = JSON.parse(body);','','function cosine(a, b) { … dot / (|a|·|b|) }'];
+S({code:'2-2',title:'Embedding API 호출해보기',group:G2,
+ caps:[{t:'.env의 EMBED_API_KEY로 교육용 Embedding API를 호출하는 test-embedding.js를 먼저 만듭니다. 유사도 계산 포함.',say:'닷 엔브 파일의 임베드 에이피아이 키로, 교육용 임베딩 에이피아이를 호출하는 테스트 임베딩 제이에스를 먼저 만듭니다. 유사도 계산도 포함합니다.'},
+  {t:'두 문장을 각각 Embedding해, Vector 앞부분 5개와 전체 차원 수, Cosine Similarity를 출력하게 합니다.',say:'두 문장을 각각 임베딩해서, 벡터 앞부분 다섯 개와 전체 차원 수, 코사인 유사도를 출력하게 합니다.'},
+  {t:'두 Vector 모두 384차원. 단어는 달라도 의미가 비슷해, 코사인 유사도는 0.5708입니다.',say:'두 벡터 모두 384차원입니다. 단어는 달라도 의미가 비슷해서, 코사인 유사도는 0.5708입니다.'}],
+ draw(g,P){winFrame(g,110,210,860,650,'scripts/test-embedding.js',{tc:C.m1,tag:'Ch4_완성본 실제 파일 · 일부 요약'});
+  TE.forEach((l,i)=>{const a=P.at(0,.3+i*.12,.35);if(a<=0)return;g.globalAlpha=a;const hi=(i===0||i===2)&&P.at(0,2,.5)>0;if(hi){rrect(g,124,262+i*44,832,40,6);g.fillStyle=hexA(C.amber,.1);g.fill()}T(g,l,136,290+i*44,{sz:i===0?14.5:17,f:hasK(l)?FK:FM,c:l.startsWith('function')?C.m3:l.includes('EMBED_API_KEY')?C.amber:'#D6D9E0'});g.globalAlpha=1});
+  T(g,'API 키 값은 .env에만 두고 화면에 표시하지 않습니다',136,840,{sz:15,c:C.dim});
+  const b=P.at(1,0,.5);if(b>0){g.globalAlpha=b;promptBox(g,1010,210,800,['scripts/test-embedding.js를 활용해서 두 문장을 각각 Embedding해줘.','1. "설비 온도가 상승하면서 불량률이 증가했습니다."','2. "장비가 과열된 이후 불량품 발생 비율이 높아졌습니다."','→ 앞부분 5개 · 전체 차원 수 · Cosine Similarity'],{lh:38,sz:17,rv:clamp(P.sec(1)/1.6),tag:'교안 프롬프트 · 요약'});g.globalAlpha=1}
+  const c=P.at(2,0,.5);if(c>0){g.save();g.globalAlpha=c;winFrame(g,1010,440,800,420,'터미널 출력',{tc:C.ok,tag:'교안 화면 기준'});
+   tbl(g,1030,500,[330,330,100],[['문장','앞 5개 값','차원'],['1. 설비 온도가 상승하면서…','[-0.0280, 0.1126, 0.0186,','384'],['','  0.1313, 0.0767]',''],['2. 장비가 과열된 이후…','[-0.0021, 0.0364, 0.0179,','384'],['','  0.0228, 0.0436]','']],{lh:46,sz:17,cc:(i,j)=>j===1?C.m4:C.text});
+   const s=P.at(2,1,.5);g.globalAlpha=c*s;T(g,'두 문장의 코사인 유사도는',1034,800,{sz:22,w:500});T(g,'0.5708',1330,802,{sz:34,f:FM,w:700,c:C.amber});g.restore()}}});
+
+// 11 SECTION 2-3 ------------------------------------------------------
+const MAN=['설비 운영 매뉴얼 (통합본)','문서번호: MAN-EQ-000','개정일: 2026-01-15','적용 범위: 전 공정 설비 (식각, 박막증착, …)','','이 매뉴얼은 공정별 설비의 주요 관리 파라미터,','정상 운영 기준, 이상 징후 발생 시 점검 순서를','정리한 것이다. …','===========================================','제1장 식각(ETCH) 설비 — 챔버 온도 및 히터 관리 기준','===========================================','대상 설비: ETCH-01, ETCH-02, ETCH-03 (L1 라인)','','1.1 챔버 온도 관리','- 정상 운영 온도 범위: 설정값 대비 ±0.5도 이내'];
+const CK=[['고정 길이',C.m1,'13','282자','62자','300자'],['구조 경계',C.ok,'28','129자','17자','382자'],['문단',C.m5,'29','124자','17자','382자']];
+function distBars(g,x,y,w,h,k,f){const n=k===0?13:k===1?28:29;const bw=w/Math.max(n,20)-3;for(let i=0;i<n;i++){if(i/n>f)break;let v;if(k===0)v=i===12?62:300;else{v=[150,130,110,60,40,140,120,90,30,150,40,20,120,30,110,40,20,120,90,20,130,40,20,140,90,30,160,382,120][i%29];if(k===1&&i===n-1)v=382}
+  const bh=h*v/382;g.fillStyle=CK[k][1];g.fillRect(x+i*(bw+3),y+h-bh,bw,bh)}}
+S({code:'2-3',title:'문서를 Chunk로 나눠보기',group:G2,
+ caps:[{t:'긴 문서는 그대로 저장하지 않고, 검색하기 좋은 작은 단위인 Chunk로 나누어 사용합니다.',say:'긴 문서는 그대로 저장하지 않고, 검색하기 좋은 작은 단위인 청크로 나누어 사용합니다.'},
+  {t:'고정 길이 — 문서 구조와 관계없이 일정한 글자 수로 나눕니다.'},
+  {t:'구조 경계는 제목·소제목·절 번호를, 문단은 빈 줄로 구분된 문단을 기준으로 나눕니다.'},
+  {t:'RAG보조자료.html의 청킹 비교 탭에 documents 폴더의 TXT를 올려, 개수와 내용을 비교해봅니다.',say:'래그 보조자료 에이치티엠엘의 청킹 비교 탭에, 도큐먼츠 폴더의 텍스트 파일을 올려서, 청크 개수와 실제 내용을 비교해봅니다.'}],
+ draw(g,P){winFrame(g,110,210,760,650,'documents/설비운영매뉴얼_통합본.txt',{tc:C.m4,tag:'실제 파일 · 앞부분'});
+  const lh=38,y0=286;MAN.forEach((l,i)=>{const a=P.at(0,.2+i*.05,.3);if(a<=0)return;g.globalAlpha=a;T(g,l,136,y0+i*lh,{sz:l.startsWith('===')?13:17,f:FK,c:/^(제\d|1\.1)/.test(l)?C.amber:'#C9CCD4'});g.globalAlpha=1});
+  const cut=(yy,c,f,lab)=>{if(f<=0)return;g.strokeStyle=c;g.lineWidth=3;line(g,120,yy,120+740*f,yy);if(lab&&f>=1)chip(g,856,yy,lab,c,{sz:13,al:'right'})};
+  const s1=P.sec(1),s2=P.sec(2);
+  if(s1>=0&&s2<0){[1,2,3].forEach(k=>cut(y0-26+k*5*lh,C.m1,clamp((s1-k*.4)/.5),'300자'))}
+  if(s2>=0){const b=[8,13];b.forEach((r,k)=>cut(y0-26+r*lh,C.ok,clamp((s2-k*.4)/.5),'제목'));[4,12].forEach((r,k)=>cut(y0-26+r*lh+5,C.m5,clamp((s2-1.2-k*.4)/.5),'빈 줄'))}
+  const a=P.at(0,.8,.6);if(a>0){g.save();g.globalAlpha=a;winFrame(g,920,210,890,650,'RAG보조자료.html  ·  ⑤ 청킹 비교',{tc:C.amber,tag:'교안 화면 기준'});
+   T(g,'설비운영매뉴얼_통합본.txt',950,290,{sz:20,w:700});T(g,'3,662자 · 143줄 · UTF-8',1240,290,{sz:17,c:C.mid});T(g,'고정 길이 300자 · 오버랩 0자',1780,290,{sz:16,al:'right',c:C.dim});
+   tbl(g,946,320,[180,110,110,100,110],[['방식','Chunk 수','평균','최소','최대']],{lh:44,sz:17});
+   CK.forEach(([n,c,cnt,av,mn,mx],k)=>{const on=k===0?P.sec(1)>=0:P.sec(2)>=(k===1?0:1.2);const f=on?1:0;const yy=380+k*150;g.globalAlpha=a*(on?1:.28);
+    g.fillStyle=c;g.fillRect(960,yy+22,14,14);T(g,n,986,yy+36,{sz:20,w:600});T(g,cnt,1224,yy+42,{sz:40,f:FM,w:700,al:'right',c});T(g,av,1334,yy+36,{sz:18,al:'right'});T(g,mn,1436,yy+36,{sz:18,al:'right'});T(g,mx,1546,yy+36,{sz:18,al:'right'});
+    distBars(g,1580,yy,210,60,k,on?clamp((k===0?P.sec(1):P.sec(2)-(k===1?0:1.2))/1.2):0);g.strokeStyle=C.line;g.lineWidth=1;line(g,946,yy+100,1790,yy+100)});
+   g.globalAlpha=a;const t4=P.at(3,0,.5);if(t4>0){g.globalAlpha=a*t4;chip(g,1365,836,'파일 업로드 → 세 방식의 Chunk 수와 실제 내용을 나란히 비교',C.amber,{sz:16,al:'center'})}g.restore()}}});
+
+// 12 SECTION 2-4 (build) ----------------------------------------------
+const DOCS5=[['설비운영매뉴얼_통합본.txt',13],['이슈보고서_CVD-01_챔버압력편차_20260814.txt',6],['이슈보고서_ETCH-02_냉각수온도상승_20260720.txt',6],['품질회의록_20260715_ETCH-02.txt',6],['품질회의록_20260818_CVD-01.txt',6]];
+S({code:'2-4',title:'문서를 검색 DB로 만들기',group:G2,
+ caps:[{t:'이번에는 documents/ 폴더의 여러 문서를 검색할 수 있는 형태로 준비합니다. mails 폴더는 제외합니다.',say:'이번에는 도큐먼츠 폴더의 여러 문서를 검색할 수 있는 형태로 준비합니다. 메일 폴더는 제외합니다.'},
+  {t:'앞의 비교처럼 제목만 따로 떨어지거나, 문장이 중간에 끊기는 Chunk가 생길 수 있습니다.',say:'앞의 비교처럼, 제목만 따로 떨어지거나 문장이 중간에 끊기는 청크가 생길 수 있습니다.'},
+  {t:'그래서 제목·소제목 구조를 기준으로 나누되, 너무 짧은 내용은 관련 본문과 함께 묶습니다.'},
+  {t:'각 Chunk를 Embedding API로 Vector로 바꾸고, 파일명·원문·Vector를 rag.db에 저장합니다.',say:'각 청크를 테스트 임베딩 제이에스와 같은 방식으로 벡터로 바꾸고, 파일명과 원문, 벡터를 래그 디비에 저장합니다.'}],
+ draw(g,P){panel(g,110,210,620,650,{r:16,fill:'#0B0E14'});T(g,'documents/',136,250,{sz:18,f:FM,w:600,c:C.m4});
+  DOCS5.forEach(([n,k],i)=>{const a=P.at(0,.3+i*.15,.4);if(a<=0)return;g.globalAlpha=a;fileIc(g,140,300+i*56,C.m4);T(g,n,172,308+i*56,{sz:15,f:FK,c:C.text});g.globalAlpha=1});
+  const mx=P.at(0,1.4,.5);if(mx>0){g.globalAlpha=mx;folder(g,140,590,C.dim);T(g,'mails/  (제외)',172,598,{sz:16,f:FK,c:C.dim});g.strokeStyle=C.bad;g.lineWidth=2.5;line(g,136,594,330,594);g.globalAlpha=1}
+  // chunk demo
+  const cx=780,s1=P.sec(1),s2=P.sec(2);
+  if(s1>=0){const a=clamp(s1/.5);g.globalAlpha=a;T(g,'Chunk 만들기',cx,250,{sz:18,w:700,c:C.mid});
+   const merge=s2>=0?eIO3(clamp((s2-.3)/1)):0;
+   const hY=lerp(300,330,merge);panel(g,cx,hY,380,lerp(60,200,merge),{r:10,fill:hexA(merge>0?C.ok:C.m5,.1),stroke:hexA(merge>0?C.ok:C.m5,.6)});
+   T(g,'1.2 점검 순서',cx+18,hY+36,{sz:18,w:700,c:C.amber});
+   if(merge<1){g.globalAlpha=a*(1-merge);panel(g,cx,400,380,140,{r:10,fill:hexA(C.m1,.08),stroke:hexA(C.m1,.5)});['1) 냉각수 유량 확인','2) 냉각수 순환 펌프 상태 확인','3) 온도 센서 캘리브레이션…'].forEach((s,i)=>T(g,s,cx+18,440+i*34,{sz:16}));if(merge===0){chip(g,cx+370,hY+30,'제목만 단독 Chunk ✕',C.m5,{sz:13,al:'right'})}}
+   if(merge>0){g.globalAlpha=a*merge;['1) 냉각수 유량 확인','2) 냉각수 순환 펌프 상태 확인','3) 온도 센서 캘리브레이션…'].forEach((s,i)=>T(g,s,cx+18,hY+76+i*34,{sz:16}));chip(g,cx+190,hY+230,'✓ 제목 + 관련 본문 = 1 Chunk',C.ok,{sz:15,al:'center'})}
+   g.globalAlpha=1}
+  // embed + db
+  const s3=P.sec(3);if(s3>=0){const a=clamp(s3/.5);g.save();g.globalAlpha=a;
+   panel(g,cx,640,380,90,{r:14,fill:hexA(C.m4,.1),stroke:hexA(C.m4,.7),lw:2});T(g,'Embedding API',cx+24,678,{sz:20,f:FM,w:600,c:C.m4});T(g,'Chunk → 384차원 Vector',cx+24,708,{sz:15,c:C.mid});
+   arrow(g,cx+190,570,cx+190,634,C.m4,clamp(s3/.6));
+   winFrame(g,1210,210,600,650,'rag.db  ·  chunks 테이블',{tc:C.amber,tag:'실습자료 Ch4_완성본 rag.db 기준'});
+   arrow(g,cx+386,685,1204,685,C.amber,clamp((s3-.5)/.6));
+   tbl(g,1230,262,[250,170,150],[['file_name','content','embedding'],...DOCS5.map(([n,k])=>[n.replace('.txt','').replace(/_\d{8}/,'').replace('이슈보고서_','이슈_').replace('품질회의록_','회의록_'),`${k} Chunk`,'[384]'])],{lh:50,sz:15,a:i=>clamp((s3-.9-i*.2)/.4),cc:(i,j)=>j===2?C.m4:C.text});
+   const tot=clamp((s3-2.2)/.5);if(tot>0){g.globalAlpha=a*tot;T(g,'37',1240,640,{sz:72,f:FM,w:700,c:C.amber});T(g,'Chunk 저장',1350,622,{sz:20,w:600});T(g,'384차원 · paraphrase-multilingual-MiniLM-L12-v2',1350,652,{sz:14,f:FM,c:C.mid});T(g,'※ 교안 화면(다음 장면)의 DB와는 Chunk 구성이 다름',1240,690,{sz:14,f:FK,c:C.dim});T(g,'Node.js 내장 SQLite (node:sqlite)',1240,726,{sz:17,f:FK,c:C.mid});T(g,'scripts/build-rag.js',1240,760,{sz:18,f:FM,c:C.m3})}
+   g.restore()}}});
+
+// 13 SECTION 2-4 (check) ----------------------------------------------
+const DBR=[['id','글자 수','content (앞부분)','vector 앞 5개 값'],['1','102','"설비 운영 매뉴얼 (통합본) 문서번호:…"','-0.10105, 0.07184, 0.04978, …'],['2','113','"이 매뉴얼은 공정별 설비의 주요 관리…"','0.02555, 0.02727, 0.00164, …'],['3','195','"=== 제1장 식각(ETCH) 설비 – 챔버…"','-0.07860, 0.05284, 0.00237, …'],['4','159','"1.1 챔버 온도 관리 - 정상 운영 온도…"','0.03391, 0.13262, 0.01051, …'],['5','119','"1.2 점검 순서 온도 이상 알람 발생 시…"','-0.00813, 0.07904, 0.07485, …']];
+const FOLD=[['.claude',C.mid],['data',C.m1],['documents',C.m4],['scripts',C.m3]];
+S({code:'2-4',title:'rag.db 내용 확인하기',group:G2,
+ caps:[{t:'실습 폴더에 rag.db가 생겼습니다. 검색에 사용할 문서 조각과 출처 정보가 저장됩니다.',say:'실습 폴더에 래그 디비가 생겼습니다. 검색에 사용할 문서 조각과 출처 정보가 저장됩니다.'},
+  {t:'DB를 직접 확인해봅니다 — 출처 문서, 글자 수, 그리고 각 조각의 Vector 숫자들.',say:'디비를 직접 확인해봅니다. 출처 문서, 글자 수, 그리고 각 조각의 벡터 숫자들입니다.'}],
+ draw(g,P){winFrame(g,110,210,560,420,'불량원인분석_실습용',{tc:C.mid,tag:'교안 화면 기준'});
+  FOLD.forEach(([n,c],i)=>{const a=P.at(0,.2+i*.15,.4);if(a<=0)return;g.globalAlpha=a;const x=190+(i%3)*160,y=320+Math.floor(i/3)*150;g.fillStyle=hexA('#F2C14E',.85);rrect(g,x-50,y-30,100,70,8);g.fill();g.fillStyle='#F7D373';rrect(g,x-50,y-40,44,16,5);g.fill();T(g,n,x,y+70,{sz:17,f:FM,al:'center'});g.globalAlpha=1});
+  const d=P.at(0,.9,.5);if(d>0){g.globalAlpha=d;const x=350,y=480;panel(g,x-70,y-75,140,190,{r:10,fill:hexA(C.amber,.12),stroke:C.amber,lw:2});doc(g,x,y,70,90,C.mid,{lines:2});T(g,'rag.db',x,y+80,{sz:18,f:FM,w:700,al:'center',c:C.amber});T(g,'1개 항목 선택함 192KB',450,560,{sz:15,f:FK,c:C.mid});g.globalAlpha=1}
+  const s=P.at(1,0,.5);g.globalAlpha=Math.max(s,.001);promptBox(g,110,660,560,['rag.db를 확인해서 저장된 데이터의 출처 문서, 글자 수,','vector 숫자 3개, 샘플 데이터 5개를 보여줘.'],{lh:36,sz:17,rv:s});g.globalAlpha=1;
+  if(s>0){g.save();g.globalAlpha=s;winFrame(g,720,210,1090,650,'터미널 출력',{tc:C.ok,tag:'교안 화면 기준'});T(g,'샘플 데이터 5개 (모두 설비운영매뉴얼_통합본.txt, vector 앞 5개 숫자 포함):',746,292,{sz:17,f:FK,c:C.m1});
+   tbl(g,740,320,[60,100,480,410],DBR,{lh:84,sz:16,a:i=>P.at(1,.4+i*.25,.4),cc:(i,j)=>j===3?C.m4:j===1?C.amber:C.text});g.restore()}}});
+
+// 14 SECTION 2-5 ------------------------------------------------------
+const RES1=[['이슈보고서_ETCH-02_냉각수온도상승_20260720.txt','0.7140','6. 결론 설비 온도 상승이 식각 공정 불량률 급증의 직접적인 원인으로 확인되었으며,','냉각수 계통 이상 징후를 조기에 감지하지 못한 것이 근본 문제였음. …'],['이슈보고서_ETCH-03_식각챔버히터온도편차_20250922.txt','0.7139','2. 발생 경위 - 2025-09-08 무렵부터 식각 챔버 히터 온도 편차 관련 징후가 관찰되었으며,','시간이 지날수록 불량률 상승 폭이 커짐. …'],['이슈보고서_ETCH-02_냉각수온도상승_20260720.txt','0.7014','2. 발생 경위 - 7월 7일 야간, ETCH-02 냉각수 순환 라인의 유량 센서에서 경고 알람이','간헐적으로 발생하였으나 당시에는 단순 노이즈로 판단하여 조치하지 않음. …']];
+const RES2=[['이슈보고서_CVD-01_챔버압력편차_20260814.txt','—','2. 발생 경위 - 8월 4일부터 챔버 내부 압력이 설정값 대비 ±8% 수준으로','불안정하게 변동하는 현상이 반복적으로 발생함. …'],['설비운영매뉴얼_통합본.txt','—','2.1 챔버 압력 관리 - 정상 운영 압력 허용 오차: 설정값 대비 ±3% 이내','(2026년 9월 개정, 기존 ±5%에서 강화) …'],['품질회의록_20260818_CVD-01.txt','—','- CVD-01 압력 조절 밸브 씰 교체 후 챔버 압력이 안정화되었고,','8월 13일 이후 불량률이 1% 내외로 정상 복귀함. …']];
+S({code:'2-5',title:'RAG 검색 화면 만들기',group:G2,
+ caps:[{t:'rag.db를 자연어로 검색하는 search-rag.js와 로컬 서버, rag-search.html을 만들고 서버까지 실행합니다.',say:'래그 디비를 자연어로 검색하는 서치 래그 제이에스와 로컬 서버, 래그 서치 에이치티엠엘을 만들고, 서버까지 실행합니다.'},
+  {t:'질문도 Embedding API로 Vector로 바꾸고, 문서 Vector와 비교해 의미가 가장 가까운 조각 5개를 찾습니다.',say:'질문도 임베딩 에이피아이로 벡터로 바꾸고, 저장된 문서 벡터와 비교해서, 의미가 가장 가까운 문서 조각 다섯 개를 찾습니다.'},
+  {t:'"설비 온도 상승과 불량 발생" — 현재 상황과 관련 있는 과거 문서가 찾아지는지 확인합니다.',say:'설비 온도 상승과 불량 발생. 현재 상황과 관련 있는 과거 문서가 찾아지는지 확인합니다.'},
+  {t:'질문을 "설비 압력 편차와 불량 발생"으로 바꾸면, 검색되는 문서와 내용도 달라집니다.',say:'질문을, 설비 압력 편차와 불량 발생으로 바꾸면, 검색되는 문서와 내용도 달라집니다.'}],
+ draw(g,P){// pipeline left
+  const a0=P.at(0,0,.5);g.globalAlpha=a0;['scripts/search-rag.js','server.js (로컬 서버)','rag-search.html'].forEach((s,i)=>{panel(g,110,220+i*72,460,56,{r:10,fill:hexA(C.m3,.08),stroke:hexA(C.m3,.5)});T(g,s,132,256+i*72,{sz:18,f:FK,w:600,c:C.m3})});g.globalAlpha=1;
+  const s1=P.sec(1);if(s1>=0){const a=clamp(s1/.5);g.save();g.globalAlpha=a;const qx=180,qy=520;bubble(g,110,qy-30,200,60,'질문',C.m1,{sz:20});
+   const f1=clamp((s1-.3)/.8);arrow(g,316,qy,380,qy,C.m1,f1);if(f1>=1)T(g,'[0.18, -0.42, …]',392,qy+6,{sz:17,f:FM,c:C.m1});
+   // db dots
+   const ox=340,oy=690;panel(g,110,600,460,250,{r:14,fill:'#0D1119',stroke:hexA(C.amber,.4)});T(g,'rag.db · 37 Chunk Vector',130,632,{sz:15,f:FK,c:C.dim});
+   for(let i=0;i<37;i++){const x=150+((i*97)%380),y=660+((i*53)%170);const near=[3,11,20,27,33].includes(i);const lit=near&&s1>1.3;g.fillStyle=lit?C.amber:hexA(C.mid,.5);g.beginPath();g.arc(x,y,lit?7:4.5,0,7);g.fill();
+    if(lit){g.strokeStyle=hexA(C.amber,.5);g.lineWidth=1.3;line(g,x,y,340,650)}}
+   g.fillStyle=C.m1;g.beginPath();g.arc(340,650,9,0,7);g.fill();if(s1>1.3)chip(g,560,830,'Top 5',C.amber,{sz:15,al:'right'});g.restore()}
+  // browser right
+  const bx=620,bw=1190,A=P.at(0,.5,.6);if(A<=0)return;g.save();g.globalAlpha=A;winFrame(g,bx,210,bw,650,'localhost · rag-search.html',{tc:C.mid,tag:P.i>=3?'2번째 질문 결과는 예시':'교안 예시 화면 기준'});
+  T(g,'불량원인분석 RAG 검색',bx+30,300,{sz:30,w:700});T(g,'질문을 입력하면 관련 문서 조각 5개를 찾아줍니다.',bx+30,336,{sz:17,c:C.mid});
+  const q2=P.sec(3)>=0,qs=q2?'설비 압력 편차와 불량 발생':'설비 온도 상승과 불량 발생';const ty=P.sec(2)>=0?clamp((q2?P.sec(3):P.sec(2))/1):0;
+  panel(g,bx+30,360,bw-190,58,{r:10,fill:'#0D1119',stroke:C.text,lw:2});T(g,qs.slice(0,Math.ceil(qs.length*ty)),bx+50,398,{sz:20});panel(g,bx+bw-146,360,116,58,{r:10,fill:C.m1,stroke:null});T(g,'검색',bx+bw-88,398,{sz:20,w:700,al:'center'});
+  const R=q2?RES2:RES1,rs=q2?P.sec(3)-1:P.sec(2)-1;
+  if(rs>=0){T(g,`"${qs}"에 대한 검색 결과 5건`,bx+30,454,{sz:17,c:C.dim});R.forEach(([f,sc,l1,l2],i)=>{const a=clamp((rs-i*.3)/.4);if(a<=0)return;const y=474+i*126;g.globalAlpha=A*a;panel(g,bx+30,y,bw-60,112,{r:10,fill:'#10141C',stroke:C.line});
+    T(g,f,bx+50,y+32,{sz:17,f:FK,w:700,c:C.m1});if(sc!=='—')T(g,'유사도 '+sc,bx+bw-50,y+32,{sz:17,f:FM,al:'right',c:C.mid});else chip(g,bx+bw-50,y+26,'예시',C.dim,{sz:13,al:'right'});T(g,l1,bx+50,y+66,{sz:16});T(g,l2,bx+50,y+94,{sz:16,c:'#C9CCD4'})})}
+  g.restore()}});
+
+// 15 SECTION 2-6 ------------------------------------------------------
+const SCORES=[['이슈보고서_ETCH-02_냉각수온도상승 · 6. 결론',.714,1],['이슈보고서_ETCH-03_식각챔버히터온도편차 · 2. 발생 경위',.7139,1],['이슈보고서_ETCH-02_냉각수온도상승 · 2. 발생 경위',.7014,1],['설비운영매뉴얼 · 1.1 챔버 온도 관리',.66,0],['품질회의록_20260715_ETCH-02',.63,0],['설비운영매뉴얼 · 1.3 관련 불량 유형',.58,0],['품질회의록_20260818_CVD-01',.49,0],['이슈보고서_CVD-01 · 1. 개요',.44,0],['설비운영매뉴얼 · 3.1 진동 관리',.37,0],['설비운영매뉴얼 · 머리말',.31,0]];
+S({code:'2-6',title:'[보너스] 검색 결과 조정하기',group:G2,
+ caps:[{t:'몇 개를 가져올지, 어느 정도 관련 있는 결과까지 쓸지에 따라 RAG의 결과가 달라집니다.',say:'몇 개를 가져올지, 어느 정도 관련 있는 결과까지 쓸지에 따라 래그의 결과가 달라집니다.'},
+  {t:'① 결과 개수 — 너무 적으면 필요한 자료를 놓치고, 너무 많으면 관계없는 내용까지 Context에 들어갑니다.',say:'첫째, 검색 결과 개수. 너무 적으면 필요한 자료를 놓칠 수 있고, 너무 많으면 관계없는 내용까지 컨텍스트에 포함될 수 있습니다.'},
+  {t:'검색 화면에서 3개, 5개, 10개 중 가져올 결과 개수를 선택할 수 있게 수정합니다.',say:'검색 화면에서 3개, 5개, 10개 중 가져올 결과 개수를 선택할 수 있게 수정합니다.'},
+  {t:'② 최소 유사도 — 결과마다 유사도 점수가 있습니다. 기준을 정해 그보다 낮은 결과는 제외합니다.',say:'둘째, 최소 유사도 기준. 결과마다 질문과 문서 벡터의 유사도 점수가 있습니다. 기준을 정해서 그보다 낮은 결과는 제외합니다.'}],
+ draw(g,P){const s2=P.sec(2),s3=P.sec(3);let K=5;if(s2>=0){const ph=s2/(P.dur1*0+1.2);K=ph<1?3:ph<2?10:5}
+  const thr=s3<0?0:lerp(0,.6,eIO3(clamp((s3-.6)/2)));
+  const x=110;winFrame(g,x,210,540,650,'검색 옵션',{tc:C.amber,tag:'예시 UI'});
+  T(g,'① 결과 개수',x+30,300,{sz:22,w:700,c:P.i>=1&&P.i<3?C.amber:C.text});[3,5,10].forEach((k,i)=>{const on=K===k;panel(g,x+30+i*160,326,140,64,{r:12,fill:on?hexA(C.amber,.2):'#10141C',stroke:on?C.amber:C.line,lw:on?2.5:1.5});T(g,k+'개',x+100+i*160,368,{sz:24,f:FK,w:700,al:'center',c:on?C.amber:C.mid})});
+  T(g,'② 최소 유사도',x+30,470,{sz:22,w:700,c:P.i>=3?C.amber:C.text});rrect(g,x+30,510,470,10,5);g.fillStyle='#1A1F2A';g.fill();const kx=x+30+470*(thr/.8);rrect(g,x+30,510,kx-x-30,10,5);g.fillStyle=C.amber;g.fill();g.fillStyle=C.text;g.beginPath();g.arc(kx,515,14,0,7);g.fill();T(g,thr.toFixed(2),x+500,480,{sz:24,f:FM,w:700,al:'right',c:C.amber});T(g,'0.00',x+30,550,{sz:14,f:FM,c:C.dim});T(g,'0.80',x+500,550,{sz:14,f:FM,al:'right',c:C.dim});
+  const pa=P.at(2,0,.5);if(pa>0){g.save();g.globalAlpha=pa;promptBox(g,x+20,600,500,P.i>=3?['검색 결과에 유사도 점수를 표시하고,','최소 유사도 값을 조절해서 기준보다 낮은 결과는','제외할 수 있도록 수정해줘.']:['검색 결과 개수를 3개, 5개, 10개 중','선택할 수 있도록 검색 화면을 수정해줘.'],{lh:34,sz:16,title:'프롬프트',rv:1});g.restore()}
+  const rx=700,rw=1110;const a=P.at(0,.2,.5);g.globalAlpha=a;winFrame(g,rx,210,rw,650,'"설비 온도 상승과 불량 발생" 검색 결과',{tc:C.m1,tag:'상위 3개 유사도는 교안 화면 · 나머지는 예시'});
+  SCORES.forEach(([n,sc,real],i)=>{const y=276+i*57;const inK=i<K,ok=sc>=thr;const al=inK?(ok?1:.22):.12;g.globalAlpha=a*al;
+   T(g,`${i+1}`,rx+30,y+30,{sz:18,f:FM,c:C.dim});T(g,n,rx+64,y+30,{sz:17,f:FK});const bw=300*sc/.8;rrect(g,rx+rw-360,y+16,300,16,8);g.fillStyle='#161B26';g.fill();rrect(g,rx+rw-360,y+16,bw,16,8);g.fillStyle=ok?(real?C.m3:hexA(C.m3,.6)):C.bad;g.fill();T(g,sc.toFixed(4),rx+rw-24,y+32,{sz:17,f:FM,al:'right',c:ok?C.text:C.bad});
+   if(inK&&!ok&&thr>0){g.strokeStyle=hexA(C.bad,.6);g.lineWidth=1.5;line(g,rx+60,y+24,rx+rw-380,y+24)}});
+  g.globalAlpha=a;if(thr>0){const tx=rx+rw-360+300*thr/.8;g.strokeStyle=C.amber;g.lineWidth=2;g.setLineDash([5,5]);line(g,tx,262,tx,850);g.setLineDash([]);chip(g,tx,840,'기준 '+thr.toFixed(2),C.amber,{sz:14,al:'center',fill:'#1A1508'})}
+  if(K<10&&thr===0){g.strokeStyle=hexA(C.m5,.6);g.lineWidth=2;g.setLineDash([6,6]);line(g,rx+20,272+K*57,rx+rw-20,272+K*57);g.setLineDash([]);chip(g,rx+rw-30,272+K*57,`상위 ${K}개까지 Context로`,C.m5,{sz:14,al:'right'})}
+  g.globalAlpha=1}});
+
+// 16 SECTION 2-7 ------------------------------------------------------
+S({code:'2-7',title:'검색한 결과를 바탕으로 답변 생성하기',group:G2,
+ caps:[{t:'이제 Claude에게 질문하면, Claude가 앞에서 만든 RAG 검색을 직접 실행합니다.',say:'이제 클로드에게 질문하면, 클로드가 앞에서 만든 래그 검색을 직접 실행합니다.'},
+  {t:'먼저 검색 결과를 순위 · 출처 문서 청크 · 유사도 표로 보여주고, 상위 문서의 원문을 확인합니다.'},
+  {t:'그다음 검색된 내용만 근거로 답합니다. 추측해서 추가하지 않고, 근거가 부족하면 알 수 없다고 표시합니다.'},
+  {t:'답변 마지막에는 참고한 파일명을 표시합니다.'}],
+ draw(g,P){const a0=P.at(0,0,.5);g.globalAlpha=a0;person(g,170,300,52,C.text);bubble(g,230,250,520,64,"'설비 온도 상승'에 관련된 문서를 찾아줘",C.m1,{sz:19});
+  agent(g,210,470,50,C.amber,{name:'Claude',nf:FM,work:P.sec(0)>.6&&P.sec(1)<0?.5:0,spin:P.ls*5});g.globalAlpha=1;
+  const f0=clamp((P.sec(0)-.8)/1);if(f0>0){gearBox(g,340,430,360,80,C.m3,'node scripts/search-rag.js',null,{spin:P.ls*3,sz:17,a:a0});arrow(g,264,470,336,470,C.amber,f0)}
+  const b=P.at(1,0,.5);if(b>0){g.save();g.globalAlpha=b;winFrame(g,780,210,1030,300,'## 검색 결과',{tc:C.amber,tag:'형식은 교안 프롬프트 · 값은 예시'});
+   tbl(g,800,260,[90,760,150],[['순위','출처 문서 청크','유사도'],['1','"6. 결론 설비 온도 상승이 식각 공정…"','0.71'],['2','"2. 발생 경위 - 2025-09-08 무렵부터 식각 챔버…"','0.71'],['3','"2. 발생 경위 - 7월 7일 야간, ETCH…"','0.70']],{lh:52,sz:18,a:i=>P.at(1,.3+i*.25,.4),ar:[0,0,1]});g.restore()}
+  const c=P.at(2,0,.5);if(c>0){g.save();g.globalAlpha=c;winFrame(g,110,600,1700,260,'## 답변',{tc:C.ok,tag:'예시 답변 · 내용은 실제 문서 기준'});
+   const L=['· 냉각수 유량 저하 → 챔버 온도 제어 실패 → 식각 속도 산포 증가 → 박막두께불량 증가','· ETCH-02: 7월 8일부터 챔버 온도가 평균 4.5도 상승, 불량률이 1~2%에서 6~9% 수준으로 상승','· ETCH-03: 히터 존별 온도 제어 불균형으로 공정 조건이 기준을 벗어나 박막두께불량 증가로 이어짐'];
+   L.forEach((s,i)=>{const a=P.at(2,.4+i*.5,.4);if(a<=0)return;g.globalAlpha=c*a;T(g,s,140,680+i*44,{sz:20})});
+   const d=P.at(3,0,.5);if(d>0){g.globalAlpha=c*d;T(g,'참고 파일: 이슈보고서_ETCH-02_냉각수온도상승_20260720.txt · 이슈보고서_ETCH-03_식각챔버히터온도편차_20250922.txt',140,830,{sz:17,f:FK,c:C.amber})}g.restore()}
+  const r=P.at(2,1.8,.5);if(r>0){g.globalAlpha=r;['✓ 검색 결과 내용만 근거','✓ 추측 추가 없음','✓ 근거 부족 → 알 수 없음'].forEach((s,i)=>chip(g,780+i*260,556,s,C.ok,{sz:16}));g.globalAlpha=1}}});
+
+// 17 SECTION 2-8 (climax) ---------------------------------------------
+const AMD=['## RAG 활용 규칙','- 과거 사례나 관련 문서가 필요하면 먼저','  scripts/search-rag.js로 rag.db를 검색','- 검색된 자료를 근거로 분석, 없는 내용은 추측 금지'];
+S({code:'2-8',title:'Agent가 RAG를 활용하도록 연결하기',group:G2,
+ caps:[{t:'지금까지는 사람이 직접 RAG 검색기를 실행해 관련 자료를 찾았습니다.',say:'지금까지는 사람이 직접 래그 검색기를 실행해서 관련 자료를 찾았습니다.'},
+  {t:'이제 defect-analyst의 .md 파일에 RAG 활용 규칙을 추가합니다. 필요하면 먼저 search-rag.js로 검색하도록.',say:'이제 디펙트 애널리스트의 엠디 파일에 래그 활용 규칙을 추가합니다. 과거 사례가 필요하면 먼저 서치 래그 제이에스로 검색하도록 합니다.'},
+  {t:'실제 불량 설비 한 건을 골라 원인 분석을 요청합니다 — @agent-defect-analyst.',say:'이제 실제 불량 설비 한 건을 골라, 디펙트 애널리스트 에이전트에게 원인 분석을 요청합니다.'},
+  {t:'Agent는 먼저 preprocess.js로 이상데이터.csv를 만들고, 불량률이 높은 설비 사례를 고릅니다.',say:'에이전트는 먼저 프리프로세스 제이에스로 이상데이터 씨에스브이를 만들고, 불량률이 높은 설비 사례를 고릅니다.'},
+  {t:'그리고 search-rag.js로 rag.db에서 관련 과거 사례 — 이슈보고서, 회의록, 매뉴얼 — 를 찾습니다.',say:'그리고 서치 래그 제이에스로 래그 디비에서 관련 과거 사례, 이슈보고서와 회의록, 매뉴얼을 찾습니다.'},
+  {t:'현재 데이터와 과거 사례를 근거로 원인 후보와 판단 근거를 함께 정리합니다.'}],
+ draw(g,P){const ax=720,ay=560;
+  const a0=P.at(0,0,.5);g.globalAlpha=a0;person(g,190,560,64,C.text,{name:'사용자'});g.globalAlpha=1;
+  const man=P.sec(1)<0;if(man&&a0>0){g.globalAlpha=a0;gearBox(g,340,400,320,70,C.m3,'search-rag.js',null,{sz:18});arrow(g,230,500,336,440,C.text,P.at(0,.4,.8),{dash:[6,6]});chip(g,300,360,'사람이 직접 실행',C.mid,{sz:15});g.globalAlpha=1}
+  agent(g,ax,ay,64,C.m3,{a:P.at(1,0,.5),name:'defect-analyst',glow:P.at(5,0,.6),work:P.sec(3)>=0&&P.sec(5)<0?.5:0,spin:P.ls*5});
+  const md=P.at(1,.2,.5)*(1-P.at(2,.2,.5));if(md>0){g.save();g.globalAlpha=md;winFrame(g,300,190,860,250,'.claude/agents/defect-analyst.md  (추가)',{tc:C.m3,tag:'예시 · 완성본에 파일 없음'});codeLines(g,330,272,AMD,{lh:40,sz:18,w:800,a:i=>P.at(1,.5+i*.25,.4)});g.restore()}
+  const q=P.sec(2);if(q>=0){const f=clamp(q/1.2);g.globalAlpha=clamp((q-.7)/.4);promptBox(g,110,196,820,['@agent-<defect-analyst>','이상데이터.csv에서 불량률이 높은 설비 사례 1개를 골라 원인을 분석해줘.','RAG에서 관련 과거 사례를 찾아 참고하고, 판단 근거도 같이 정리해줘.'],{lh:32,sz:17,tag:'교안 프롬프트 · 요약'});g.globalAlpha=1;packet(g,250,560,ax-70,ay,f,C.m1,'요청')}
+  // tool 1
+  const t1=P.sec(3);if(t1>=0){const a=clamp(t1/.4);g.save();g.globalAlpha=a;gearBox(g,960,220,300,70,C.m3,'preprocess.js',null,{spin:P.ls*3,sz:18});
+   const[x0,y0,x1,y1]=edge(ax,ay,1000,290,70,6);g.strokeStyle=hexA(C.m3,.5);g.lineWidth=2;line(g,x0,y0,x1,y1);packet(g,x0,y0,x1,y1,clamp(t1/1),C.amber,'실행');
+   const o=clamp((t1-1)/.6);if(o>0){g.globalAlpha=a*o;winFrame(g,960,310,420,190,'이상데이터.csv',{tc:C.m3,tag:'실습 데이터 계산'});
+    T(g,'ETCH-02 · LOT24223 · 2026-07-08',980,388,{sz:17,f:FM,c:C.text});T(g,'불량률 8.82%  ·  치수불량',980,420,{sz:17,f:FK,c:C.m5});T(g,'챔버온도 평균 454.82',980,452,{sz:17,f:FK});T(g,'정상범위 449.5~450.5',980,480,{sz:15,f:FK,c:C.mid})}
+   packet(g,1000,500,ax+40,ay-60,clamp((t1-1.8)/.9),C.m3,null);g.restore()}
+  // tool 2
+  const t2=P.sec(4);if(t2>=0){const a=clamp(t2/.4);g.save();g.globalAlpha=a;gearBox(g,960,640,300,70,C.m4,'search-rag.js',null,{spin:P.ls*3,sz:18});
+   const[x0,y0,x1,y1]=edge(ax,ay,960,675,70,6);g.strokeStyle=hexA(C.m4,.5);g.lineWidth=2;line(g,x0,y0,x1,y1);packet(g,x0,y0,x1,y1,clamp(t2/1),C.amber,'검색');
+   doc(g,1110,790,60,74,C.amber,{lines:2,title:'rag.db',tsz:15});arrow(g,1110,714,1110,748,C.m4,clamp((t2-.8)/.4));
+   const H=['이슈보고서_ETCH-02_냉각수온도상승','품질회의록_20260715_ETCH-02','설비운영매뉴얼 · 1.2 점검 순서'];
+   H.forEach((h,i)=>{const f=clamp((t2-1.2-i*.35)/.5);if(f<=0)return;g.globalAlpha=a*f;panel(g,1290,600+i*66,520,54,{r:10,fill:hexA(C.m4,.1),stroke:hexA(C.m4,.55)});T(g,h,1308,634+i*66,{sz:16,f:FK})});
+   packet(g,1290,650,ax+60,ay+30,clamp((t2-2.6)/.9),C.m4,null);g.restore()}
+  // result
+  const r=P.at(5,0,.6);if(r>0){g.save();g.globalAlpha=r;panel(g,1420,190,390,390,{r:16,fill:hexA(C.amber,.08),stroke:hexA(C.amber,.7),lw:2});T(g,'원인 후보',1444,232,{sz:22,w:700,c:C.amber});
+   const L=[['냉각수 계통 이상',C.text,20,600],['→ 챔버 온도 상승',C.text,20,600],['근거',C.amber,17,700],['· 챔버온도 454.82 (범위 밖)',C.mid,16,400],['· 과거 ETCH-02 이슈보고서:',C.mid,16,400],['  냉각수 펌프 임펠러 마모','#C9CCD4',16,400],['· 매뉴얼 점검 순서:','#C9CCD4',16,400],['  1) 냉각수 유량 확인','#C9CCD4',16,400]];
+   L.forEach(([s,c,sz,w],i)=>{const a=P.at(5,.3+i*.15,.3);if(a<=0)return;g.globalAlpha=r*a;T(g,s,1444,276+i*37,{sz,w,c})});g.restore()}
+  if(P.sec(3)>=0){T(g,'사례 선택은 예시 · 수치는 실습 데이터 · 문서는 실제 파일',1810,866,{sz:14,f:FK,al:'right',c:C.dim})}}});
+
+// 18 SUMMARY ----------------------------------------------------------
+const SUM=[['규칙이 명확한 입력 처리는 Code로 분리할 수 있습니다.',C.m3,'Code'],['많은 문서에서 필요한 내용을 찾아야 할 때는 RAG를 활용할 수 있습니다.',C.m4,'RAG'],['RAG는 문서를 작은 단위로 나눠 검색할 수 있게 준비한 뒤, 관련 있는 내용만 Context에 전달합니다.',C.m1,'Chunk'],['Agent는 Code로 처리된 데이터와 RAG로 검색한 자료를 활용해 분석과 판단에 집중합니다.',C.amber,'Agent']];
+S({code:'요약',title:'이번 챕터 요약',group:'CHAPTER 04',
+ caps:[{t:'규칙이 명확한 입력은 Code로, 많은 문서는 RAG로.',say:'정리합니다. 규칙이 명확한 입력은 코드로, 많은 문서는 래그로 처리합니다.'},
+  {t:'RAG는 문서를 작게 나눠 검색할 수 있게 준비하고, 질문과 관련 있는 내용만 Context에 전달합니다.',say:'래그는 문서를 작게 나눠 검색할 수 있게 준비하고, 질문과 관련 있는 내용만 컨텍스트에 전달합니다.'},
+  {t:'그래서 Agent는 처리된 데이터와 검색한 자료로, 분석과 판단에 집중할 수 있습니다.',say:'그래서 에이전트는 처리된 데이터와 검색한 자료로, 분석과 판단에 집중할 수 있습니다.'}],
+ draw(g,P){SUM.forEach(([s,c,k],i)=>{const cap=i<2?0:i===2?1:2;const a=P.at(cap,.2+(i%2)*.5,.6);if(a<=0)return;const y=240+i*150;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   panel(g,200,y,1520,120,{r:18,fill:hexA(c,.06),stroke:hexA(c,.45)});chip(g,300,y+60,k,c,{sz:20,al:'center'});T(g,s,400,y+70,{sz:27,w:500});g.restore()})}});
+
+
+/* ================= timing ================= */
+const capDur=c=>{const n=Math.max(c.t.replace(/\s/g,'').length,(c.say||'').replace(/\s/g,'').length);return clamp(1.0+n*.112,3.2,10)};
+let DUR=0;const CAPS=[];
+SC.forEach((s,si)=>{s.start=DUR;s.capT=[];s.capD=[];let acc=0;s.caps.forEach((c,ci)=>{const d=capDur(c)+(si===0?1.2:0);s.capT.push(acc);s.capD.push(d);CAPS.push({si,ci,t:DUR+acc,d,text:c.t,say:c.say||c.t});acc+=d});s.dur=acc+(si===SC.length-1?1.2:.35);DUR+=s.dur});
+function makeP(si,ls){const s=SC[si];let i=0;for(let k=0;k<s.capT.length;k++)if(ls>=s.capT[k])i=k;
+  return{ls,u:ls/s.dur,i,dur:s.dur,dur0:s.capD[0],dur1:s.capD[1]||1,sec:k=>ls-(s.capT[k]??1e9),c:k=>s.capT[k]===undefined?0:clamp((ls-s.capT[k])/s.capD[k]),at:(k,d=0,du=.5)=>s.capT[k]===undefined?0:eO3(clamp((ls-s.capT[k]-d)/du))}}
+function sceneAt(t){let si=0;for(let k=0;k<SC.length;k++)if(t>=SC[k].start)si=k;return si}
+function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;return k}
+
+/* ================= composite ================= */
+const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,0.55)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
+function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#10141C';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
+function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+  g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
+  if(!s.hideHead){const a=eO3(clamp(ls/.5));g.save();g.globalAlpha=a;g.translate(0,(1-a)*20);g.font=`400 34px ${FD}`;g.fillStyle=C.amber;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(s.code,M,M+44);
+   const cw=g.measureText(s.code).width;T(g,s.group,M+cw+26,M+14,{sz:15,f:FM,c:C.dim});T(g,s.title,M+cw+26,M+48,{sz:30,w:700});g.restore()}
+  T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
+  g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
+  const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(7,8,12,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
+function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
+  if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
+  else drawScene(g,si,ls);
+  if(si===SC.length-1){const f=inv(SC[si].dur-1,SC[si].dur,ls);if(f>0){g.fillStyle=`rgba(0,0,0,${f})`;g.fillRect(0,0,W,H)}}
+  g.drawImage(vig,0,0);hud(g,t,si,ls)}
+
+/* ================= audio bed ================= */
+const AU={ctx:null,on:false,bus:null,sched:0};
+function auInit(){const c=new(window.AudioContext||window.webkitAudioContext)();AU.ctx=c;const comp=c.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
+  AU.master=c.createGain();AU.master.gain.value=.5;AU.master.connect(comp);comp.connect(c.destination);
+  const len=Math.floor(c.sampleRate*3),ib=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  AU.rev=c.createConvolver();AU.rev.buffer=ib;const rg=c.createGain();rg.gain.value=.5;AU.rev.connect(rg);rg.connect(AU.master)}
+function newBus(){const c=AU.ctx,b={dry:c.createGain(),rev:c.createGain()};b.dry.connect(AU.master);b.rev.connect(AU.rev);AU.bus=b}
+function killBus(){const b=AU.bus;if(!b)return;const n=AU.ctx.currentTime;[b.dry,b.rev].forEach(x=>x.gain.setTargetAtTime(0,n,.02));setTimeout(()=>[b.dry,b.rev].forEach(x=>x.disconnect()),300);AU.bus=null}
+function send(node,dry,rv){const c=AU.ctx,b=AU.bus;[[dry,b.dry],[rv,b.rev]].forEach(([v,d])=>{if(!v)return;const x=c.createGain();x.gain.value=v;node.connect(x);x.connect(d)})}
+function pad(w,ch,dur,a){const c=AU.ctx,lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const g=c.createGain();g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(a,w+1.2);g.gain.setValueAtTime(a,w+Math.max(1.3,dur-1));g.gain.linearRampToValueAtTime(0,w+dur+.6);
+  ch.forEach(f=>[-7,7].forEach(dt=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(lp);o.start(w);o.stop(w+dur+.8)}));lp.connect(g);send(g,.5,.6)}
+function blip(w,f,a){const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,w);g.gain.exponentialRampToValueAtTime(a,w+.005);g.gain.exponentialRampToValueAtTime(.0001,w+.35);o.connect(g);send(g,.6,.5);o.start(w);o.stop(w+.4)}
+const CHORDS=[[146.83,174.61,220],[116.54,146.83,174.61],[174.61,220,261.63],[130.81,164.81,196]];
+const EV=[];SC.forEach((s,i)=>{EV.push({t:s.start,f:w=>pad(w,CHORDS[i%4],s.dur,.045)});EV.push({t:s.start,f:w=>blip(w,[880,988,1175,1319][i%4],.05)})});CAPS.forEach((c,i)=>{if(c.ci>0)EV.push({t:c.t,f:w=>blip(w,[1760,1976,2349][i%3],.025)})});EV.sort((a,b)=>a.t-b.t);
+
+/* ================= narration (Web Speech) ================= */
+const TTS={ok:'speechSynthesis' in window,on:false,voice:null,last:-1};
+function pickVoice(){if(!TTS.ok)return;const vs=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));TTS.voice=vs.find(v=>/Heami|SunHi|InJoon|Google/i.test(v.name))||vs[0]||null;voiceNote()}
+
+function speak(s){if(!TTS.ok)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='ko-KR';if(TTS.voice)u.voice=TTS.voice;u.rate=1.1;u.pitch=1;speechSynthesis.speak(u)}catch(e){}}
+function hush(){if(TTS.ok)try{speechSynthesis.cancel()}catch(e){}}
+
+/* ================= transport ================= */
+let t=0,tAbs=0,playing=false,anchorT=0,anchorClock=0,lastSrc='',dirty=true,scrubbing=false,started=false;
+const srcKey=()=>AU.on&&AU.ctx&&AU.ctx.state==='running'?'a':'p',clk=()=>srcKey()==='a'?AU.ctx.currentTime:performance.now()/1000;
+function reanchor(){anchorT=tAbs;anchorClock=clk();lastSrc=srcKey();if(AU.on&&AU.ctx){killBus();if(playing)newBus();AU.sched=tAbs}}
+function auTick(){if(!AU.on||!playing||scrubbing||!AU.bus||srcKey()!=='a')return;const c=AU.ctx;if(AU.sched<tAbs-.05)AU.sched=tAbs;const until=tAbs+.25;
+  for(const e of EV)if(e.t>=AU.sched&&e.t<until){const w=anchorClock+(e.t-anchorT);if(w>=c.currentTime-.01)e.f(Math.max(w,c.currentTime+.001))}AU.sched=until}
+function narrTick(){if(!TTS.on||!playing||scrubbing)return;const k=capAt(t);if(k!==TTS.last){TTS.last=k;if(t-CAPS[k].t<1)speak(CAPS[k].say)}}
+function play(){if(t>=DUR-.05){t=0}started=true;playing=true;tAbs=t;reanchor();bigplay.hidden=true;TTS.last=-1;const k=capAt(t);if(TTS.on&&t-CAPS[k].t>=1){TTS.last=k;speak(CAPS[k].say)}dirty=true;syncUI()}
+function pause(){playing=false;if(AU.bus)killBus();hush();dirty=true;syncUI()}
+function seek(nt){t=clamp(nt,0,DUR-1e-3);tAbs=t;hush();TTS.last=-1;if(playing)reanchor();dirty=true}
+async function setMusic(on){if(on){if(!AU.ctx)auInit();try{await AU.ctx.resume()}catch(e){}AU.on=true}else{AU.on=false;if(AU.bus)killBus()}if(playing)reanchor();syncUI()}
+function setVoice(on){if(!TTS.ok)return;TTS.on=on;if(!TTS.on)hush();TTS.last=-1;
+  if(TTS.on&&playing){const k=capAt(t);TTS.last=k;speak(CAPS[k].say)}if(AU.master&&AU.ctx)AU.master.gain.setTargetAtTime(TTS.on?.32:.5,AU.ctx.currentTime,.2);syncUI()}
+function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock);t=tAbs;if(t>=DUR){t=DUR-1e-3;playing=false;if(AU.bus)killBus();syncUI()}auTick();narrTick();dirty=true}
+  if(dirty){render(t);ui();dirty=false}requestAnimationFrame(frame)}
+
+/* ================= page UI ================= */
+const $=s=>document.querySelector(s),track=$('#track'),head=$('#head'),bigplay=$('#bigplay'),playBtn=$('#play'),voiceBtn=$('#voice'),musicBtn=$('#music'),tc=$('#tc'),shots=$('#shots');
+const fmt=s=>`${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
+SC.forEach((s,i)=>{const sg=document.createElement('div');sg.className='seg';sg.style.flex=`${s.dur} 1 0`;sg.innerHTML=`<i></i><span>${s.code}</span>`;track.insertBefore(sg,head);
+  const li=document.createElement('li');li.className='shot';li.innerHTML=`<button type="button"><span class="n">${s.code}</span><span class="t"></span><span class="r">${fmt(s.start)}–${fmt(s.start+s.dur)}</span><span class="d"></span></button>`;
+  li.querySelector('.t').textContent=s.title;li.querySelector('.d').textContent=s.caps.map(c=>c.t).join(' ');
+  li.querySelector('button').addEventListener('click',()=>{seek(s.start+.001);bigplay.hidden=true;if(!playing)play()});shots.appendChild(li)});
+track.setAttribute('aria-valuemax',DUR.toFixed(1));$('#meta').textContent=`${SC.length}개 장면 · 자막 ${CAPS.length}개 · ${fmt(DUR)}`;
+const segs=[...track.querySelectorAll('.seg')],shotEls=[...shots.children];let lastSi=-1;
+function ui(){const si=sceneAt(t);head.style.left=(t/DUR*100)+'%';segs.forEach((s,i)=>{const S0=SC[i];s.firstChild.style.width=(t>=S0.start+S0.dur?100:t<S0.start?0:(t-S0.start)/S0.dur*100)+'%'});
+  if(si!==lastSi){segs.forEach((s,i)=>s.classList.toggle('on',i===si));shotEls.forEach((s,i)=>s.classList.toggle('on',i===si));lastSi=si}
+  tc.innerHTML=`<b>${fmt(t)}</b> / ${fmt(DUR)}`;track.setAttribute('aria-valuenow',t.toFixed(1))}
+function voiceNote(){const n=$('#vnote');if(!TTS.ok){n.textContent='이 브라우저는 음성 합성을 지원하지 않아 자막으로만 재생됩니다.';voiceBtn.disabled=true;return}
+  n.textContent=TTS.voice?`음성 해설: ${TTS.voice.name}`:'한국어 음성을 찾는 중입니다. 없으면 기본 음성으로 읽습니다.'}
+function syncUI(){playBtn.setAttribute('aria-label',playing?'일시정지':'재생');$('#playic').innerHTML=playing?'<path d="M3 2h4v12H3zm6 0h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
+  voiceBtn.setAttribute('aria-pressed',String(TTS.on));voiceBtn.textContent=TTS.on?'음성 해설 켜짐':'음성 해설 꺼짐';musicBtn.setAttribute('aria-pressed',String(AU.on));musicBtn.textContent=AU.on?'배경음 켜짐':'배경음 꺼짐'}
+bigplay.addEventListener('click',async()=>{setVoice(true);await setMusic(true);seek(0);play()});
+playBtn.addEventListener('click',()=>{if(!started)seek(0);playing?pause():play()});
+voiceBtn.addEventListener('click',()=>setVoice(!TTS.on));musicBtn.addEventListener('click',()=>setMusic(!AU.on));
+$('#fs').addEventListener('click',()=>{const el=$('#screen');try{if(document.fullscreenElement)document.exitFullscreen();else el.requestFullscreen&&el.requestFullscreen().catch(()=>{})}catch(e){}});
+const scrubTo=e=>{const r=track.getBoundingClientRect();seek(clamp((e.clientX-r.left)/r.width)*DUR)};
+track.addEventListener('pointerdown',e=>{scrubbing=true;track.setPointerCapture(e.pointerId);started=true;bigplay.hidden=true;scrubTo(e)});
+track.addEventListener('pointermove',e=>{if(scrubbing)scrubTo(e)});
+const endScrub=()=>{if(!scrubbing)return;scrubbing=false;if(playing)reanchor()};track.addEventListener('pointerup',endScrub);track.addEventListener('pointercancel',endScrub);
+const jump=d=>{const k=capAt(t);let n=d>0?k+1:(t-CAPS[k].t<1.2?k-1:k);n=clamp(n,0,CAPS.length-1);seek(CAPS[n].t+.001)};
+track.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();jump(e.key==='ArrowRight'?1:-1)}});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+  if(e.key===' '){e.preventDefault();if(!started)seek(0);playing?pause():play()}else if(e.key==='ArrowRight')jump(1);else if(e.key==='ArrowLeft')jump(-1);
+  else if(e.key==='v'||e.key==='V')setVoice(!TTS.on);else if(e.key==='f'||e.key==='F')$('#fs').click()});
+
+{const pp=(typeof POSTER!=='undefined'?POSTER:[SC.length-1,0,.9]),ps=SC[Math.min(pp[0],SC.length-1)],pc=Math.min(pp[1],ps.capT.length-1);t=ps.start+ps.capT[pc]+ps.capD[pc]*pp[2];tAbs=t}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
+['400 20px "Michroma"','500 20px "JetBrains Mono"','600 20px "IBM Plex Sans KR"','700 20px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}syncUI();requestAnimationFrame(frame);
+window.Lesson={render,SC,CAPS,DUR,canvas:cv};
+})();
+</script>
+</body>
+</html>

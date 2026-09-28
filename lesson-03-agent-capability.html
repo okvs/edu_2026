@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent 능력 확장</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Michroma&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#07080C; --panel:#0E1117; --line:#1C212C; --line2:#2A3140;
+  --dim:#6E7688; --soft:#A9ADB8; --text:#ECE8DE; --amber:#FFB547;
+  --fd:"Michroma","Eurostile","Arial Black",sans-serif;
+  --fm:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  --fb:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+[hidden]{display:none!important}
+body{font-family:var(--fb);font-size:15px;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 56px;display:grid;gap:20px}
+.hd{display:grid;grid-template-columns:auto 1fr;gap:10px 48px;align-items:end}
+.eyebrow{font:500 11px/1.4 var(--fm);letter-spacing:.16em;color:var(--dim);text-transform:uppercase;margin:0 0 12px}
+h1{font:400 clamp(24px,4vw,38px)/1.1 var(--fd);letter-spacing:.12em;margin:0}
+h1 small{display:block;font:600 16px var(--fb);letter-spacing:0;color:var(--soft);margin-top:10px}
+.lede{margin:0;max-width:60ch;color:var(--soft);justify-self:end;text-wrap:pretty}
+.screen{position:relative;aspect-ratio:16/9;max-width:100%;background:#000;border:1px solid var(--line);overflow:hidden}
+.screen:fullscreen{border:0;width:100vw;height:100vh;aspect-ratio:auto}
+canvas{display:block;width:100%;height:100%;object-fit:contain}
+.bigplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:14px;padding:12px 24px 12px 12px;border-radius:999px;border:1px solid rgba(255,181,71,.55);background:rgba(7,8,12,.8);color:var(--text);font:500 15px var(--fb);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);white-space:nowrap}
+.bigplay:hover{border-color:var(--amber)}
+.bigplay .ic{width:42px;height:42px;border-radius:50%;background:var(--amber);display:grid;place-items:center;flex:none}
+.bigplay small{display:block;font:400 11px var(--fm);color:var(--dim);letter-spacing:.06em}
+.controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{height:38px;min-width:38px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:500 13px var(--fb);cursor:pointer;border-radius:6px}
+.btn:hover{border-color:var(--line2)}
+.btn[aria-pressed="true"]{border-color:rgba(255,181,71,.55);color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn svg{width:16px;height:16px;fill:currentColor}
+:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.track{flex:1 1 320px;position:relative;height:38px;display:flex;gap:2px;cursor:pointer;touch-action:none;min-width:0}
+.seg{position:relative;background:#10141B;border-radius:2px;overflow:hidden;min-width:0}
+.seg i{position:absolute;left:0;top:0;bottom:0;background:rgba(255,181,71,.2);width:0}
+.seg span{position:absolute;left:5px;top:50%;transform:translateY(-50%);font:500 10px var(--fm);color:var(--dim);white-space:nowrap;pointer-events:none}
+.seg.on span{color:var(--amber)}
+.head{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--amber);left:0;pointer-events:none}
+.tc{font:500 13px var(--fm);font-variant-numeric:tabular-nums;min-width:112px;text-align:right;color:var(--soft)}
+.tc b{color:var(--text);font-weight:500}
+.note{font:400 12px var(--fm);color:var(--dim);margin:8px 0 0}
+.sh{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-top:18px}
+.sh h2{font:500 12px var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--soft);margin:0}
+.sh p{margin:0;font:400 12px var(--fm);color:var(--dim)}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 36px;margin:0;padding:0;list-style:none;border-top:1px solid var(--line)}
+.shot{border-bottom:1px solid var(--line)}
+.shot button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:52px 1fr auto;gap:2px 14px;padding:14px 4px;width:100%;cursor:pointer}
+.shot button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px}
+.shot button:hover .t{color:var(--amber)}
+.shot .n{font:400 14px/1.9 var(--fd);color:var(--dim);grid-row:1/3}
+.shot.on .n,.shot.on .t{color:var(--amber)}
+.shot .t{font:600 15px/1.6 var(--fb)}
+.shot .r{font:400 12px/1.9 var(--fm);color:var(--dim);font-variant-numeric:tabular-nums}
+.shot .d{grid-column:2/4;color:var(--soft);font-size:14px;line-height:1.65}
+.foot{display:flex;flex-wrap:wrap;gap:8px 22px;color:var(--dim);font:400 12px var(--fm);margin-top:6px}
+kbd{font:500 11px var(--fm);border:1px solid var(--line2);border-bottom-width:2px;border-radius:4px;padding:1px 6px;color:var(--soft)}
+@media (max-width:760px){
+  .hd{grid-template-columns:1fr}.lede{justify-self:start}
+  .seg span{display:none}.track{flex-basis:100%;order:5}
+  .shots{grid-template-columns:1fr}
+  .bigplay{padding:8px 16px 8px 8px;font-size:13px}.bigplay .ic{width:34px;height:34px}
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header class="hd">
+    <div>
+      <p class="eyebrow">Lesson video · Chapter 03 · 1920×1080</p>
+      <h1>AGENT +<small>Agent 능력 확장 — Skill과 MCP</small></h1>
+    </div>
+    <p class="lede">교안 「03. Agent 능력 확장」을 장면 19개로 옮긴 모션그래픽 강의 영상입니다. Skill의 개념과 Agent와의 차이, skill-creator로 나만의 디자인 Skill을 만들어 report-writer에 연결하는 실습, 그리고 MCP와 Playwright로 Agent가 외부 도구를 쓰게 하는 과정까지 따라갑니다.</p>
+  </header>
+
+  <section aria-label="강의 영상 플레이어">
+    <div class="screen" id="screen">
+      <canvas id="stage" aria-label="멀티 에이전트 강의 모션그래픽"></canvas>
+      <button class="bigplay" id="bigplay" type="button">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 18 18"><path d="M5 3l10 6-10 6z" fill="#07080C"/></svg></span>
+        <span>처음부터 재생<small>음성 해설 + 배경음</small></span>
+      </button>
+    </div>
+    <div class="controls">
+      <button class="btn" id="play" type="button" aria-label="재생"><svg viewBox="0 0 16 16" id="playic"><path d="M4 2l10 6-10 6z"/></svg></button>
+      <button class="btn" id="voice" type="button" aria-pressed="false">음성 해설 꺼짐</button>
+      <button class="btn" id="music" type="button" aria-pressed="false">배경음 꺼짐</button>
+      <div class="track" id="track" role="slider" tabindex="0" aria-label="타임라인" aria-valuemin="0" aria-valuenow="0"><div class="head" id="head"></div></div>
+      <span class="tc" id="tc"></span>
+      <button class="btn" id="fs" type="button" aria-label="전체 화면"><svg viewBox="0 0 16 16"><path d="M1 1h5v2H3v3H1zm9 0h5v5h-2V3h-3zM1 10h2v3h3v2H1zm12 0h2v5h-5v-2h3z"/></svg></button>
+    </div>
+    <p class="note" id="vnote"></p>
+  </section>
+
+  <section aria-label="장면과 대본">
+    <div class="sh"><h2>장면 · 대본</h2><p id="meta"></p></div>
+    <ol class="shots" id="shots"></ol>
+    <div class="foot">
+      <span><kbd>Space</kbd> 재생/일시정지</span><span><kbd>←</kbd><kbd>→</kbd> 자막 단위 이동</span><span><kbd>V</kbd> 음성 해설</span><span><kbd>F</kbd> 전체 화면</span>
+      <span>터미널 화면 · 샘플 색상/글자 값 · 에이전트 파일은 교안 스크린샷과 실습자료(Ch2_실습용, Ch2_완성본) 기준이며, 교안에 결과가 없는 화면은 ‘예시’로 표시했습니다.</span>
+    </div>
+  </section>
+</main>
+
+<script>
+(()=>{
+'use strict';
+/* ================= core ================= */
+const W=1920,H=1080;
+const cv=document.getElementById('stage');cv.width=W;cv.height=H;
+const ctx=cv.getContext('2d');
+const mk=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;return c};
+const scratch=mk(W,H),sctx=scratch.getContext('2d');
+const C={bg:'#07080C',grid:'#141925',line:'#232A38',dim:'#6E7688',mid:'#9AA3B5',text:'#ECE8DE',amber:'#FFB547',
+  m1:'#4C8DFF',m2:'#FF4FA3',m3:'#2FE3C4',m4:'#B98CFF',m5:'#FF7A45',ok:'#3DDC84',bad:'#FF5A5F',card:'#0F131B'};
+const FD='"Michroma","Eurostile","Arial Black",sans-serif',FM='"JetBrains Mono",ui-monospace,Consolas,monospace',FK='"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+const _ha=new Map();
+function hexA(h,a){const k=h+a;let v=_ha.get(k);if(v)return v;const n=parseInt(h.slice(1),16);v=`rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;if(_ha.size<5000)_ha.set(k,v);return v}
+const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,lerp=(a,b,t)=>a+(b-a)*t,inv=(a,b,x)=>clamp((x-a)/(b-a));
+const eO3=t=>1-Math.pow(1-t,3),eIO3=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,eOB=t=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2)};
+const pad2=n=>String(n).padStart(2,'0');
+
+/* ================= drawing kit ================= */
+function line(g,x0,y0,x1,y1){g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()}
+function rrect(g,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function panel(g,x,y,w,h,o={}){rrect(g,x,y,w,h,o.r??14);g.fillStyle=o.fill??C.card;g.fill();if(o.stroke!==null){g.strokeStyle=o.stroke??C.line;g.lineWidth=o.lw??1.5;if(o.dash)g.setLineDash(o.dash);g.stroke();g.setLineDash([])}}
+function T(g,s,x,y,o={}){g.font=`${o.w??500} ${o.sz??24}px ${o.f??FK}`;g.fillStyle=o.c??C.text;g.textAlign=o.al??'left';g.textBaseline=o.bl??'alphabetic';g.fillText(s,x,y);return g.measureText(s).width}
+function wrapLines(g,s,max){const out=[];let cur='';for(const w of s.split(' ')){const t=cur?cur+' '+w:w;if(g.measureText(t).width>max&&cur){out.push(cur);cur=w}else cur=t}if(cur)out.push(cur);return out}
+function chip(g,x,y,s,col,o={}){const sz=o.sz??18;g.font=`${o.w??600} ${sz}px ${o.f??FK}`;const w=g.measureText(s).width+sz*1.4,h=sz*1.9;const x0=o.al==='center'?x-w/2:o.al==='right'?x-w:x;
+  rrect(g,x0,y-h/2,w,h,h/2);g.fillStyle=o.fill??hexA(col,.14);g.fill();g.strokeStyle=hexA(col,.75);g.lineWidth=1.3;g.stroke();g.fillStyle=o.tc??col;g.textAlign='center';g.textBaseline='middle';g.fillText(s,x0+w/2,y+1);return w}
+function polyLen(p){let L=0;for(let i=1;i<p.length;i++)L+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);return L}
+function polyPartial(g,p,f){let rem=f*polyLen(p);g.moveTo(p[0][0],p[0][1]);for(let i=1;i<p.length&&rem>0;i++){const dx=p[i][0]-p[i-1][0],dy=p[i][1]-p[i-1][1],d=Math.hypot(dx,dy);if(rem>=d){g.lineTo(p[i][0],p[i][1]);rem-=d}else{const k=rem/d;g.lineTo(p[i-1][0]+dx*k,p[i-1][1]+dy*k);rem=0}}}
+function check(g,x,y,s,col,f){if(f<=0)return;g.strokeStyle=col;g.lineWidth=Math.max(3,s*.18);g.lineCap='round';g.lineJoin='round';g.beginPath();polyPartial(g,[[x-s*.45,y],[x-s*.12,y+s*.32],[x+s*.5,y-s*.38]],f);g.stroke();g.lineCap='butt'}
+function cross(g,x,y,s,col){g.strokeStyle=col;g.lineWidth=Math.max(3,s*.16);g.lineCap='round';line(g,x-s/2,y-s/2,x+s/2,y+s/2);line(g,x+s/2,y-s/2,x-s/2,y+s/2);g.lineCap='butt'}
+function doc(g,x,y,w,h,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const x0=x-w/2,y0=y-h/2,f=Math.min(w,h)*.24;
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x0+w-f,y0);g.lineTo(x0+w,y0+f);g.lineTo(x0+w,y0+h);g.lineTo(x0,y0+h);g.closePath();g.fillStyle=o.fill??'#131824';g.fill();g.strokeStyle=hexA(col,.9);g.lineWidth=2;g.stroke();
+  g.beginPath();g.moveTo(x0+w-f,y0);g.lineTo(x0+w-f,y0+f);g.lineTo(x0+w,y0+f);g.stroke();
+  const n=o.lines??4;for(let i=0;i<n;i++){g.fillStyle=hexA(o.lc??col,i===0?.7:.35);g.fillRect(x0+w*.14,y0+f+h*.08+i*((h-f-h*.2)/n),(w*.72)*(i===0?.6:[.9,.75,.85,.6,.8][i%5]),Math.max(2,h*.025))}
+  if(o.marks){g.strokeStyle=C.bad;g.lineWidth=2.5;for(let i=1;i<n;i+=2){const yy=y0+f+h*.08+i*((h-f-h*.2)/n)+6;line(g,x0+w*.14,yy,x0+w*.14+w*.6*o.marks,yy)}}
+  if(o.head){T(g,o.head,x0+w*.14,y0+f*.8,{sz:Math.max(11,w*.1),f:FM,w:600,c:col})}
+  if(o.title)T(g,o.title,x,y0+h+(o.tsz??18)+8,{sz:o.tsz??18,w:600,al:'center',c:o.tc??C.text});
+  if(o.sub)T(g,o.sub,x,y0+h+(o.tsz??18)+32,{sz:15,al:'center',c:C.dim,f:FM});g.restore()}
+function agent(g,x,y,r,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;
+  if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,r*1.7,0,7);g.fill()}
+  g.fillStyle='#0D1118';g.beginPath();g.arc(x,y,r,0,7);g.fill();g.strokeStyle=col;g.lineWidth=o.lw??3;g.stroke();
+  if(o.work>0&&o.work<1){g.strokeStyle=col;g.lineWidth=4;g.lineCap='round';g.beginPath();const st=(o.spin||0);g.arc(x,y,r+10,st,st+Math.PI*1.2);g.stroke();g.lineCap='butt'}
+  const e=r*.17;g.fillStyle=col;rrect(g,x-r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();rrect(g,x+r*.34-e/2,y-r*.2,e,e*1.7,e/2);g.fill();
+  g.fillRect(x-r*.28,y+r*.32,r*.56,Math.max(2,r*.07));
+  if(o.name){const sz=o.nsz??20;if(o.side)T(g,o.name,x+r+16,y+(o.role?-2:7),{sz,w:600,f:o.nf??FM});else T(g,o.name,x,y+r+sz+12,{sz,w:600,al:'center',f:o.nf??FM})}
+  if(o.role){const sz=o.nsz??20;if(o.side)T(g,o.role,x+r+16,y+22,{sz:16,c:C.dim});else T(g,o.role,x,y+r+sz+38,{sz:16,al:'center',c:C.dim})}
+  g.restore()}
+function person(g,x,y,s,col,o={}){g.fillStyle=col;g.beginPath();g.arc(x,y-s*.38,s*.3,0,7);g.fill();g.beginPath();g.moveTo(x-s*.6,y+s*.62);g.quadraticCurveTo(x-s*.6,y,x,y);g.quadraticCurveTo(x+s*.6,y,x+s*.6,y+s*.62);g.closePath();g.fill();
+  if(o.name)T(g,o.name,x,y+s*.62+30,{sz:20,w:600,al:'center'})}
+function edge(x0,y0,x1,y1,r0,r1){const d=Math.hypot(x1-x0,y1-y0)||1,ux=(x1-x0)/d,uy=(y1-y0)/d;return[x0+ux*r0,y0+uy*r0,x1-ux*r1,y1-uy*r1]}
+function arrow(g,x0,y0,x1,y1,col,f=1,o={}){if(f<=0)return;const x=lerp(x0,x1,f),y=lerp(y0,y1,f);g.strokeStyle=col;g.lineWidth=o.lw??2.5;if(o.dash)g.setLineDash(o.dash);line(g,x0,y0,x,y);g.setLineDash([]);
+  if(o.head!==false){const an=Math.atan2(y1-y0,x1-x0),s=o.hs??12;g.fillStyle=col;g.beginPath();g.moveTo(x,y);g.lineTo(x-s*Math.cos(an-.45),y-s*Math.sin(an-.45));g.lineTo(x-s*Math.cos(an+.45),y-s*Math.sin(an+.45));g.closePath();g.fill()}}
+function packet(g,x0,y0,x1,y1,f,col,label){if(f<=0||f>=1)return;const e=eIO3(f),x=lerp(x0,x1,e),y=lerp(y0,y1,e);g.fillStyle=hexA(col,.22);g.beginPath();g.arc(x,y,17,0,7);g.fill();g.fillStyle=col;g.beginPath();g.arc(x,y,7,0,7);g.fill();if(label)chip(g,x,y-32,label,col,{sz:15,al:'center',fill:'#0D1118'})}
+function gauge(g,x,y,w,v,col,label){rrect(g,x,y,w,16,8);g.fillStyle='#161B26';g.fill();if(v>0){rrect(g,x,y,Math.max(16,w*v),16,8);g.fillStyle=col;g.fill()}
+  T(g,label,x,y-12,{sz:17,f:FM,c:C.mid});T(g,Math.round(v*100)+'%',x+w,y-12,{sz:21,f:FM,w:700,al:'right',c:col})}
+function folder(g,x,y,col){g.fillStyle=hexA(col,.85);g.beginPath();g.moveTo(x,y-8);g.lineTo(x+9,y-8);g.lineTo(x+12,y-5);g.lineTo(x+22,y-5);g.lineTo(x+22,y+9);g.lineTo(x,y+9);g.closePath();g.fill()}
+function fileIc(g,x,y,col){g.strokeStyle=col;g.lineWidth=1.8;g.strokeRect(x+3,y-9,15,19);g.fillStyle=col;g.fillRect(x+6,y-3,9,2);g.fillRect(x+6,y+2,7,2)}
+function tree(g,x,y,rows,o={}){const lh=o.lh??50;rows.forEach((r,i)=>{const a=r.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const xx=x+r.d*34,yy=y+i*lh;
+  if(r.hi){rrect(g,x-14,yy-lh/2+4,o.w??680,lh-8,8);g.fillStyle=hexA(r.hc??C.amber,.12*r.hi);g.fill();g.strokeStyle=hexA(r.hc??C.amber,.6*r.hi);g.lineWidth=1.3;g.stroke()}
+  if(r.d>0){g.strokeStyle=hexA(C.text,.15);g.lineWidth=1;line(g,xx-20,yy-lh/2,xx-20,yy);line(g,xx-20,yy,xx-6,yy)}
+  (r.dir?folder:fileIc)(g,xx,yy,r.c??(r.dir?C.mid:C.text));
+  T(g,r.n,xx+32,yy+8,{sz:o.sz??22,f:FM,w:r.dir?600:500,c:r.tc??C.text});
+  if(r.tag){g.font=`500 ${o.sz??22}px ${FM}`;const w=g.measureText(r.n).width;chip(g,xx+48+w,yy,r.tag,r.hc??C.amber,{sz:15})}
+  g.restore()})}
+function codeLines(g,x,y,lines,o={}){const lh=o.lh??44;lines.forEach((l,i)=>{const a=typeof o.a==='function'?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const yy=y+i*lh;
+  if(o.hi&&o.hi(i)>0){rrect(g,x-14,yy-lh+12,o.w??820,lh,6);g.fillStyle=hexA(C.amber,.13*o.hi(i));g.fill();g.fillStyle=hexA(C.amber,o.hi(i));g.fillRect(x-14,yy-lh+12,3,lh)}
+  let col=C.text,s=l;if(/^#/.test(l))col=C.amber;else if(/^---/.test(l))col=C.dim;else if(/^\s*-/.test(l))col='#C9CCD4';
+  const m=/^([a-z]+):(.*)$/.exec(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${FM}`;g.textAlign='left';g.textBaseline='alphabetic';
+  if(m){g.fillStyle=C.m3;g.fillText(m[1]+':',x,yy);const w=g.measureText(m[1]+':').width;g.fillStyle=C.text;g.font=`400 ${o.sz??21}px ${FK}`;g.fillText(m[2],x+w,yy)}
+  else{g.fillStyle=col;const hasK=/[가-힣]/.test(l);g.font=`${/^#/.test(l)?600:400} ${o.sz??21}px ${hasK?FK:FM}`;g.fillText(s,x,yy)}g.restore()})}
+function winFrame(g,x,y,w,h,title,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,44,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+30,w,14);
+  T(g,title,x+22,y+29,{sz:17,f:FM,w:500,c:o.tc??C.mid});if(o.tag)chip(g,x+w-18,y+22,o.tag,C.dim,{sz:13,al:'right'})}
+
+/* ================= scenes ================= */
+// Chapter 03 · Agent 능력 확장 — scenes for lesson-template.html
+const POSTER=[12,5,.98];
+const SC=[];
+const S=(o)=>SC.push(o);
+
+// role colours (kept for the whole video)
+const SKC=C.m4,   // Skill (violet)
+      MCPC=C.m1,  // MCP (blue)
+      PWC=C.m5,   // Playwright / browser (orange)
+      RWC=C.m2,   // report-writer
+      MAC=C.m3;   // market-analyst
+// doc-sample.html real colours
+const NAVY='#0A1547',ACC='#1428A0',LAV='#C2C8E8',PALE='#F2F3F7',PERI='#7C9BFF';
+
+const typed=(s,f)=>s.slice(0,Math.ceil(s.length*clamp(f)));
+function gear(g,x,y,r,col){g.fillStyle=col;g.beginPath();for(let i=0;i<16;i++){const an=i/16*Math.PI*2,rr=i%2?r:r*1.32;g.lineTo(x+Math.cos(an)*rr,y+Math.sin(an)*rr)}g.closePath();g.fill();g.fillStyle='#131824';g.beginPath();g.arc(x,y,r*.45,0,7);g.fill()}
+function book(g,x,y,s,col,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;const w=s*.78;
+  if(o.glow>0){g.fillStyle=hexA(col,.16*o.glow);g.beginPath();g.arc(x,y,s*.9,0,7);g.fill()}
+  rrect(g,x-w/2,y-s/2,w,s,s*.08);g.fillStyle='#131824';g.fill();g.fillStyle=hexA(col,.16);g.fill();g.strokeStyle=col;g.lineWidth=2.5;g.stroke();
+  g.fillStyle=col;g.fillRect(x-w/2+s*.1,y-s/2,Math.max(3,s*.06),s);gear(g,x+s*.05,y-s*.1,s*.15,col);
+  if(o.label){let lz=o.lsz??Math.max(13,s*.12);g.font=`600 ${lz}px ${FM}`;const lw=g.measureText(o.label).width;if(lw>w*.7)lz=Math.max(9,lz*w*.7/lw);T(g,o.label,x+s*.04,y+s*.3,{sz:lz,f:FM,w:600,al:'center',c:C.text})}
+  if(o.name)T(g,o.name,x,y+s/2+(o.nsz??18)+10,{sz:o.nsz??18,w:600,al:'center',c:o.nc??col,f:o.nf??FM});g.restore()}
+function termL(g,x,y,L,o={}){const lh=o.lh??40,sz=o.sz??19;L.forEach((r,i)=>{if(!r)return;const a=o.a?o.a(i):1;if(a<=0)return;g.save();g.globalAlpha*=a;const[s,c,w,hl]=r;const yy=y+i*lh;
+  if(hl){rrect(g,x-12,yy-lh+10,o.w??900,lh,6);g.fillStyle=hexA(hl,.14);g.fill();g.fillStyle=hl;g.fillRect(x-12,yy-lh+10,3,lh)}
+  T(g,s,x,yy,{sz,f:FM,w:w??400,c:c??C.text});g.restore()})}
+function browser(g,x,y,w,h,url,o={}){panel(g,x,y,w,h,{r:14,fill:o.fill??'#0B0E14',stroke:o.stroke??C.line});rrect(g,x,y,w,50,14);g.fillStyle='#10141C';g.fill();g.fillRect(x,y+34,w,16);
+  ['#FF5F57','#FEBC2E','#28C840'].forEach((c,i)=>{g.fillStyle=c;g.beginPath();g.arc(x+24+i*20,y+25,6,0,7);g.fill()});
+  panel(g,x+96,y+11,w-120-(o.tag?180:0),28,{r:14,fill:'#161B26',stroke:null});T(g,url,x+114,y+31,{sz:15,f:FM,c:C.mid});if(o.tag)chip(g,x+w-18,y+25,o.tag,C.dim,{sz:13,al:'right'})}
+function bubble(g,x,y,w,h,col,lines,o={}){panel(g,x,y,w,h,{r:16,fill:o.fill??'#12161F',stroke:hexA(col,.55)});lines.forEach((s,i)=>T(g,s,x+22,y+(o.top??38)+i*(o.lh??32),{sz:o.sz??20,w:o.w??500,c:o.c??C.text,f:o.f??FK}))}
+function cellText(g,s,x,y,w,o={}){const sz=o.sz??19;g.font=`${o.w??500} ${sz}px ${FK}`;const L=wrapLines(g,s,w);const lh=sz*1.35;L.forEach((l,i)=>T(g,l,x,y-(L.length-1)*lh/2+i*lh,{sz,w:o.w??500,al:o.al??'center',c:o.c??C.text}))}
+function tile(g,x,y,w,h,label,col,glyph,o={}){const a=o.a??1;if(a<=0)return;g.save();g.globalAlpha*=a;panel(g,x-w/2,y-h/2,w,h,{r:16,fill:hexA(col,.07+.08*(o.hi||0)),stroke:hexA(col,.35+.5*(o.hi||0)),lw:1.5+(o.hi||0)});
+  T(g,glyph,x,y+2,{sz:30,f:FM,w:700,al:'center',c:col});T(g,label,x,y+h/2-16,{sz:18,w:600,al:'center'});g.restore()}
+
+// 0 TITLE
+S({code:'03',title:'Agent 능력 확장',group:'CHAPTER',hideHead:1,
+ caps:[{t:'Chapter 03, Agent 능력 확장 — 반복 업무 방법은 Skill로, 외부 도구는 MCP로 연결합니다.',say:'챕터 3, 에이전트 능력 확장. 반복하는 업무 방법은 스킬로, 외부 도구는 엠씨피로 연결해 봅니다.'}],
+ draw(g,P){const t=P.ls,cx=960,cy=470,la=P.at(0,0,1.2);
+  for(let k=0;k<6;k++){const an=k/6*Math.PI*2+t*.12,x=cx+Math.cos(an)*620,y=cy+Math.sin(an)*280;g.globalAlpha=la*.45;g.strokeStyle=hexA(C.amber,.5);g.lineWidth=1.2;g.setLineDash([4,9]);line(g,cx,cy,x,y);g.setLineDash([]);g.globalAlpha=1;
+   if(k%2===0)book(g,x,y,74,SKC,{a:la*.85});else tile(g,x,y,96,84,'',MCPC,'MCP',{a:la*.8})}
+  const rg=g.createRadialGradient(cx,cy+30,40,cx,cy+30,560);rg.addColorStop(0,'rgba(7,8,12,0.96)');rg.addColorStop(1,'rgba(7,8,12,0)');g.fillStyle=rg;g.fillRect(0,0,W,H);
+  const a1=P.at(0,.2,.8),a2=P.at(0,.5,.9),a3=P.at(0,.9,.8),a4=P.at(0,1.3,.8);
+  g.globalAlpha=a1;T(g,'CHAPTER 03',cx,380,{sz:22,f:FM,w:500,al:'center',c:C.amber});
+  g.globalAlpha=a2;T(g,'Agent +',cx,530+(1-a2)*30,{sz:118,f:FD,w:400,al:'center'});
+  g.globalAlpha=a3;T(g,'Agent 능력 확장',cx,620,{sz:50,w:600,al:'center'});
+  g.globalAlpha=a4;T(g,'Skill  ·  skill-creator  ·  MCP  ·  Playwright',cx,690,{sz:19,f:FM,al:'center',c:C.dim});g.globalAlpha=1}});
+
+// 1 OBJECTIVES
+const OBJ=['Agent와 Skill의 차이를 설명할 수 있습니다.','좋은 결과물 샘플을 바탕으로 나만의 Skill을 만들고 적용할 수 있습니다.','MCP를 통해 Claude가 외부 도구의 기능을 사용하는 과정을 설명할 수 있습니다.','Agent에 필요한 Skill과 MCP를 연결해 업무 수행 방식을 확장할 수 있습니다.'];
+S({code:'00',title:'학습 목표',group:'CHAPTER 03',
+ caps:[{t:'이번 챕터의 학습 목표는 네 가지입니다.'},{t:'Agent와 Skill의 차이, 나만의 Skill 만들기, MCP의 동작 과정, 그리고 Agent에 Skill과 MCP 연결하기.',say:'에이전트와 스킬의 차이, 나만의 스킬 만들기, 엠씨피의 동작 과정, 그리고 에이전트에 스킬과 엠씨피를 연결하기입니다.'}],
+ draw(g,P){OBJ.forEach((s,k)=>{const a=P.at(0,.2+k*.25,.6),y=270+k*140;if(a<=0)return;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   const ck=eO3(clamp((P.sec(1)-.3-k*.9)/.45));panel(g,300,y-10,1320,112,{fill:ck>0?hexA(C.amber,.05):C.card,stroke:ck>0?hexA(C.amber,.45):C.line});
+   rrect(g,340,y+22,48,48,10);g.strokeStyle=ck>0?C.amber:C.mid;g.lineWidth=2.5;g.stroke();check(g,364,y+46,30,C.amber,ck);
+   T(g,s,420,y+56,{sz:28,w:500,c:ck>0?C.text:'#C4C7CF'});g.restore()})}});
+
+// 2 SKILL?
+const LONGP=['다음 조사 결과를 바탕으로 보고서를 작성해줘.','제목은 28px Bold, 본문은 16px,','폰트는 Pretendard로 해줘.','포인트 색상은 #2563EB, 보조 색상은','#E5E7EB, 표 헤더는 연한 파랑(#DBEAFE),','여백은 24px로 하고, 목차도 만들어줘.','시장 상황을 분석하고, 어떤 부분이 중요한지','인사이트를 뽑아서 작성해줘...'];
+S({code:'1-1',title:'Skill이란?',group:'1 · 반복해서 사용하는 업무 방법 — Skill',
+ caps:[{t:'보고서를 만들 때마다 제목 크기, 표 스타일, 색상, 레이아웃을 매번 다시 설명하곤 합니다.'},
+  {t:'같은 지시를 반복 입력해야 하고, 분석 기준과 디자인 지시가 섞여 결과물 품질도 일정하지 않습니다.'},
+  {t:'이렇게 반복해서 쓰는 지시나 업무 방법을 따로 저장해 두고, 필요할 때 다시 쓰는 것이 Skill입니다.',say:'이렇게 반복해서 쓰는 지시나 업무 방법을 따로 저장해 두고, 필요할 때 다시 쓰는 것이 스킬입니다.'},
+  {t:'쉽게 말하면 Claude가 필요할 때 꺼내서 참고하는 ‘업무 매뉴얼’입니다.',say:'쉽게 말하면, 클로드가 필요할 때 꺼내서 참고하는 업무 매뉴얼입니다.'}],
+ draw(g,P){g.strokeStyle=C.line;g.lineWidth=1.5;line(g,960,200,960,860);
+  const R=P.at(2,0,.5);
+  T(g,'Skill이 없을 때',520,232,{sz:30,w:700,al:'center'});T(g,'같은 지시를 매번 다시 설명',520,266,{sz:18,al:'center',c:C.dim});
+  T(g,'Skill이 있을 때',1400,232,{sz:30,w:700,al:'center',c:R>0?C.text:C.dim});T(g,'한 번 만든 업무 방법을 필요할 때마다',1400,266,{sz:18,al:'center',c:C.dim});
+  agent(g,200,460,50,RWC,{name:'report-writer',nsz:17});
+  const rv=clamp(P.sec(0)/Math.max(.1,P.dur0*.8));panel(g,290,300,560,340,{r:18,fill:'#12161F',stroke:hexA(C.text,.3)});
+  const n=Math.floor(LONGP.length*rv);LONGP.forEach((s,i)=>{if(i<n)T(g,s,312,340+i*37,{sz:19,c:/#|px|Pretendard/.test(s)?C.amber:C.text})});
+  const pa=P.at(1,0,.6);if(pa>0){g.globalAlpha=pa;panel(g,120,680,780,170,{r:16,fill:hexA(C.bad,.07),stroke:hexA(C.bad,.5)});T(g,'⚠ 문제점',150,722,{sz:22,w:700,c:C.bad});
+   ['매번 같은 지시를 다시 입력해야 함','분석 기준과 디자인 지시가 섞여 복잡해짐','결과물의 품질이 일정하지 않을 수 있음'].forEach((s,i)=>{const b=P.at(1,.3+i*.35,.4);g.globalAlpha=pa*b;T(g,'• '+s,310,724+i*40,{sz:20})});g.globalAlpha=1}
+  if(R>0){g.save();g.globalAlpha=R;agent(g,1070,460,50,RWC,{name:'report-writer',nsz:17});bubble(g,1010,300,330,86,RWC,['조사 결과를 바탕으로','보고서를 작성해줘.'],{sz:19,top:34,lh:28});
+   const f=clamp((P.sec(2)-.4)/.8);arrow(g,1140,460,lerp(1140,1340,f),460,hexA(SKC,.8),f,{lw:3});
+   book(g,1420,460,120,SKC,{label:'report-design',name:'Skill',nf:FK,glow:.3+.5*P.at(3,0,.6)});
+   const f2=clamp((P.sec(2)-1.3)/.8);arrow(g,1500,460,lerp(1500,1620,f2),460,hexA(SKC,.8),f2,{lw:3});
+   if(f2>=1){const d=eOB(clamp((P.sec(2)-2.1)/.5));g.save();g.translate(1715,460);g.scale(d,d);doc(g,0,0,110,140,C.ok,{lines:5,title:'시장조사 보고서',tsz:16});g.restore()}
+   const ba=P.at(2,2.2,.6);g.globalAlpha=R*ba;
+   [['핵심 업무에 집중','분석 · 판단 · 인사이트 도출',1010],['일관된 결과물','정해둔 디자인 규칙으로 같은 품질',1420]].forEach(([t,d,x])=>{panel(g,x,680,390,170,{r:16,fill:hexA(C.ok,.06),stroke:hexA(C.ok,.45)});T(g,t,x+24,726,{sz:23,w:700,c:C.ok});T(g,d,x+24,770,{sz:18,c:C.mid})});g.restore()}
+  const m=P.at(3,0,.6);if(m>0){g.globalAlpha=m;chip(g,960,190,'Skill = 반복해서 쓰는 지시 · 방법 · 기준을 재사용하는 ‘업무 매뉴얼’',SKC,{sz:20,al:'center',fill:'#141022'});g.globalAlpha=1}
+  g.globalAlpha=1;chip(g,1800,850,'교안 그림 기준',C.dim,{sz:13,al:'right'})}});
+
+// 3 AGENT vs SKILL
+const AVS=[['역할','업무를 맡아 분석·판단·수행','반복해서 사용할 방법·규칙·절차 제공'],['Context','독립된 Context Window에서 작업','Agent의 Context 안에 불러와 사용'],['Memory','설정하면 경험과 지식을 축적 가능','자체적인 지속 Memory 없음'],['시장조사 예시','report-writer가 조사 결과를 해석하고 인사이트 도출','report-design이 보고서 디자인 규칙 제공']];
+const AVSCAP=[0,1,3,2];
+S({code:'1-2',title:'Agent와 Skill은 무엇이 다를까?',group:'1 · 반복해서 사용하는 업무 방법 — Skill',
+ caps:[{t:'Agent는 특정 역할을 맡아 분석하고 판단하며 업무를 수행하는 담당자입니다.',say:'에이전트는 특정 역할을 맡아, 분석하고 판단하며 업무를 수행하는 담당자입니다.'},
+  {t:'Sub Agent는 자신만의 독립된 Context Window에서 작업하며, 필요하면 Tool과 Skill을 사용합니다.',say:'서브 에이전트는 자신만의 독립된 컨텍스트 윈도우에서 작업하며, 필요하면 툴과 스킬을 사용합니다.'},
+  {t:'Skill은 별도의 담당자가 아니라, Agent가 불러와 참고하는 재사용 가능한 지시·절차·기준입니다.',say:'스킬은 별도의 담당자가 아니라, 에이전트가 불러와 참고하는 재사용 가능한 지시, 절차, 기준입니다.'},
+  {t:'Agent는 memory를 설정하면 경험을 축적할 수 있지만, Skill 자체에는 지속 Memory 기능이 없습니다.',say:'에이전트는 메모리를 설정하면 경험을 축적할 수 있지만, 스킬 자체에는 지속 메모리 기능이 없습니다.'}],
+ draw(g,P){const cw=P.at(1,0,.6);
+  panel(g,120,215,780,520,{r:20,fill:'#0D1119',stroke:hexA(RWC,.25+.4*cw),lw:2,dash:cw>0?[8,6]:null});
+  if(cw>0){g.globalAlpha=cw;chip(g,144,248,'report-writer의 독립된 Context Window',RWC,{sz:16});g.globalAlpha=1}
+  agent(g,330,450,64,RWC,{a:P.at(0,0,.5),name:'report-writer',role:'판단하며 업무를 수행하는 담당자',glow:.3});
+  const tl=P.at(1,.4,.5);if(tl>0){g.globalAlpha=tl;chip(g,520,330,'Tool',C.m3,{sz:17});g.globalAlpha=1}
+  // shelf + skill book
+  const sh=P.at(2,0,.5);if(sh>0){g.globalAlpha=sh;g.strokeStyle=C.line;g.lineWidth=3;line(g,160,835,860,835);T(g,'Skill 보관 (필요할 때 꺼내 씀)',160,868,{sz:15,c:C.dim});g.globalAlpha=1;
+   [0,1,2].forEach(i=>{if(i!==1)book(g,330+i*170,790,70,SKC,{a:sh*.45})});
+   const f=eIO3(clamp((P.sec(2)-.6)/1.2)),bx=lerp(500,700,f),by=lerp(790,450,f),bs=lerp(70,120,f);book(g,bx,by,bs,SKC,{a:sh,label:'report-design',glow:f});
+   if(f>=1){g.strokeStyle=hexA(SKC,.7);g.setLineDash([5,6]);line(g,400,450,640,450);g.setLineDash([]);T(g,'불러와 참고',520,436,{sz:16,al:'center',c:SKC})}}
+  const mm=P.at(3,0,.5);if(mm>0){g.globalAlpha=mm;panel(g,190,590,280,110,{r:12,fill:hexA(RWC,.08),stroke:hexA(RWC,.5)});T(g,'memory',212,624,{sz:17,f:FM,w:700,c:RWC});
+   for(let i=0;i<5;i++){const on=clamp((P.sec(3)-.4-i*.3)/.3);rrect(g,212+i*48,642,40,40,6);g.fillStyle=hexA(RWC,.12+.5*on);g.fill()}
+   chip(g,700,560,'✗ 지속 Memory 없음',C.bad,{sz:16,al:'center'});g.globalAlpha=1}
+  // table
+  const X=[960,1150,1490],Wd=[180,330,330],y0=215;
+  const ha=P.at(0,.2,.5);g.globalAlpha=ha;[['구분',C.mid],['Agent',RWC],['Skill',SKC]].forEach(([s,c],j)=>{panel(g,X[j],y0,Wd[j],70,{r:12,fill:hexA(c,.1),stroke:hexA(c,.5)});T(g,s,X[j]+Wd[j]/2,y0+45,{sz:24,w:700,al:'center',c})});
+  T(g,'판단하며 업무를 수행하는 담당자',X[1]+Wd[1]/2,y0+100,{sz:15,al:'center',c:C.dim});T(g,'필요할 때 꺼내 쓰는 업무 매뉴얼',X[2]+Wd[2]/2,y0+100,{sz:15,al:'center',c:C.dim});g.globalAlpha=1;
+  AVS.forEach((r,k)=>{const a=P.at(AVSCAP[k],.3,.5);if(a<=0)return;const y=335+k*128,hi=k===1?P.at(1,.8,.5):0;g.globalAlpha=a;
+   panel(g,X[0],y,Wd[0],112,{r:12,fill:C.card});cellText(g,r[0],X[0]+Wd[0]/2,y+62,160,{sz:20,w:700});
+   panel(g,X[1],y,Wd[1],112,{r:12,fill:hexA(hi>0?C.amber:RWC,.05+.08*hi),stroke:hexA(hi>0?C.amber:RWC,.3+.5*hi),lw:1.5+hi});cellText(g,r[1],X[1]+Wd[1]/2,y+62,300,{sz:19,w:k===1?700:500});
+   panel(g,X[2],y,Wd[2],112,{r:12,fill:hexA(SKC,.05),stroke:hexA(SKC,.3)});cellText(g,r[2],X[2]+Wd[2]/2,y+62,300,{sz:19});
+   if(hi>0)chip(g,X[1]+Wd[1]-10,y-2,'핵심',C.amber,{sz:14,al:'right',fill:'#1A1508'});g.globalAlpha=1});
+  chip(g,1820,860,'교안 그림 기준',C.dim,{sz:13,al:'right'})}});
+
+// 4 PRACTICE OVERVIEW
+S({code:'2',title:'실습 — 나만의 Skill 만들기',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'실습: 좋은 결과물 샘플에서 반복 가능한 규칙을 뽑아 Skill로 만들고, Agent에 연결해 재사용합니다.',say:'실습입니다. 좋은 결과물 샘플에서 반복 가능한 규칙을 뽑아 스킬로 만들고, 에이전트에 연결해 재사용하는 과정을 익힙니다.'},
+  {t:'폴더는 Ch2_실습용. samples의 세 샘플 중 하나를 골라 나만의 디자인 Skill을 만듭니다.',say:'폴더는 챕터2 실습용입니다. 샘플즈 폴더의 세 가지 샘플 중 하나를 골라, 나만의 디자인 스킬을 만듭니다.'},
+  {t:'산출물은 선택한 샘플 기반 디자인 Skill, report/report_styled.html, 그리고 report-writer의 Skill 연결입니다.',say:'산출물은 선택한 샘플 기반의 디자인 스킬, 리포트 스타일드 에이치티엠엘, 그리고 리포트 라이터의 스킬 연결입니다.'}],
+ draw(g,P){const rows=[['목적','좋은 결과물 샘플에서 반복 가능한 규칙을 뽑아 Skill로 만들고, Agent에 연결해 재사용하는 과정을 익힙니다.',0],['주제','dashboard-sample.html · doc-sample.html · slide-sample.html 중 하나를 선택해 나만의 디자인 Skill 만들기',1],['폴더','삼성전자_DS_실습자료/실습자료/Ch2_실습용',1],['산출물','',2]];
+  rows.forEach(([k,v,ci],i)=>{const a=P.at(ci,.2+i*.2,.5);if(a<=0)return;const y=215+i*160;g.globalAlpha=a;panel(g,110,y,1000,140,{r:14,fill:C.card,stroke:hexA(i===3?SKC:C.line,i===3?.5:1)});
+   T(g,k,140,y+80,{sz:24,w:700,c:C.amber});
+   if(v){g.font=`500 21px ${i===2?FM:FK}`;const L=wrapLines(g,v,810);L.forEach((l,j)=>T(g,l,270,y+80-(L.length-1)*16+j*32,{sz:21,f:i===2?FM:FK,c:i===2?C.m3:C.text}))}
+   else{let cx=270;[['선택한 샘플 기반 디자인 Skill',SKC],['report/report_styled.html',C.ok],['report-writer Skill 연결',RWC]].forEach(([s,c],j)=>{const b=P.at(2,.4+j*.5,.4);g.globalAlpha=a*b;cx+=chip(g,cx,y+72,s,c,{sz:17})+14})}
+   g.globalAlpha=1});
+  const wa=P.at(1,0,.6);if(wa>0){g.save();g.globalAlpha=wa;winFrame(g,1170,215,650,620,'탐색기',{tag:'실습자료 zip 실제 구성'});
+   const r=j=>P.at(1,.2+j*.18,.4);
+   tree(g,1200,300,[{n:'실습자료/',d:0,dir:1,a:r(0)},{n:'Ch2_실습용/',d:1,dir:1,a:r(1),c:C.amber,tc:C.amber},{n:'samples/',d:2,dir:1,a:r(2)},
+    {n:'dashboard-sample.html',d:3,a:r(3),tag:'38 KB',hc:C.mid},{n:'doc-sample.html',d:3,a:r(4),tag:'25 KB',hc:C.mid,hi:P.at(2,0,.4)*.0},{n:'slide-sample.html',d:3,a:r(5),tag:'35 KB',hc:C.mid},
+    {n:'Ch2_완성본/',d:1,dir:1,a:r(6),tc:C.mid},{n:'.claude/agents/',d:2,dir:1,a:r(7),tc:C.mid},{n:'report-writer.md',d:3,a:r(8),c:RWC,tc:RWC,hi:P.at(2,1.4,.4),hc:RWC,tag:P.at(2,1.4,.4)>0?'연결할 대상':null}],{w:600,sz:19,lh:54});g.restore()}}});
+
+// 5 SKILL-CREATOR (concept)
+S({code:'2-1',title:'스킬을 만들어주는 스킬 — skill-creator',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'skill-creator는 새로운 Skill을 만드는 과정을 도와주는 Skill입니다.',say:'스킬 크리에이터는, 새로운 스킬을 만드는 과정을 도와주는 스킬입니다.'},
+  {t:'원하는 업무와 참고 자료를 전달하면, 반복해서 쓸 규칙을 정리해 SKILL.md 형태의 Skill로 만들어 줍니다.',say:'원하는 업무와 참고 자료를 전달하면, 반복해서 쓸 규칙을 정리해, 스킬 엠디 형태의 스킬로 만들어 줍니다.'},
+  {t:'좋은 Skill의 구조와 작성 기준이 들어 있어, 호출 조건(description)과 references, scripts, assets까지 고려합니다.',say:'좋은 스킬의 구조와 작성 기준이 이미 들어 있어서, 호출 조건인 디스크립션과, 레퍼런스, 스크립트, 에셋 폴더까지 고려해 체계적으로 구성합니다.'},
+  {t:'즉, skill-creator는 “Skill을 만드는 방법” 자체를 Skill로 만들어 둔 도구입니다.',say:'즉, 스킬 크리에이터는, 스킬을 만드는 방법 자체를 스킬로 만들어 둔 도구입니다.'}],
+ draw(g,P){const a0=P.at(0,0,.6);
+  book(g,960,470,190,SKC,{a:a0,label:'skill-creator',lsz:20,glow:.3+.6*P.at(3,0,.6)});
+  if(a0>0){g.globalAlpha=a0;T(g,'Skill을 만드는 Skill',960,630,{sz:22,w:600,al:'center',c:SKC});g.globalAlpha=1}
+  const ia=P.at(1,0,.5);if(ia>0){g.save();g.globalAlpha=ia;person(g,220,420,70,C.text,{name:'나'});
+   panel(g,120,560,420,190,{r:16,fill:'#12161F',stroke:hexA(C.text,.35)});T(g,'전달하는 것',144,600,{sz:17,c:C.dim});T(g,'• 원하는 업무',144,642,{sz:22});T(g,'• 참고 자료 (좋은 샘플)',144,684,{sz:22});T(g,'• 반복할 기준',144,726,{sz:22});
+   const f=clamp((P.sec(1)-.5)/1);arrow(g,550,470,lerp(550,840,f),470,hexA(C.text,.6),f,{dash:[6,6]});packet(g,550,470,850,470,clamp((P.sec(1)-.5)/1.2),C.amber,'업무 + 자료');g.restore()}
+  const oa=P.at(1,1.6,.6);if(oa>0){g.save();g.globalAlpha=oa;const f=clamp((P.sec(1)-1.6)/.8);arrow(g,1080,470,lerp(1080,1230,f),470,hexA(SKC,.8),f,{lw:3});
+   winFrame(g,1250,220,570,560,'.claude/skills/<스킬 이름>/',{tc:SKC,tag:'구조'});
+   const r=j=>j===0?1:P.at(2,.3+j*.35,.4);
+   tree(g,1280,310,[{n:'<스킬 이름>/',d:0,dir:1,c:SKC,tc:SKC},{n:'SKILL.md',d:1,c:C.amber,tc:C.amber,hi:P.at(2,0,.5),hc:C.amber,tag:'필수'},{n:'references/',d:1,dir:1,a:r(1)},{n:'scripts/',d:1,dir:1,a:r(2)},{n:'assets/',d:1,dir:1,a:r(3)}],{w:520,sz:21,lh:56});
+   const da=P.at(2,.1,.5);if(da>0){g.globalAlpha=oa*da;panel(g,1280,610,510,140,{r:12,fill:'#0A0D12',stroke:hexA(C.amber,.5)});
+    codeLines(g,1302,650,['---','name: <스킬 이름>','description: 언제 이 Skill을 부를지'],{lh:34,sz:18,w:480,hi:i=>i===2?P.at(2,.3,.5):0})}g.restore()}
+  const sa=P.at(2,1.8,.6);if(sa>0){g.globalAlpha=sa;chip(g,960,760,'안에 든 것: 좋은 Skill 구조 · 작성 기준',SKC,{sz:18,al:'center'});g.globalAlpha=1}
+  const qa=P.at(3,.2,.6);if(qa>0){g.globalAlpha=qa;T(g,'“Skill을 만드는 방법” 자체를 Skill로',960,840,{sz:32,w:700,al:'center',c:C.amber});g.globalAlpha=1}}});
+
+// 6 SKILL-CREATOR (install)
+const INST=[
+ [['Claude Code v2.1.270',C.text,700],['Opus 5 (1M context) · Claude Max',C.mid],['~\\Desktop\\삼성전자_DS_실습자료\\실습자료\\Ch2_실습용',C.mid],null,['/plugin (plugins)          Manage Claude Code plugins',SKC,600,SKC],['/reload-plugins            Activate pending plugin changes…',C.mid],['/doctor                    Health-check the user\'s Claude Code setup…',C.mid],null,['❯ /plugin',C.text,700]],
+ [['Plugins   [Discover]   Installed   Marketplaces   Errors   Stats',SKC,600],null,['Discover plugins (5/292)',C.text,700],['○ code-review · claude-plugins-official · 476.6K installs',C.mid],['○ context7 · claude-plugins-official [Community Managed] · 446.3K installs',C.mid],['❯ ○ skill-creator · claude-plugins-official · 425.7K installs',C.amber,700,C.amber],['   Create new skills, improve existing skills, and measure ski…',C.dim],['○ code-simplifier · claude-plugins-official · 371.6K installs',C.mid],['○ playwright · claude-plugins-official · 352.7K installs',C.mid]],
+ [['Plugin details',C.text,700],null,['skill-creator',C.text,700],['from claude-plugins-official',C.mid],['Last updated: 2026년 4월 24일',C.mid],['By: Anthropic',C.mid],['Will install:  · Skills: skill-creator',C.text],null,['> Install for you (user scope)',C.amber,700,C.amber],['  Install for all collaborators on this repository (project scope)',C.mid],['  Install for you, in this repo only (local scope)',C.mid]],
+ [['Claude Code v2.1.270',C.text,700],['Opus 5 (1M context) · Claude Max',C.mid],null,['❯ /plugin',C.text],['  └ ✓ Installed skill-creator. Plugin is now active.',C.ok,600,C.ok],null,null,['…tor:skill-creator (skill-creator)   Create new skills, modify and…',SKC],['❯ /skill-creator',C.amber,700]],
+ [['PS> claude plugin install skill-creator@claude-plugins-official',C.amber,700,C.amber],null,['# 메뉴에서 설치가 잘 되지 않으면 터미널에서 실행',C.dim]]];
+const ISTEP=[['/plugin 입력','Claude Code에서'],['skill-creator 찾기','Discover plugins → 엔터'],['Install for you','(user scope) 선택 → 엔터'],['/skill-creator 활성화','설치 완료'],['대안: 터미널 명령','claude plugin install …']];
+S({code:'2-1',title:'skill-creator 설치하기 — /plugin',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'Claude Code에서 /plugin을 입력합니다.',say:'클로드 코드에서 슬래시 플러그인을 입력합니다.'},
+  {t:'Discover plugins에서 skill-creator를 찾아 엔터를 칩니다.',say:'디스커버 플러그인즈에서 스킬 크리에이터를 찾아 엔터를 칩니다.'},
+  {t:'하단의 Install for you (user scope) 옵션을 선택하고 엔터를 칩니다.',say:'하단의 인스톨 포 유, 유저 스코프 옵션을 선택하고 엔터를 칩니다.'},
+  {t:'그러면 이제 /skill-creator 명령이 활성화됩니다.',say:'그러면 이제 슬래시 스킬 크리에이터 명령이 활성화됩니다.'},
+  {t:'메뉴에서 설치가 잘 되지 않으면 터미널에서 claude plugin install 명령을 사용할 수 있습니다.',say:'메뉴에서 설치가 잘 되지 않으면, 터미널에서 클로드 플러그인 인스톨 명령을 사용할 수 있습니다.'}],
+ draw(g,P){const i=P.i;g.strokeStyle=C.line;g.lineWidth=2;line(g,160,280,160,800);
+  ISTEP.forEach(([t,d],k)=>{const y=280+k*130,on=k===i,dn=k<i&&k<4;const col=dn?C.ok:on?C.amber:C.dim;g.fillStyle='#0D1118';g.beginPath();g.arc(160,y,28,0,7);g.fill();g.strokeStyle=col;g.lineWidth=3;g.stroke();
+   if(dn)check(g,160,y+2,24,C.ok,1);else T(g,String(k+1),160,y+9,{sz:22,f:FD,al:'center',c:col});T(g,t,210,y-2,{sz:24,w:700,c:on||dn?C.text:C.mid});T(g,d,210,y+30,{sz:17,c:C.dim,f:k===4?FM:FK})});
+  const a=P.at(i,0,.4);g.save();g.globalAlpha=a;winFrame(g,640,215,1180,640,i===4?'Windows PowerShell':'Claude Code',{tc:i===4?C.mid:C.amber,tag:'교안 화면 기준'});
+  termL(g,680,300,INST[i],{lh:i===2?46:52,sz:19,w:1110,a:k=>P.at(i,.1+k*.12,.3)});g.restore()}});
+
+// 7 SAMPLES -> report-design
+function miniDoc(g,x,y,w,h,a){g.save();g.globalAlpha*=a;panel(g,x,y,w,h,{r:6,fill:'#FFFFFF',stroke:null});const px=x+w*.1,iw=w*.8;
+  g.fillStyle='#C8CCD8';g.fillRect(px,y+h*.06,iw,1.5);g.fillStyle=NAVY;g.fillRect(px+iw*.15,y+h*.1,iw*.7,h*.035);g.fillStyle='#9BA2B2';g.fillRect(px+iw*.25,y+h*.16,iw*.5,h*.015);
+  g.fillStyle=PALE;g.fillRect(px,y+h*.21,iw,h*.1);g.strokeStyle='#D5D9E3';g.lineWidth=1;g.strokeRect(px,y+h*.21,iw,h*.1);
+  [0,1].forEach(s=>{const yy=y+h*(.37+s*.3);g.fillStyle=NAVY;g.fillRect(px,yy,iw*.3,h*.025);g.fillRect(px,yy+h*.04,iw,2);g.fillStyle='#C8CCD8';for(let k=0;k<3;k++)g.fillRect(px+iw*.05,yy+h*(.07+k*.035),iw*(.9-k*.1),h*.012);
+   if(s===0){for(let k=0;k<8;k++){const bh=h*.08*(.4+k*.08);g.fillStyle=k>5?ACC:LAV;g.fillRect(px+k*iw/8+2,yy+h*.24-bh,iw/8-4,bh)}}else{g.strokeStyle='#C8CCD8';for(let k=0;k<4;k++){g.strokeRect(px,yy+h*(.19+k*.03),iw,h*.03)}g.fillStyle=NAVY;g.fillRect(px,yy+h*.19,iw,h*.03)}});g.restore()}
+function miniDash(g,x,y,w,h,a){g.save();g.globalAlpha*=a;panel(g,x,y,w,h,{r:6,fill:'#EEF0F5',stroke:null});g.fillStyle=ACC;g.fillRect(x,y,w,h*.12);
+  for(let k=0;k<4;k++){panel(g,x+8+k*(w-16)/4,y+h*.16,(w-16)/4-6,h*.16,{r:4,fill:'#FFFFFF',stroke:null});g.fillStyle=ACC;g.fillRect(x+14+k*(w-16)/4,y+h*.23,(w-16)/8,h*.04)}
+  panel(g,x+8,y+h*.36,w*.6,h*.34,{r:4,fill:'#FFFFFF',stroke:null});g.strokeStyle=ACC;g.lineWidth=2;g.beginPath();for(let k=0;k<8;k++){const xx=x+18+k*(w*.6-20)/7,yy=y+h*(.64-k*.035);k?g.lineTo(xx,yy):g.moveTo(xx,yy)}g.stroke();
+  panel(g,x+w*.64+4,y+h*.36,w*.36-12,h*.34,{r:4,fill:'#FFFFFF',stroke:null});g.strokeStyle=PERI;g.lineWidth=h*.06;g.beginPath();g.arc(x+w*.82,y+h*.53,h*.09,0,4.5);g.stroke();
+  panel(g,x+8,y+h*.74,w-16,h*.22,{r:4,fill:'#FFFFFF',stroke:null});for(let k=0;k<4;k++){g.fillStyle=k?'#E1E4EC':LAV;g.fillRect(x+14,y+h*(.77+k*.045),w-28,h*.03)}g.restore()}
+function miniSlide(g,x,y,w,h,a){g.save();g.globalAlpha*=a;panel(g,x,y,w,h,{r:6,fill:'#FFFFFF',stroke:null});const sh=w*9/16,sy=y+(h-sh)/2-h*.12;
+  panel(g,x,sy,w,sh,{r:4,fill:'#FFFFFF',stroke:'#E1E4EC'});g.fillStyle=ACC;g.fillRect(x+w*.06,sy+sh*.12,w*.06,sh*.08);g.fillStyle=NAVY;g.fillRect(x+w*.15,sy+sh*.12,w*.55,sh*.08);
+  [0,1,2].forEach(k=>{g.fillStyle=ACC;g.font=`700 ${sh*.2}px ${FK}`;g.textAlign='center';g.fillText(['32%','4.2h','18'][k],x+w*(.2+k*.3),sy+sh*.6);g.fillStyle='#7D8493';g.fillRect(x+w*(.1+k*.3),sy+sh*.7,w*.2,sh*.04)});
+  const s2=sy+sh+h*.06;panel(g,x,s2,w,sh*.55,{r:4,fill:NAVY,stroke:null});g.fillStyle='#FFFFFF';g.fillRect(x+w*.08,s2+sh*.18,w*.5,sh*.07);g.fillStyle=PERI;g.fillRect(x+w*.08,s2+sh*.32,w*.3,sh*.05);g.restore()}
+const SAMP=[['dashboard-sample.html','대시보드',miniDash],['doc-sample.html','문서 · 보고서',miniDoc],['slide-sample.html','슬라이드',miniSlide]];
+const CODE2=['/skill-creator @samples/[선택한 샘플 파일]을','참고해서 디자인해주는 스킬을 이 프로젝트 범위로 만들어줘.','스킬 이름은 report-design 으로 해줘. 테스트는 하지 말아줘.'];
+const RULES=['# report-design','## 글자','- 본문 Noto Sans KR 10.5pt · 행간 1.62','- 제목 17pt Bold · 장 제목 12.5pt (Ⅰ. Ⅱ. Ⅲ.)','## 색상','- 제목·구분선 #0A1547 · 강조 #1428A0','## 표 · 레이아웃','- A4 한 장 단위 · 요약 박스 #F2F3F7 · ○ 글머리'];
+S({code:'2-2',title:'좋은 샘플로 Skill 만들기',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'Ch2_실습용/samples에는 결과물 유형별 좋은 샘플이 미리 준비되어 있습니다.',say:'챕터2 실습용의 샘플즈 폴더에는, 결과물 유형별 좋은 샘플이 미리 준비되어 있습니다.'},
+  {t:'dashboard, doc, slide 샘플 중 원하는 유형 하나를 고릅니다. 여기서는 doc-sample.html을 예로 봅니다.',say:'대시보드, 독, 슬라이드 샘플 중 원하는 유형 하나를 고릅니다. 여기서는 독 샘플을 예로 봅니다.'},
+  {t:'/skill-creator로 샘플을 분석하게 해, 이 프로젝트 범위에 report-design 스킬을 만듭니다.',say:'슬래시 스킬 크리에이터로 샘플을 분석하게 해서, 이 프로젝트 범위에 리포트 디자인 스킬을 만듭니다.'},
+  {t:'글자 · 색상 · 표 · 레이아웃처럼 반복해서 쓸 디자인 규칙이 Skill로 정리됩니다.',say:'글자, 색상, 표, 레이아웃처럼 반복해서 쓸 디자인 규칙이 스킬로 정리됩니다.'},
+  {t:'생성이 끝나면 .claude/skills/ 아래 SKILL.md를 열어, 샘플의 특징이 재사용 가능한 규칙으로 정리됐는지 확인합니다.',say:'생성이 끝나면 닷 클로드 슬래시 스킬즈 아래의 스킬 엠디를 열어, 샘플의 특징이 재사용 가능한 규칙으로 잘 정리됐는지 확인합니다.'}],
+ draw(g,P){const sel=P.at(1,.3,.5);
+  SAMP.forEach(([n,d,fn],k)=>{const a=P.at(0,.2+k*.25,.5);if(a<=0)return;const x=130+k*330,y=215,dim=k===1?1:1-.6*sel;g.save();g.globalAlpha=a*dim;
+   panel(g,x-10,y-10,310,300,{r:14,fill:'#0D1119',stroke:hexA(k===1&&sel>0?C.amber:C.line,k===1&&sel>0?.9:1),lw:k===1?1.5+sel*1.5:1.5});
+   fn(g,x+50,y+8,190,210,1);T(g,n,x+145,y+248,{sz:16,f:FM,w:600,al:'center',c:k===1&&sel>0?C.amber:C.text});T(g,d,x+145,y+274,{sz:15,al:'center',c:C.dim});g.restore()});
+  if(sel>0){g.globalAlpha=sel;chip(g,605,540,'실제 파일 · doc-sample.html 선택',C.amber,{sz:15,al:'center'});g.globalAlpha=1}
+  const pa=P.at(2,0,.5);if(pa>0){g.save();g.globalAlpha=pa;winFrame(g,1140,205,680,300,'Claude Code · 프롬프트',{tc:SKC,tag:'교안 프롬프트'});
+   const tf=clamp((P.sec(2)-.2)/2.2),tot=CODE2.join('').length;let used=0;CODE2.forEach((s,i)=>{const n=clamp(tf*tot-used,0,s.length);used+=s.length;if(n>0)T(g,s.slice(0,Math.ceil(n)),1166,290+i*44,{sz:17,f:FM,c:i===0?SKC:C.text})});
+   if(tf>=1){const w=clamp((P.sec(2)-2.4)/1);if(w<1){g.strokeStyle=SKC;g.lineWidth=4;g.lineCap='round';g.beginPath();g.arc(1200,460,14,P.ls*5,P.ls*5+Math.PI*1.3);g.stroke();g.lineCap='butt'}T(g,w<1?'샘플 분석 중…':'✓ report-design 생성',1230,467,{sz:18,c:w<1?C.mid:C.ok,w:600})}g.restore()}
+  const ra=P.at(3,0,.5);if(ra>0){g.save();g.globalAlpha=ra;winFrame(g,110,590,990,275,'SKILL.md — 추출된 디자인 규칙',{tc:SKC,tag:'값: doc-sample.html 실제 · 문구 예시'});
+   const L=RULES,rv=i=>eO3(clamp((P.sec(3)-.2-i*.18)/.3));
+   L.slice(0,4).forEach((s,i)=>codeLines(g,140,665+i*48,[s],{lh:48,sz:18,a:()=>rv(i)}));L.slice(4).forEach((s,i)=>codeLines(g,610,665+i*48,[s],{lh:48,sz:18,a:()=>rv(i+4)}));
+   // chips flying from doc thumbnail
+   ['글자','색상','표','레이아웃'].forEach((s,i)=>{const f=eIO3(clamp((P.sec(3)-i*.25)/.9));if(f>0&&f<1)chip(g,lerp(605,200+i*230,f),lerp(420,610,f),s,SKC,{sz:15,al:'center'})});g.restore()}
+  const ta=P.at(4,0,.5);if(ta>0){g.save();g.globalAlpha=ta;winFrame(g,1140,540,680,325,'.claude › skills › report-design',{tc:C.mid,tag:'교안 화면 기준'});
+   tree(g,1170,625,[{n:'report-design/',d:0,dir:1,c:SKC,tc:SKC,tag:'Skill 생성 완료',hc:C.ok},{n:'assets/',d:1,dir:1,a:P.at(4,.3,.4)},{n:'references/',d:1,dir:1,a:P.at(4,.5,.4)},{n:'SKILL.md',d:1,c:C.amber,tc:C.amber,a:P.at(4,.7,.4),hi:P.at(4,1,.5),tag:'6.62KB',hc:C.amber}],{w:630,sz:20,lh:56});g.restore()}}});
+
+// 8 APPLY SKILL
+function repPage(g,x,y,w,h,styled,a){g.save();g.globalAlpha*=a;
+  if(!styled){panel(g,x,y,w,h,{r:8,fill:'#F4F4F4',stroke:null});const L=[['AI 반도체 시장조사 보고서',26,700],['1. 시장 규모 · 성장 전망',19,700],['',0],['2. 주요 공급사 · 점유율',19,700],['',0],['3. 수요처 · 응용 분야',19,700],['',0],['4. 종합 · 시사점',19,700]];
+   let yy=y+50;L.forEach(([s,sz,wt])=>{if(s){g.font=`${wt} ${sz}px "Times New Roman",serif`;g.fillStyle='#111';g.textAlign='left';g.fillText(s,x+30,yy);yy+=sz+14}else{g.fillStyle='#BBB';g.fillRect(x+30,yy-8,w-60,4);g.fillRect(x+30,yy+4,w-120,4);yy+=34}})}
+  else{panel(g,x,y,w,h,{r:8,fill:'#FFFFFF',stroke:null});const px=x+30,iw=w-60;g.fillStyle='#C8CCD8';g.fillRect(px,y+26,iw,1.5);T(g,'대외비 · 사내 한정',px,y+20,{sz:11,c:'#6E7688'});
+   T(g,'AI 반도체 시장조사 보고서',x+w/2,y+68,{sz:22,w:700,al:'center',c:NAVY});g.fillStyle=PALE;g.fillRect(px,y+88,iw,54);g.strokeStyle='#D5D9E3';g.lineWidth=1;g.strokeRect(px,y+88,iw,54);g.fillStyle='#9BA2B2';g.fillRect(px+14,y+106,iw-28,4);g.fillRect(px+14,y+120,iw-80,4);
+   ['Ⅰ. 시장 규모 · 성장 전망','Ⅱ. 주요 공급사 · 점유율','Ⅲ. 수요처 · 응용 분야'].forEach((s,k)=>{const yy=y+176+k*86;T(g,s,px,yy,{sz:16,w:700,c:NAVY});g.fillStyle=NAVY;g.fillRect(px,yy+8,iw,2);T(g,'○',px+4,yy+34,{sz:13,c:ACC});g.fillStyle='#C8CCD8';g.fillRect(px+24,yy+26,iw-40,4);g.fillRect(px+24,yy+42,iw-90,4);
+    if(k===0)for(let b=0;b<6;b++){g.fillStyle=b>3?ACC:LAV;g.fillRect(px+iw-120+b*20,yy-4-b*3,14,b*3+4)}})}g.restore()}
+S({code:'2-3',title:'기존 결과물에 Skill 적용하기',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'Chapter 2의 멀티 에이전트 팀이 만든 report/report.html에 방금 만든 디자인 Skill을 적용합니다.',say:'챕터 2의 멀티 에이전트 팀이 만든 리포트 에이치티엠엘에, 방금 만든 디자인 스킬을 적용합니다.'},
+  {t:'/report-design @report/report.html — 보고서 내용은 그대로, Skill의 규칙에 맞게 디자인만 바꿉니다.',say:'슬래시 리포트 디자인, 골뱅이 리포트 에이치티엠엘. 보고서 내용은 그대로 두고, 스킬의 규칙에 맞게 디자인만 바꿉니다.'},
+  {t:'결과는 report/report_styled.html로 저장한 뒤 원본과 비교합니다.',say:'결과는 리포트 스타일드 에이치티엠엘로 저장한 뒤, 원본과 비교합니다.'},
+  {t:'마음에 들지 않으면 결과물 하나를 고치는 대신, SKILL.md를 수정한 뒤 다시 실행합니다.',say:'결과가 마음에 들지 않으면, 결과물 하나를 고치는 대신 스킬 엠디를 수정한 뒤 다시 실행해 봅니다.'}],
+ draw(g,P){const a0=P.at(0,0,.5);g.globalAlpha=a0;winFrame(g,110,225,560,590,'report/report.html',{tc:C.mid,tag:'원본'});repPage(g,140,290,500,500,false,1);g.globalAlpha=1;
+  const ca=P.at(1,0,.4);if(ca>0){g.save();g.globalAlpha=ca;panel(g,700,195,520,64,{r:12,fill:'#0A0D12',stroke:hexA(SKC,.6)});const cmd='> /report-design @report/report.html';T(g,typed(cmd,P.sec(1)/1),722,236,{sz:20,f:FM,w:600,c:SKC});
+   book(g,960,470,130,SKC,{label:'report-design',lsz:14,glow:.4});T(g,'내용 그대로 · 디자인만',960,580,{sz:18,al:'center',c:C.mid});
+   const f=clamp((P.sec(1)-1)/1.2);packet(g,680,470,880,470,f,C.mid,'내용');packet(g,1040,470,1240,470,clamp((P.sec(1)-1.8)/1.2),SKC,'+ 규칙');g.restore()}
+  const sa=P.at(1,2.6,.6)||P.at(2,0,.5);if(sa>0){g.save();g.globalAlpha=sa;winFrame(g,1260,225,560,590,'report/report_styled.html',{tc:C.ok,tag:'Skill 적용'});repPage(g,1290,290,500,500,true,1);g.restore()}
+  const cm=P.at(2,.2,.5);if(cm>0){g.globalAlpha=cm;chip(g,390,848,'원본',C.mid,{sz:16,al:'center'});chip(g,960,848,'← 비교 →',C.amber,{sz:16,al:'center'});chip(g,1540,848,'report_styled.html',C.ok,{sz:16,al:'center'});g.globalAlpha=1}
+  const lp=P.at(3,0,.5);if(lp>0){g.save();g.globalAlpha=lp;panel(g,700,620,520,190,{r:16,fill:'#12161F',stroke:hexA(C.amber,.6)});T(g,'결과가 마음에 들지 않으면?',730,660,{sz:20,w:700,c:C.amber});
+   cross(g,745,700,16,C.bad);T(g,'결과물 하나를 직접 고치기',770,707,{sz:19,c:C.mid});check(g,745,752,22,C.ok,P.at(3,.5,.4));T(g,'SKILL.md 수정 → 다시 실행',770,760,{sz:19,w:700});
+   const sp=P.ls*2;g.strokeStyle=hexA(SKC,.8);g.lineWidth=3;g.beginPath();g.arc(1150,752,26,sp,sp+Math.PI*1.5);g.stroke();g.restore()}
+  chip(g,1820,190,'예시 화면 · report.html은 Ch2 실습 결과물',C.dim,{sz:13,al:'right'})}});
+
+// 9 LINK SKILL TO AGENT
+const RWMD=['---','name: report-writer','description: 세 조사 결과(data/)를 읽어 짧은 보고서를 report/에 작성.','tools: Read, Write','skills: report-design','---','당신은 AI 반도체 시장조사 보고서 작성 담당자입니다.','## 작업 방식','- data/ 세 조사 결과만 읽고 종합 · 없는 수치는 만들지 않음','- 보고서 디자인은 report-design Skill의 규칙을 따름','## 피드백 반영','- report-reviewer 피드백 1개 → 1회 수정 후 종료'];
+S({code:'2-4',title:'에이전트에 Skill 연동하기',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'마지막으로 Chapter 2 시장조사 팀의 report-writer Agent에 방금 만든 디자인 Skill을 연결합니다.',say:'마지막으로, 챕터 2 시장조사 팀의 리포트 라이터 에이전트에 방금 만든 디자인 스킬을 연결합니다.'},
+  {t:'“report-writer가 보고서를 작성할 때 report-design Skill을 사용하도록 연결해줘.”',say:'리포트 라이터가 보고서를 작성할 때, 리포트 디자인 스킬을 사용하도록 연결해줘.'},
+  {t:'report-writer는 기존처럼 조사 결과를 종합해 보고서를 쓰고, 이제 Skill의 디자인 규칙까지 함께 씁니다.',say:'리포트 라이터는 기존처럼 조사 결과를 종합해 보고서를 쓰고, 이제 스킬에 저장된 디자인 규칙까지 함께 사용합니다.'},
+  {t:'.claude/agents/report-writer.md를 열어 확인합니다. 역할은 그대로 — 반복해서 쓸 업무 방법 하나를 추가한 것입니다.',say:'닷 클로드 에이전츠 폴더의 리포트 라이터 엠디를 열어 확인합니다. 에이전트의 역할은 그대로이고, 반복해서 쓸 업무 방법 하나를 추가한 것입니다.'}],
+ draw(g,P){const a0=P.at(0,0,.5),lk=P.at(1,1,.8),i2=P.sec(2)>=0;
+  agent(g,400,440,80,RWC,{a:a0,name:'report-writer',role:'보고서 작성 담당자 (역할 그대로)',glow:.3+.4*lk});
+  [0,1,2].forEach(k=>{const a=P.at(0,.4+k*.15,.4);if(a<=0)return;const y=340+k*100;g.globalAlpha=a;doc(g,150,y,44,58,MAC,{lines:2});g.globalAlpha=1;
+   if(i2)packet(g,180,y,320,440,clamp((P.sec(2)-.2-k*.2)/1),MAC,null)});
+  if(a0>0){g.globalAlpha=a0;T(g,'data/ 조사 결과',150,600,{sz:16,al:'center',c:C.dim});g.globalAlpha=1}
+  const ba=P.at(1,0,.5);if(ba>0){g.save();g.globalAlpha=ba;panel(g,110,195,760,64,{r:14,fill:'#12161F',stroke:hexA(C.text,.35)});T(g,'> report-writer가 보고서를 작성할 때 report-design Skill을 사용하도록 연결해줘.',130,236,{sz:16,f:FM,c:C.text});g.restore()}
+  const bx=lerp(700,540,lk),by=lerp(700,440,lk);if(ba>0)book(g,bx,by,lerp(110,90,lk),SKC,{a:ba,label:'report-design',lsz:13,glow:lk});
+  if(lk>.98){g.strokeStyle=hexA(SKC,.7);g.lineWidth=2;g.setLineDash([5,5]);line(g,485,440,500,440);g.setLineDash([])}
+  if(i2){const d=eOB(clamp((P.sec(2)-1.4)/.5));if(d>0){g.save();g.translate(640,680);g.scale(d,d);doc(g,0,0,110,140,C.ok,{lines:5,fill:'#141A26'});g.restore()}
+   packet(g,480,470,600,620,clamp((P.sec(2)-.9)/.6),RWC,null);if(P.at(2,1.8,.4)>0){g.globalAlpha=P.at(2,1.8,.4);chip(g,640,820,'내용 + 디자인 규칙',C.ok,{sz:16,al:'center'});g.globalAlpha=1}}
+  const fa=P.at(3,0,.5);if(fa>0){g.save();g.globalAlpha=fa;winFrame(g,930,290,890,560,'.claude/agents/report-writer.md',{tc:RWC,tag:'Ch2_완성본 실제 파일 + 연결 후 예시'});
+   codeLines(g,960,370,RWMD,{lh:38,sz:18,w:840,a:i=>eO3(clamp((P.sec(3)-.1-i*.1)/.3)),hi:i=>(i===4||i===9)?P.at(3,1.4,.5):0});
+   if(P.at(3,1.8,.5)>0){g.globalAlpha=fa*P.at(3,1.8,.5);chip(g,1800,528,'연결 후 추가 (예시)',C.amber,{sz:14,al:'right'});chip(g,1800,718,'연결 후 추가 (예시)',C.amber,{sz:14,al:'right'})}g.restore()}}});
+
+// 10 K-SKILL
+S({code:'2-5',title:'다른 사람이 만든 Skill 가져오기',group:'2 · 실습 — 나만의 Skill 만들기',
+ caps:[{t:'Skill은 직접 만들 수도 있지만, GitHub에 공개된 다른 사람의 Skill을 가져와 쓸 수도 있습니다.',say:'스킬은 직접 만들 수도 있지만, 깃허브에 공개된 다른 사람의 스킬을 가져와 쓸 수도 있습니다.'},
+  {t:'k-skill 저장소에는 한국 환경에 맞춘 다양한 Skill이 공개되어 있습니다.',say:'케이 스킬 저장소에는 한국 환경에 맞춘 다양한 스킬이 공개되어 있습니다.'},
+  {t:'필요한 Skill을 하나 골라, GitHub 주소와 Skill 이름을 Claude에게 알려주면 프로젝트로 가져옵니다.',say:'필요한 스킬을 하나 골라, 깃허브 주소와 스킬 이름을 클로드에게 알려주면 프로젝트로 가져올 수 있습니다.'},
+  {t:'가져온 뒤 SKILL.md를 열어 지시와 기준을 확인하고, /스킬이름으로 호출해 사용합니다.',say:'가져온 뒤에는 스킬 엠디를 열어 어떤 지시와 기준이 들어 있는지 확인하고, 슬래시 스킬이름으로 호출해 사용합니다.'}],
+ draw(g,P){const ga=P.at(0,0,.5);g.globalAlpha=ga;browser(g,110,215,800,560,'github.com/NomaDamas/k-skill',{tag:'교안 링크 기준'});
+  T(g,'NomaDamas / k-skill',150,320,{sz:30,f:FM,w:700});T(g,'한국인을 위한 스킬 모음집 - 에이전트를 한국인으로',150,362,{sz:20,c:C.mid});g.fillStyle=C.line;g.fillRect(150,390,720,1.5);g.globalAlpha=1;
+  const sa=P.at(1,0,.5);for(let k=0;k<8;k++){const a=P.at(1,.2+k*.1,.3);if(a<=0)continue;const x=200+(k%4)*180,y=490+Math.floor(k/4)*150,pick=k===5;
+   const f=pick?eIO3(clamp((P.sec(2)-.6)/1.2)):0;if(pick&&f>0){g.strokeStyle=hexA(SKC,.35);g.setLineDash([4,6]);line(g,x,y,1270,395);g.setLineDash([])}
+   book(g,lerp(x,1270,f),lerp(y,395,f),lerp(90,70,f),SKC,{a:a*(pick?1-inv(.8,1,f):1-.5*P.at(2,.3,.5)),label:pick?'':'skill',lsz:12});if(pick&&f<.3&&P.sec(2)>0){g.globalAlpha=P.at(2,0,.3);chip(g,x,y+70,'선택',C.amber,{sz:14,al:'center'});g.globalAlpha=1}}
+  if(sa>0){g.globalAlpha=sa;T(g,'공개된 Skill 목록 (예시 그림)',510,860,{sz:15,al:'center',c:C.dim});g.globalAlpha=1}
+  const pa=P.at(2,0,.5);if(pa>0){g.save();g.globalAlpha=pa;winFrame(g,960,215,860,130,'Claude Code · 프롬프트',{tc:SKC,tag:'교안 프롬프트'});
+   T(g,typed('https://github.com/NomaDamas/k-skill',P.sec(2)/.8),990,290,{sz:18,f:FM,c:C.m1});T(g,typed('여기서 [내가 원하는 스킬 이름]을 스킬로 다운로드 받아줘',(P.sec(2)-.8)/1),990,326,{sz:18,f:FM});
+   winFrame(g,960,370,860,300,'프로젝트 폴더',{tc:C.mid});const d=P.sec(2)>1.8;
+   tree(g,1000,450,[{n:'.claude/',d:0,dir:1},{n:'skills/',d:1,dir:1},{n:'report-design/',d:2,dir:1,c:SKC,tc:C.mid},{n:'[가져온 스킬 이름]/',d:2,dir:1,c:SKC,tc:SKC,a:d?P.at(2,1.9,.4):0,tag:'NEW',hc:C.ok},{n:'SKILL.md',d:3,c:C.amber,tc:C.amber,a:P.at(3,0,.4),hi:P.at(3,.2,.5),tag:'열어서 확인',hc:C.amber}],{w:790,sz:19,lh:44});g.restore()}
+  const ca=P.at(3,1,.5);if(ca>0){g.globalAlpha=ca;panel(g,960,700,860,110,{r:14,fill:'#0A0D12',stroke:hexA(C.amber,.6)});T(g,typed('> /[다운받은 스킬 이름]',(P.sec(3)-1)/.8),990,768,{sz:24,f:FM,w:600,c:C.amber});g.globalAlpha=1}}});
+
+// 11 MCP?
+const TOOLS=[['웹 브라우저','WWW',-1,-1],['노션','N',1,-1],['이메일','@',-1,-.35],['데이터베이스','DB',1,-.35],['구글 드라이브','▲',-1,.35],['슬랙','#',1,.35],['깃허브','git',-.45,1],['캘린더','31',.45,1]];
+S({code:'3-1',title:'MCP란?',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'Claude는 기본적으로 자신에게 연결된 기능과 정보 안에서 작업합니다.',say:'클로드는 기본적으로, 자신에게 연결된 기능과 정보 안에서 작업합니다.'},
+  {t:'실제 업무에서는 웹 브라우저, Notion, 데이터베이스처럼 외부 도구와 데이터를 써야 할 때가 있습니다.',say:'실제 업무에서는 웹 브라우저, 노션, 데이터베이스처럼, 외부 도구와 데이터를 사용해야 할 때가 있습니다.'},
+  {t:'MCP(Model Context Protocol)는 Claude와 이런 외부 시스템을 연결하는 표준 방식입니다.',say:'엠씨피, 모델 컨텍스트 프로토콜은, 클로드와 이런 외부 시스템을 연결하는 표준 방식입니다.'},
+  {t:'MCP를 연결하면 Claude가 외부 도구의 기능을 사용해 직접 정보를 가져오거나 작업을 수행할 수 있습니다.',say:'엠씨피를 연결하면, 클로드가 외부 도구의 기능을 사용해 직접 정보를 가져오거나 작업을 수행할 수 있습니다.'}],
+ draw(g,P){const cx=960,cy=500,a0=P.at(0,0,.5),conn=P.at(2,.3,.8);
+  const bnd=1-P.at(2,0,.6);if(bnd>0&&a0>0){g.globalAlpha=a0*bnd;g.strokeStyle=hexA(C.amber,.5);g.lineWidth=2;g.setLineDash([6,8]);g.beginPath();g.arc(cx,cy,170,0,7);g.stroke();g.setLineDash([]);T(g,'연결된 기능 · 정보',cx,cy-185,{sz:18,al:'center',c:C.amber});g.globalAlpha=1}
+  TOOLS.forEach(([n,gl,dx,dy],k)=>{const a=P.at(1,.2+k*.15,.4);if(a<=0)return;const x=cx+dx*640,y=cy+dy*265,col=[C.m1,C.text,C.m4,C.ok,C.amber,C.m2,C.mid,C.m1][k];
+   const lf=eO3(clamp((P.sec(2)-.3-k*.12)/.6));if(lf>0){g.strokeStyle=hexA(col,.6);g.lineWidth=2.5;const[x0,y0,x1,y1]=edge(cx,cy+90,x,y,110,90);g.beginPath();polyPartial(g,[[x0,y0],[x1,y1]],lf);g.stroke();
+    if(P.sec(3)>=0){const ph=((P.sec(3)*.5+k*.13)%1);packet(g,x1,y1,x0,y0,ph,col,null)}}
+   tile(g,x,y,200,120,n,col,gl,{a:a*(lf>0?1:.55),hi:lf});});
+  agent(g,cx,cy,86,C.amber,{a:a0,name:'Claude',nf:FK,glow:.3+.4*conn,nsz:24});
+  const ma=P.at(2,0,.5);if(ma>0){g.save();g.globalAlpha=ma;panel(g,cx-110,cy+140,220,64,{r:32,fill:MCPC,stroke:null});T(g,'MCP',cx,cy+185,{sz:32,f:FD,al:'center',c:'#FFFFFF'});g.restore()}
+  const sa=P.at(3,.3,.6);if(sa>0){g.globalAlpha=sa;chip(g,cx,855,'MCP = Claude가 외부 도구와 데이터를 사용할 수 있도록 연결하는 표준 방식',MCPC,{sz:19,al:'center',fill:'#0A1224'});g.globalAlpha=1}
+  chip(g,1820,190,'교안 그림 기준',C.dim,{sz:13,al:'right'})}});
+
+// 12 MCP FLOW (climax)
+const PWSTEP=[['페이지 열기','browser.goto','먼저 쇼핑몰 페이지를 열어야겠다.'],['화면 요소 확인','page.locator','검색창이 어디에 있는지 화면을 확인하자.'],['텍스트 입력','fill','검색창에 ‘노트북’을 입력해야겠다.'],['클릭','click','이제 검색 버튼을 클릭해야겠다.'],['화면 내용 확인','text_content','검색 결과에서 첫 번째 상품의 가격을 알아보자.']];
+function shopView(g,x,y,w,h,st,fr){ // st = completed steps (0..5), fr = progress of current
+  browser(g,x,y,w,h,st>=1?'https://shopping.naver.com':'about:blank',{tag:'교안 그림 · 예시 요청'});if(st<1){T(g,'빈 페이지',x+w/2,y+h/2,{sz:22,al:'center',c:C.dim});return}
+  const px=x+30;g.fillStyle='#03C75A';rrect(g,px,y+80,52,52,8);g.fill();T(g,'N',px+26,y+118,{sz:32,w:800,al:'center',c:'#FFFFFF',f:FK});T(g,'쇼핑',px+70,y+116,{sz:28,w:700});
+  const sx=px+180,sw=w-260;panel(g,sx,y+82,sw,50,{r:10,fill:'#0D1119',stroke:st>=2?PWC:'#3A4150',lw:st>=2?2.5:1.5});
+  const txt=st>=3?'노트북':'';if(txt)T(g,txt,sx+18,y+116,{sz:22,w:600});else T(g,'상품을 검색해보세요.',sx+18,y+116,{sz:19,c:C.dim});
+  const bxx=sx+sw-50;rrect(g,bxx,y+86,42,42,8);g.fillStyle=st>=4?'#03C75A':'#1A1F2A';g.fill();g.strokeStyle='#FFFFFF';g.lineWidth=2.5;g.beginPath();g.arc(bxx+19,y+105,8,0,7);g.stroke();line(g,bxx+25,y+111,bxx+31,y+117);
+  ['홈','오늘행사','베스트','패션의류','…'].forEach((s,i)=>T(g,s,px+i*110,y+176,{sz:17,c:C.mid}));
+  if(st>=4){const r=st>=5?1:0;[0,1,2].forEach(k=>{const yy=y+210+k*80;panel(g,px,yy,w-60,68,{r:10,fill:k===0&&r?hexA(PWC,.1):'#10141C',stroke:k===0&&r?PWC:C.line,lw:k===0&&r?2.5:1});
+    g.fillStyle='#1E2A44';rrect(g,px+12,yy+10,80,48,6);g.fill();
+    if(k===0){T(g,'LG 그램 16',px+110,yy+30,{sz:17,c:C.mid});T(g,'1,490,000원',px+110,yy+56,{sz:22,w:700,c:r?PWC:C.text});T(g,'로켓배송',px+300,yy+56,{sz:15,c:C.m1})}else{g.fillStyle='#2A3040';g.fillRect(px+110,yy+22,220,8);g.fillRect(px+110,yy+42,140,8)}})}
+  else if(st>=3&&fr>.5){} }
+S({code:'3-2',title:'MCP는 어떻게 동작할까?',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'MCP를 연결하면 Claude는 외부 서비스가 제공하는 기능의 이름과 사용 방법을 알 수 있습니다.',say:'엠씨피를 연결하면, 클로드는 외부 서비스가 제공하는 기능의 이름과 사용 방법을 알 수 있습니다.'},
+  {t:'요청 예시: “쇼핑몰에서 노트북을 검색해서 첫 번째 상품의 가격을 알려줘.”'},
+  {t:'① 페이지 열기 → ② 화면 요소 확인 — Claude가 필요한 기능을 판단하고 순서대로 호출합니다.',say:'첫째 페이지 열기, 둘째 화면 요소 확인. 클로드가 어떤 기능이 필요한지 판단하고, 필요한 순서대로 호출합니다.'},
+  {t:'③ 텍스트 입력 → ④ 클릭 — 실제 브라우저 조작은 Playwright가 수행합니다.',say:'셋째 텍스트 입력, 넷째 클릭. 실제 브라우저 조작은 플레이라이트가 수행합니다.'},
+  {t:'⑤ 화면 내용 확인 — Claude는 결과를 확인하면서 다음 행동을 계속 판단합니다.',say:'다섯째 화면 내용 확인. 클로드는 결과를 확인하면서 다음 행동을 계속 판단합니다.'},
+  {t:'Claude가 무엇을 할지 판단 → MCP를 통해 기능 호출 → Playwright가 브라우저에서 실제 실행.',say:'클로드가 무엇을 할지 판단하고, 엠씨피를 통해 기능을 호출하면, 플레이라이트가 브라우저에서 실제로 실행합니다.'}],
+ draw(g,P){const N={cl:[210,300],mc:[520,300],pw:[830,300]};
+  let sp=-1;if(P.sec(2)>=0)sp=2*P.c(2);if(P.sec(3)>=0)sp=2+2*P.c(3);if(P.sec(4)>=0)sp=4+P.c(4)*1.05;if(P.sec(5)>=0)sp=5.2;
+  const k=sp<0?-1:Math.min(4,Math.floor(sp)),fr=sp<0?0:sp>=5?1:sp-Math.floor(sp),st=sp<0?0:Math.min(5,Math.floor(sp)+(fr>.66?1:0));
+  // nodes + links
+  g.strokeStyle=hexA(C.text,.2);g.lineWidth=2;line(g,N.cl[0]+60,300,N.mc[0]-84,300);line(g,N.mc[0]+84,300,N.pw[0]-60,300);
+  const fin=P.at(5,0,.5);
+  agent(g,N.cl[0],300,56,C.amber,{name:'Claude',nf:FK,glow:k>=0&&fr<.33?.8:.2});
+  panel(g,N.mc[0]-84,272,168,56,{r:28,fill:MCPC,stroke:null});T(g,'MCP',N.mc[0],312,{sz:26,f:FD,al:'center',c:'#FFFFFF'});
+  agent(g,N.pw[0],300,56,PWC,{name:'Playwright',work:k>=0&&fr>.33&&fr<.66?.5:0,spin:P.ls*6});
+  const la=P.at(0,.4,.5)*(1-.0);if(la>0){g.globalAlpha=la;[['요청 이해 · 기능 판단',N.cl[0]],['기능 목록을 AI에게 제공',N.mc[0]],['브라우저를 실제로 조작',N.pw[0]]].forEach(([s,x])=>T(g,s,x,408,{sz:17,al:'center',c:C.mid}));g.globalAlpha=1}
+  const fa=P.at(0,.8,.6)*(1-P.at(1,0,.4));if(fa>0){g.globalAlpha=fa;panel(g,110,450,800,200,{r:16,fill:'#0A0D12',stroke:hexA(MCPC,.5)});T(g,'Playwright MCP가 알려주는 기능 (일부)',134,490,{sz:18,c:MCPC,w:600});chip(g,890,484,'개념 예시',C.dim,{sz:13,al:'right'});
+   PWSTEP.forEach(([t,fn],i)=>{T(g,fn,134+(i%3)*260,540+Math.floor(i/3)*50,{sz:20,f:FM,c:C.text})});g.globalAlpha=1}
+  if(k>=0&&sp<5){const q=fr;packet(g,N.cl[0]+60,300,N.mc[0]-84,300,clamp(q/.3),C.amber,PWSTEP[k][1]);packet(g,N.mc[0]+84,300,N.pw[0]-60,300,clamp((q-.3)/.3),MCPC,null);
+   packet(g,N.pw[0]+60,300,1000,300,clamp((q-.55)/.15),PWC,null);g.strokeStyle=hexA(C.text,.15);g.setLineDash([4,6]);g.beginPath();g.moveTo(N.pw[0],360);g.quadraticCurveTo(520,440,N.cl[0],360);g.stroke();g.setLineDash([]);
+   const rb=clamp((q-.72)/.25);if(rb>0&&rb<1){const t=eIO3(rb),x=(1-t)*(1-t)*N.pw[0]+2*(1-t)*t*520+t*t*N.cl[0],y=(1-t)*(1-t)*360+2*(1-t)*t*440+t*t*360;g.fillStyle=PWC;g.beginPath();g.arc(x,y,7,0,7);g.fill();chip(g,x,y+28,'결과 확인',PWC,{sz:14,al:'center',fill:'#0D1118'})}}
+  // request bubble
+  const ra=P.at(1,0,.5);if(ra>0){g.globalAlpha=ra;person(g,150,520,50,C.text);bubble(g,210,470,700,90,C.text,['“쇼핑몰에서 노트북을 검색해서','  첫 번째 상품의 가격을 알려줘.”'],{sz:21,top:36,lh:32});g.globalAlpha=1}
+  // judgment bubble
+  if(k>=0&&sp<5){g.save();panel(g,110,590,800,86,{r:16,fill:hexA(C.amber,.07),stroke:hexA(C.amber,.5)});T(g,'Claude의 판단',134,624,{sz:16,w:700,c:C.amber});T(g,'“'+PWSTEP[k][2]+'”',134,657,{sz:21});g.restore()}
+  if(fin>0){g.globalAlpha=fin;panel(g,110,590,800,86,{r:16,fill:hexA(C.ok,.08),stroke:hexA(C.ok,.6)});T(g,'최종 결과',134,624,{sz:16,w:700,c:C.ok});T(g,'“첫 번째 상품의 가격은 1,490,000원입니다.”',134,657,{sz:22,w:700});g.globalAlpha=1}
+  // browser
+  shopView(g,1000,200,820,480,st,fr);
+  if(k===3&&fr>.4&&fr<.9){const cx=1000+820-80+18,cy=200+105;g.fillStyle='#FFFFFF';g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy+26);g.lineTo(cx+7,cy+19);g.lineTo(cx+14,cy+30);g.lineTo(cx+18,cy+27);g.lineTo(cx+11,cy+17);g.lineTo(cx+20,cy+16);g.closePath();g.fill()}
+  // step cards
+  PWSTEP.forEach(([t,fn],i)=>{const x=110+i*346,y=715,on=i===k&&sp<5,dn=sp>=5||i<k||(i===k&&fr>.97);const col=dn?C.ok:on?C.amber:C.dim;const a=P.at(0,.2+i*.1,.4);if(a<=0)return;g.globalAlpha=a;
+   panel(g,x,y,330,140,{r:14,fill:on?hexA(C.amber,.08):C.card,stroke:hexA(col,on||dn?.8:.4),lw:on?2.5:1.5});g.fillStyle=col;g.beginPath();g.arc(x+36,y+40,20,0,7);g.fill();T(g,String(i+1),x+36,y+48,{sz:20,f:FD,al:'center',c:'#07080C'});
+   T(g,t,x+68,y+48,{sz:23,w:700,c:on||dn?C.text:C.mid});T(g,'사용한 기능 (MCP · 개념 예시)',x+24,y+92,{sz:14,c:C.dim});T(g,fn,x+24,y+122,{sz:20,f:FM,w:600,c:on?C.amber:dn?C.ok:C.mid});if(i<4)arrow(g,x+332,y+70,x+344,y+70,hexA(C.text,.4),1,{hs:8});g.globalAlpha=1})}});
+
+// 13 CONNECT PLAYWRIGHT
+const CODE8=['Playwright를 사용해서','Semiconductor Industry Association의 Market Data 페이지에 접속해줘.','','가장 최근에 발표된 글로벌 반도체 매출 자료를 찾아서','다음 정보를 확인해줘.','- 기준 월','- 글로벌 반도체 매출','- 전월 대비 증감률','찾은 내용을 3줄로 정리해줘.'];
+S({code:'3-3',title:'Playwright MCP 연결하기',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'이제 Claude가 웹 브라우저를 쓸 수 있도록 Playwright MCP를 연결해 봅니다.',say:'이제 클로드가 웹 브라우저를 사용할 수 있도록, 플레이라이트 엠씨피를 연결해 봅니다.'},
+  {t:'터미널에서 claude mcp add playwright npx @playwright/mcp@latest를 실행하면 Claude Code에 추가됩니다.',say:'터미널에서 클로드 엠씨피 애드 플레이라이트 명령을 실행하면, 플레이라이트 엠씨피가 클로드 코드에 추가됩니다.'},
+  {t:'Claude Code를 실행해 /mcp를 입력하면, playwright · connected · 24 tools를 확인할 수 있습니다.',say:'클로드 코드를 실행해 슬래시 엠씨피를 입력하면, 플레이라이트가 연결되어 있고 툴 스물네 개가 있는 것을 확인할 수 있습니다.'},
+  {t:'연결되면 요청합니다 — SIA의 Market Data 페이지에서 최신 글로벌 반도체 매출을 찾아 3줄로 정리해줘.',say:'연결되면 요청합니다. 에스아이에이의 마켓 데이터 페이지에서, 가장 최근 글로벌 반도체 매출을 찾아 세 줄로 정리해줘.'}],
+ draw(g,P){const a0=P.at(0,0,.5);
+
+  if(P.sec(1)<0){g.globalAlpha=a0;agent(g,640,520,80,C.amber,{name:'Claude Code',nf:FK});const f=P.at(0,.5,.8);panel(g,1060,470,240,100,{r:20,fill:hexA(PWC,.12),stroke:PWC,lw:2});T(g,'Playwright',1180,520,{sz:26,f:FM,w:700,al:'center',c:PWC});T(g,'MCP 서버',1180,550,{sz:16,al:'center',c:C.mid});
+   g.strokeStyle=hexA(MCPC,.8);g.lineWidth=3;g.setLineDash([8,8]);g.beginPath();polyPartial(g,[[730,520],[1055,520]],f);g.stroke();g.setLineDash([]);if(f>.9)chip(g,895,490,'연결',MCPC,{sz:16,al:'center'});g.globalAlpha=1;return}
+  const ta=P.at(1,0,.4);g.save();g.globalAlpha=ta;winFrame(g,110,200,1710,230,'Windows PowerShell',{tc:C.mid,tag:'교안 화면 기준'});
+  const cmd='claude mcp add playwright npx @playwright/mcp@latest',pr='PS C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료\\실습자료\\Ch2_실습용> ';
+  g.font=`400 17px ${FM}`;const pw=T(g,pr,140,286,{sz:17,f:FM,c:C.text});T(g,typed(cmd,P.sec(1)/1.2),140+pw,286,{sz:17,f:FM,w:700,c:C.amber});
+  const o=P.at(1,1.4,.3);if(o>0){g.globalAlpha=ta*o;T(g,'Added stdio MCP server playwright with command: npx @playwright/mcp@latest to local config',140,322,{sz:17,f:FM,c:C.ok});
+   T(g,'File modified: C:\\Users\\GNA\\.claude.json [project: C:\\Users\\GNA\\Desktop\\삼성전자_DS_실습자료\\실습자료\\Ch2_실습용]',140,356,{sz:17,f:FM,c:C.mid});T(g,pr,140,390,{sz:17,f:FM})}g.restore();
+  const ma=P.at(2,0,.5);if(ma>0){g.save();g.globalAlpha=ma;winFrame(g,110,460,900,400,'Claude Code · /mcp',{tc:C.amber,tag:'교안 화면 기준'});
+   termL(g,140,540,[['> /mcp',C.amber,700],['Manage MCP servers',SKC,700],['10 servers',C.mid],null,['Local MCPs (C:\\Users\\GNA\\.claude.json [project:',C.text],['   …\\실습자료\\Ch2_실습용])',C.text],['❯ playwright · ✔ connected · 24 tools',C.text,700,C.ok]],{lh:44,sz:18,w:840,a:i=>P.at(2,.2+i*.18,.3)});
+   const c=P.at(2,1.6,.5);if(c>0){g.globalAlpha=ma*c;chip(g,760,804,'✔ connected · 24 tools',C.ok,{sz:17,al:'center'})}g.restore()}
+  const qa=P.at(3,0,.5);if(qa>0){g.save();g.globalAlpha=qa;winFrame(g,1040,460,780,400,'Claude Code · 프롬프트',{tc:PWC,tag:'교안 프롬프트'});
+   CODE8.forEach((s,i)=>{const a=P.at(3,.2+i*.2,.3);if(a<=0||!s)return;g.globalAlpha=qa*a;T(g,s,1066,530+i*37,{sz:i===1?16:17,f:FM,c:i<2?PWC:/^-/.test(s)?C.amber:C.text})});g.restore()}}});
+
+// 14 MCP -> AGENT
+const CODE9=['시장조사를 담당하는 Sub Agent가','Playwright MCP를 사용할 수 있도록 수정해줘.','','현재 연결된 Playwright MCP의 기능을 확인해서,','시장조사에 필요한 웹페이지 접속·화면 확인 기능을','사용할 수 있게 해줘.','','기존 Agent의 역할과 다른 설정은 그대로 유지해줘.'];
+const MAMD=['---','name: market-analyst','description: AI 반도체 시장 규모와 성장 전망(CAGR 등)을 웹에서 조사…','tools: WebSearch, WebFetch, Read, Write,','  mcp__playwright__browser_navigate,','  mcp__playwright__browser_snapshot','---','## 조사 범위','- 현재 규모, 향후 성장 전망(CAGR 등)을 웹에서 조사','## 공통 규칙','- 웹 출처 최대 5개 · 모든 수치에 출처 · 못 찾으면 "못 찾음"','- 결과는 data/market-analysis.md 로 저장'];
+S({code:'3-4',title:'에이전트에 MCP 연동하기',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'MCP는 Claude만 쓰는 것이 아니라, 특정 Sub Agent가 업무에 필요한 외부 기능을 쓰도록 연결할 수도 있습니다.',say:'엠씨피는 클로드만 쓰는 것이 아니라, 특정 서브 에이전트가 업무에 필요한 외부 기능을 쓰도록 연결할 수도 있습니다.'},
+  {t:'시장조사를 담당하는 Agent가 Playwright로 웹사이트에 직접 접속하고 자료를 확인하도록 만들어 봅니다.',say:'시장조사를 담당하는 에이전트가, 플레이라이트로 웹사이트에 직접 접속하고 자료를 확인하도록 만들어 봅니다.'},
+  {t:'기존 Agent의 역할과 다른 설정은 그대로 두고, 웹페이지 접속 · 화면 확인 기능만 추가합니다.',say:'기존 에이전트의 역할과 다른 설정은 그대로 두고, 웹페이지 접속과 화면 확인 기능만 추가합니다.'},
+  {t:'같은 조사 업무를 실행해, 웹페이지 접속 → 자료 확인 → 필요한 정보 추출까지 수행하는지 확인합니다.',say:'같은 조사 업무를 실행해, 웹페이지 접속, 자료 확인, 필요한 정보 추출까지 수행하는지 확인합니다.'},
+  {t:'Agent는 어떤 업무를 맡을지 결정하고 수행하는 담당자, MCP는 그 Agent가 외부에서 쓸 수 있는 기능을 확장합니다.',say:'에이전트는 어떤 업무를 맡을지 결정하고 수행하는 담당자, 엠씨피는 그 에이전트가 외부에서 사용할 수 있는 기능을 확장합니다.'}],
+ draw(g,P){const a0=P.at(0,0,.5),add=P.at(1,.4,.7);
+  agent(g,300,400,80,MAC,{a:a0,name:'market-analyst',role:'시장 규모 · 성장 전망 조사 (역할 그대로)',glow:.3});
+  const tl=[['WebSearch',C.mid],['WebFetch',C.mid],['Read',C.mid],['Write',C.mid]];tl.forEach(([s,c],i)=>{const a=P.at(0,.4+i*.12,.4);if(a<=0)return;g.globalAlpha=a;chip(g,520,300+i*44,s,c,{sz:16,f:FM});g.globalAlpha=1});
+  if(add>0){g.save();g.globalAlpha=add;const y=lerp(560,480,add);panel(g,510,y-6,300,56,{r:28,fill:hexA(PWC,.14),stroke:PWC,lw:2});T(g,'+ Playwright MCP',660,y+30,{sz:20,f:FM,w:700,al:'center',c:PWC});g.restore()}
+  const ra=P.sec(3)>=0;const steps=[['웹페이지 접속','browser_navigate'],['자료 확인','browser_snapshot'],['필요한 정보 추출','→ data/market-analysis.md']];
+  steps.forEach(([t,f],i)=>{const a=ra?P.at(3,.3+i*.7,.5):0;if(a<=0)return;const x=150+i*260,y=640;g.globalAlpha=a;panel(g,x,y,240,110,{r:14,fill:hexA(i===2?MAC:PWC,.08),stroke:hexA(i===2?MAC:PWC,.6)});T(g,t,x+20,y+44,{sz:21,w:700});T(g,f,x+20,y+80,{sz:14,f:FM,c:i===2?MAC:PWC});
+   if(i<2)arrow(g,x+244,y+55,x+258,y+55,hexA(C.text,.5),1,{hs:8});check(g,x+214,y+26,18,C.ok,P.at(3,.8+i*.7,.4));g.globalAlpha=1});
+  const qa=P.at(1,.2,.5)*(1-P.at(2,0,.4));if(qa>0){g.save();g.globalAlpha=qa;winFrame(g,930,200,890,520,'Claude Code · 프롬프트',{tc:PWC,tag:'교안 프롬프트'});
+   CODE9.forEach((l,i)=>{const a=P.at(1,.4+i*.18,.3);if(a<=0||!l)return;g.globalAlpha=qa*a;T(g,l,960,280+i*48,{sz:19,f:FM,c:i<2?PWC:C.text})});g.restore()}
+  const fa=P.at(2,0,.5);if(fa>0){g.save();g.globalAlpha=fa;winFrame(g,930,200,890,520,'.claude/agents/market-analyst.md',{tc:MAC,tag:'실제 파일 + MCP 추가 예시'});
+   codeLines(g,960,280,MAMD,{lh:36,sz:17,w:840,a:i=>(i===4||i===5)?P.at(2,1,.5):eO3(clamp((P.sec(2)-.1-i*.08)/.3)),hi:i=>(i===4||i===5)?P.at(2,1.2,.5):0});
+   if(P.at(2,1.4,.4)>0){g.globalAlpha=fa*P.at(2,1.4,.4);chip(g,1800,388,'추가된 기능 (예시)',C.amber,{sz:14,al:'right'})}g.restore()}
+  const ea=P.at(4,0,.6);if(ea>0){g.globalAlpha=ea;panel(g,930,745,430,110,{r:14,fill:hexA(MAC,.08),stroke:hexA(MAC,.6)});T(g,'Agent',955,788,{sz:24,f:FM,w:700,c:MAC});T(g,'업무를 맡아 결정 · 수행하는 담당자',955,826,{sz:18});
+   panel(g,1390,745,430,110,{r:14,fill:hexA(PWC,.08),stroke:hexA(PWC,.6)});T(g,'MCP',1415,788,{sz:24,f:FM,w:700,c:PWC});T(g,'그 Agent가 외부에서 쓸 기능을 확장',1415,826,{sz:18});g.globalAlpha=1}}});
+
+// 15 MCP usage as Skill
+const CODE10=['/skill-creator','','Playwright MCP를 활용해서','SIA(Semiconductor Industry Association) 웹사이트에서','최신 글로벌 반도체 매출 자료를 확인하는 Skill을 만들어줘.','','Skill을 실행하면 다음 작업을 수행하도록 해줘.','','1. SIA 웹사이트에 접속','2. 가장 최근 글로벌 반도체 매출 자료 찾기','3. 기준 월, 글로벌 반도체 매출, 전월 대비 증감률 확인','4. 결과를 표로 정리'];
+S({code:'3-5',title:'MCP 활용 방법을 Skill로 만들기',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'MCP를 연결했다고 해서 매번 사용 방법을 처음부터 설명할 필요는 없습니다.',say:'엠씨피를 연결했다고 해서, 매번 사용 방법을 처음부터 설명할 필요는 없습니다.'},
+  {t:'반복 업무라면, 어떤 사이트에 접속하고 무엇을 확인할지를 Skill로 만들어 둘 수 있습니다.',say:'반복해서 하는 업무라면, 어떤 사이트에 접속하고 무엇을 확인할지를 스킬로 만들어 둘 수 있습니다.'},
+  {t:'Skill을 실행하면 정해진 절차를 참고하고, 필요한 단계에서 Playwright MCP의 기능을 사용합니다.',say:'스킬을 실행하면 클로드가 정해진 업무 절차를 참고하고, 필요한 단계에서 플레이라이트 엠씨피의 기능을 사용합니다.'},
+  {t:'즉, MCP로 기능을 확장하고, Skill로 그 기능을 사용하는 방법을 재사용합니다.',say:'즉, 엠씨피로 기능을 확장하고, 스킬로 그 기능을 사용하는 방법을 재사용할 수 있습니다.'}],
+ draw(g,P){const a0=P.at(0,0,.5);
+  if(P.sec(1)<0){g.globalAlpha=a0;agent(g,400,480,70,C.amber,{name:'Claude',nf:FK});[0,1,2].forEach(k=>{const a=P.at(0,.5+k*.6,.4);g.globalAlpha=a0*a;bubble(g,560,300+k*130,620,90,C.text,['“SIA 사이트 열고, 최신 매출 자료 찾고,','  기준 월이랑 증감률 확인하고, 표로…”'],{sz:19,top:36,lh:30});chip(g,1210,345+k*130,k===0?'월요일':k===1?'다음 달':'또 다음 달',C.mid,{sz:15})});g.globalAlpha=1;return}
+  const pa=P.at(1,0,.5);g.save();g.globalAlpha=pa;winFrame(g,110,200,640,520,'Claude Code · 프롬프트',{tc:SKC,tag:'교안 프롬프트'});
+  CODE10.forEach((s,i)=>{const a=P.at(1,.1+i*.1,.3);if(a<=0||!s)return;g.globalAlpha=pa*a;T(g,s,136,268+i*38,{sz:16,f:FM,c:i===0?SKC:/^\d/.test(s)?C.amber:C.text})});g.restore();
+  const bf=P.at(1,1.6,.6);if(bf>0){book(g,920,460,150,SKC,{a:bf,label:'SIA 매출 확인',lsz:14,glow:.3+.5*P.at(2,0,.4),name:'Skill (이름 예시)',nf:FK,nsz:16});const f=clamp((P.sec(1)-1.4)/.6);arrow(g,760,460,lerp(760,830,f),460,hexA(SKC,.8),f,{lw:3})}
+  const ra=P.sec(2)>=0;if(ra){const f=clamp(P.sec(2)/1);arrow(g,1010,460,lerp(1010,1130,f),460,hexA(PWC,.8),f,{lw:3});
+   panel(g,1140,220,680,250,{r:16,fill:'#0D1119',stroke:hexA(PWC,.6)});T(g,'Playwright MCP 사용',1170,262,{sz:20,f:FM,w:700,c:PWC});
+   ['SIA 웹사이트에 접속','최근 글로벌 반도체 매출 자료 찾기','기준 월 · 매출 · 증감률 확인','결과를 표로 정리'].forEach((s,i)=>{const on=clamp((P.sec(2)-.6-i*.6)/.4);g.globalAlpha=.4+.6*on;T(g,String(i+1),1180,312+i*42,{sz:18,f:FD,al:'center',c:on>=1?C.ok:C.amber});T(g,s,1210,318+i*42,{sz:19,c:on>0?C.text:C.mid});g.globalAlpha=1});
+   const tb=P.at(2,3,.5);if(tb>0){g.globalAlpha=tb;const x=1140,y=500,cw=[190,260,230];panel(g,x,y,680,170,{r:12,fill:'#0B0E14'});let xx=x;['기준 월','글로벌 반도체 매출','전월 대비 증감률'].forEach((h,j)=>{T(g,h,xx+20,y+44,{sz:18,w:700,c:C.amber});T(g,'(실행 시 확인)',xx+20,y+110,{sz:18,c:C.dim});xx+=cw[j]});
+    g.strokeStyle=C.line;g.lineWidth=1;line(g,x,y+66,x+680,y+66);chip(g,x+670,y+150,'값은 실행 시점 SIA 최신 발표',C.dim,{sz:13,al:'right'});g.globalAlpha=1}}
+  const ea=P.at(3,0,.6);if(ea>0){g.globalAlpha=ea;panel(g,110,760,1710,96,{r:16,fill:'#0D1119',stroke:hexA(C.amber,.5)});
+   T(g,'MCP',170,820,{sz:26,f:FM,w:700,c:PWC});T(g,'= 기능 확장',250,820,{sz:26,w:600});T(g,'+',760,820,{sz:32,w:700,al:'center',c:C.mid});T(g,'Skill',860,820,{sz:26,f:FM,w:700,c:SKC});T(g,'= 그 기능을 사용하는 방법을 재사용',960,820,{sz:26,w:600});g.globalAlpha=1}}});
+
+// 16 WEB SEARCH vs PLAYWRIGHT
+const WHY=['1. 실제 시간표는 코레일 예매 화면에서 날짜를 넣어야 나옵니다.','   Web search는 검색 엔진에 저장된 페이지 제목과 요약만 가져옵니다.','2. 날짜마다 시간표가 달라서 정적인 글로는 답할 수 없습니다.','3. 검색 도구에 한계가 있습니다 — 예매나 조회 같은 화면 조작도 불가.'];
+S({code:'3-6',title:'[보너스] Web Search가 있는데 왜 Playwright를 써야하나요?',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'Web Search는 웹에서 필요한 정보를 찾고 읽을 때 사용합니다.',say:'웹 서치는, 웹에서 필요한 정보를 찾고 읽을 때 사용합니다.'},
+  {t:'Playwright MCP는 웹사이트에 직접 들어가 화면을 조작할 때 씁니다 — 검색창 입력, 버튼 클릭, 날짜 선택, 필터 적용.',say:'플레이라이트 엠씨피는 웹사이트에 직접 들어가 화면을 조작해야 할 때 씁니다. 검색창 입력, 버튼 클릭, 날짜 선택, 필터 적용처럼요.'},
+  {t:'로그인 후 조회하거나 조건을 입력해야 결과가 나오는 화면처럼, 검색만으로는 접근하기 어려운 곳에서도 쓸 수 있습니다.'},
+  {t:'“코레일에서 다음주 월요일 서울역 → 부산역 가장 빠른 기차” — Web Search로만 시키면 안 되는 이유를 이렇게 답합니다.',say:'코레일에서 다음주 월요일 서울역에서 부산역 가는 가장 빠른 기차를 웹 서치로만 시켜 보면, 안 되는 이유를 이렇게 답합니다.'}],
+ draw(g,P){g.strokeStyle=C.line;g.lineWidth=1.5;line(g,960,200,960,870);
+  T(g,'Web Search',530,238,{sz:30,f:FM,w:700,al:'center',c:C.m3});T(g,'찾고 읽기',530,272,{sz:18,al:'center',c:C.dim});
+  const rA=P.at(1,0,.5);T(g,'Playwright MCP',1390,238,{sz:30,f:FM,w:700,al:'center',c:rA>0?PWC:C.dim});T(g,'직접 들어가 조작하기',1390,272,{sz:18,al:'center',c:C.dim});
+  const why=P.sec(3)>=0;
+  if(!why){const a0=P.at(0,0,.5);g.globalAlpha=a0;panel(g,130,310,800,60,{r:30,fill:'#12161F',stroke:hexA(C.m3,.6)});T(g,typed('코레일 서울 부산 월요일 첫차',P.sec(0)/1),160,350,{sz:20});
+   [0,1,2].forEach(k=>{const a=P.at(0,.8+k*.3,.4);g.globalAlpha=a0*a;panel(g,130,400+k*120,800,100,{r:12,fill:C.card});g.fillStyle=C.m1;g.fillRect(156,428+k*120,300,12);g.fillStyle='#2A3040';g.fillRect(156,456+k*120,620,8);g.fillRect(156,474+k*120,480,8);if(k===0)chip(g,900,432+k*120,'예매 페이지 링크',C.mid,{sz:14,al:'right'})});
+   g.globalAlpha=a0*P.at(0,2,.5);T(g,'검색 엔진에 저장된 페이지 제목 · 요약',530,800,{sz:20,al:'center',c:C.mid});g.globalAlpha=1}
+  else{const wa=P.at(3,0,.5);g.save();g.globalAlpha=wa;winFrame(g,110,300,830,560,'Claude Code · Web Search만 사용',{tc:C.m3,tag:'교안 화면 기준'});
+   T(g,'> 코레일에서 다음주 월요일 서울역 -> 부산역',140,380,{sz:17,f:FM,c:C.amber});T(g,'  가장 빠른 기차 출발 시간 알려줘',140,410,{sz:17,f:FM,c:C.amber});T(g,'  web search로 안되면 그만하고 왜 안되는지 알려줘.',140,440,{sz:17,f:FM,c:C.amber});
+   T(g,'안 되는 이유',140,500,{sz:22,w:700,c:C.bad});WHY.forEach((s,i)=>{const a=P.at(3,.6+i*.5,.4);g.globalAlpha=wa*a;g.font=`500 18px ${FK}`;const L=wrapLines(g,s,760);L.forEach((l,j)=>T(g,l,140,545+i*70+j*28,{sz:18,c:s.startsWith('   ')?C.mid:C.text}))});g.restore()}
+  if(rA>0){g.save();g.globalAlpha=rA;browser(g,1000,310,820,470,'letskorail.com · 승차권 예매',{tag:'예시 화면'});const st=[P.at(1,.5,.4),P.at(1,1.1,.4),P.at(1,1.7,.4),P.at(1,2.3,.4),P.at(1,2.9,.4)];
+   const fld=(x,y,w,lab,val,k)=>{T(g,lab,x,y-10,{sz:15,c:C.dim});panel(g,x,y,w,50,{r:8,fill:'#0D1119',stroke:st[k]>0?PWC:'#3A4150',lw:st[k]>0?2:1.3});if(st[k]>0){g.globalAlpha=rA*st[k];T(g,val,x+16,y+33,{sz:20,w:600});g.globalAlpha=rA}};
+   fld(1040,420,340,'출발역','서울',0);fld(1420,420,360,'도착역','부산',1);fld(1040,530,340,'출발일','다음주 월요일',2);fld(1420,530,360,'필터','KTX · 빠른 순',3);
+   rrect(g,1040,620,740,56,10);g.fillStyle=st[4]>0?PWC:'#1A1F2A';g.fill();T(g,'조회하기',1410,657,{sz:22,w:700,al:'center',c:st[4]>0?'#07080C':C.mid});
+   const L=P.at(2,0,.5);if(L>0){g.globalAlpha=rA*L;panel(g,1040,700,740,60,{r:10,fill:hexA(PWC,.1),stroke:hexA(PWC,.6)});T(g,'조건 입력 후에만 결과 표시',1410,738,{sz:19,al:'center',c:PWC})}g.restore();
+   const ca=P.at(1,.4,.4);if(ca>0){g.globalAlpha=ca;['입력','클릭','날짜 선택','필터 적용'].forEach((s,i)=>chip(g,1040+i*160,830,s,PWC,{sz:16}));g.globalAlpha=1}}}});
+
+// 17 CLAUDE IN CHROME
+S({code:'3-7',title:'[보너스] Playwright MCP가 제품이 되면?',group:'3 · 외부 도구를 연결하는 — MCP',
+ caps:[{t:'앞에서는 Playwright MCP를 직접 연결해 Agent가 브라우저를 조작하도록 했습니다.',say:'앞에서는 플레이라이트 엠씨피를 직접 연결해서, 에이전트가 브라우저를 조작하도록 했습니다.'},
+  {t:'Claude에서는 이런 브라우저 작업 기능을 Claude in Chrome으로 사용할 수도 있습니다.',say:'클로드에서는 이런 브라우저 작업 기능을, 클로드 인 크롬으로 사용할 수도 있습니다.'},
+  {t:'Claude가 현재 웹페이지 내용을 확인하고 탐색 · 클릭 · 입력을 직접 수행합니다. 그동안 사용자는 다음 작업을 결정합니다.',say:'클로드가 현재 웹페이지 내용을 확인하고, 탐색과 클릭, 입력을 직접 수행합니다. 그동안 사용자는 다음 작업을 결정합니다.'},
+  {t:'예시 프롬프트: “Airbnb에서 다음주 월~수, 성인 2명 속초 숙소 — 1박 20만 원대 3곳 비교해줘.”',say:'예시 프롬프트입니다. 에어비앤비에서 다음주 월요일부터 수요일까지, 성인 두 명이 묵을 속초 숙소를, 1박 20만 원대로 세 곳 비교해줘.'}],
+ draw(g,P){const a0=P.at(0,0,.5),pr=P.at(1,0,.6);
+  g.globalAlpha=a0*(1-.6*pr);const y0=250;agent(g,220,y0,40,C.amber,{name:'Claude',nf:FK,nsz:16});panel(g,330,y0-24,120,48,{r:24,fill:MCPC,stroke:null});T(g,'MCP',390,y0+9,{sz:20,f:FD,al:'center',c:'#FFFFFF'});agent(g,560,y0,40,PWC,{name:'Playwright',nsz:16});
+  line(g,262,y0,328,y0);line(g,452,y0,518,y0);T(g,'직접 연결',390,y0+86,{sz:17,al:'center',c:C.dim});g.globalAlpha=1;
+  if(pr>0){g.globalAlpha=pr;arrow(g,390,y0+110,390,y0+170,hexA(C.amber,.8),pr,{lw:3});panel(g,170,y0+190,440,90,{r:45,fill:hexA(C.amber,.1),stroke:C.amber,lw:2});T(g,'Claude in Chrome',390,y0+247,{sz:28,f:FM,w:700,al:'center',c:C.amber});T(g,'제품으로 제공되는 브라우저 작업',390,y0+320,{sz:18,al:'center',c:C.mid});chip(g,390,y0+358,'일반적으로 모든 유료 플랜에서 사용할 수 있습니다',C.amber,{sz:15,al:'center'});g.globalAlpha=1}
+  const pa=P.at(3,0,.5);if(pa>0){g.globalAlpha=pa;['코레일에서 다음주 월요일 서울역 -> 부산역','가장 빠른 기차 출발 시간 알려줘'].forEach((s,i)=>T(g,s,130,675+i*30,{sz:17,f:FM,c:C.mid}));T(g,'교안 예시 프롬프트 ①',130,645,{sz:15,c:C.dim});
+   T(g,'교안 예시 프롬프트 ②',130,765,{sz:15,c:C.dim});['Airbnb에서 다음주 월~수, 성인 2명이 묵을 속초','숙소를 찾아줘. 1박 20만 원대 숙소만 찾아서','괜찮은 곳 3개를 비교해줘.'].forEach((s,i)=>T(g,s,130,795+i*28,{sz:17,f:FM,c:C.text}));g.globalAlpha=1}
+  const ba=P.at(1,.4,.6);if(ba>0){g.save();g.globalAlpha=ba;browser(g,700,200,1120,660,P.sec(3)>=0?'airbnb.co.kr · 속초 숙소':'현재 웹페이지',{tag:'예시 화면'});
+   const px=730,pw=680;for(let k=0;k<6;k++){const x=px+(k%3)*230,y=280+Math.floor(k/3)*270;panel(g,x,y,210,250,{r:10,fill:'#10141C',stroke:C.line});g.fillStyle='#1E2A44';rrect(g,x+10,y+10,190,130,8);g.fill();g.fillStyle='#2A3040';g.fillRect(x+14,y+160,150,10);g.fillRect(x+14,y+182,100,10);
+    const pick=P.sec(3)>=0&&[0,2,4].includes(k)&&P.at(3,.8+k*.2,.4)>0;if(pick){g.strokeStyle=C.amber;g.lineWidth=3;rrect(g,x,y,210,250,10);g.stroke();chip(g,x+105,y+226,'비교 후보',C.amber,{sz:14,al:'center'})}}
+   panel(g,1430,250,370,590,{r:12,fill:'#12161F',stroke:hexA(C.amber,.5)});T(g,'Claude',1454,288,{sz:20,w:700,c:C.amber});
+   const acts=[['페이지 내용 확인',C.m3],['탐색 · 스크롤',C.m1],['날짜 · 인원 입력',PWC],['필터 클릭',PWC],['3곳 비교 정리',C.ok]];acts.forEach(([s,c],i)=>{const a=P.at(2,.3+i*.5,.4);if(a<=0)return;g.globalAlpha=ba*a;chip(g,1454,340+i*56,'● '+s,c,{sz:16})});
+   const ua=P.at(2,2.6,.5);if(ua>0){g.globalAlpha=ba*ua;panel(g,1450,690,330,120,{r:12,fill:'#0B0E14',stroke:C.line});T(g,'그동안 사용자는',1470,728,{sz:16,c:C.dim});T(g,'다음 작업을 결정',1470,764,{sz:22,w:700})}
+   if(P.sec(2)>=0){const t=P.sec(2),cx=900+Math.sin(t*1.3)*160,cy=420+Math.cos(t*1.1)*120;g.globalAlpha=ba;g.fillStyle='#FFFFFF';g.beginPath();g.moveTo(cx,cy);g.lineTo(cx,cy+26);g.lineTo(cx+7,cy+19);g.lineTo(cx+14,cy+30);g.lineTo(cx+18,cy+27);g.lineTo(cx+11,cy+17);g.lineTo(cx+20,cy+16);g.closePath();g.fill()}g.restore()}}});
+
+// 18 SUMMARY
+const SUM=['Agent는 역할을 맡아 판단하고 업무를 수행하는 담당자입니다.','Skill은 반복해서 사용하는 업무 방법과 기준을 재사용할 수 있게 합니다.','MCP는 Agent가 외부 도구와 데이터의 기능을 사용할 수 있게 연결합니다.','Agent는 Skill을 참고하고 MCP의 기능을 사용하며 업무 수행 능력을 확장할 수 있습니다.'];
+S({code:'요약',title:'이번 챕터 요약',group:'CHAPTER 03',
+ caps:[{t:'Agent는 역할을 맡아 판단하고 업무를 수행하는 담당자입니다.',say:'에이전트는 역할을 맡아 판단하고 업무를 수행하는 담당자입니다.'},
+  {t:'Skill은 반복해서 쓰는 업무 방법과 기준을 재사용하게 하고, MCP는 외부 도구와 데이터의 기능을 연결합니다.',say:'스킬은 반복해서 쓰는 업무 방법과 기준을 재사용하게 하고, 엠씨피는 외부 도구와 데이터의 기능을 연결합니다.'},
+  {t:'Agent는 Skill을 참고하고 MCP의 기능을 사용하며 업무 수행 능력을 확장합니다.',say:'에이전트는 스킬을 참고하고, 엠씨피의 기능을 사용하며, 업무 수행 능력을 확장할 수 있습니다.'}],
+ draw(g,P){const cols=[MAC,SKC,PWC,C.amber];SUM.forEach((s,k)=>{const a=k===0?P.at(0,.3,.6):k<3?P.at(1,(k-1)*.9,.6):P.at(2,0,.6);if(a<=0)return;const y=230+k*100;g.save();g.globalAlpha=a;g.translate((1-a)*40,0);
+   T(g,pad2(k+1),140,y+34,{sz:30,f:FD,c:cols[k]});T(g,s,230,y+34,{sz:26,w:500});g.restore()});
+  const d=P.at(2,.4,.8);if(d>0){g.save();g.globalAlpha=d;const cx=960,cy=740;agent(g,cx,cy,64,MAC,{name:'Agent',nsz:20,glow:.5});
+   book(g,cx-330,cy,110,SKC,{label:'Skill',lsz:16});tile(g,cx+330,cy,150,110,'외부 도구',PWC,'MCP',{hi:.6});
+   arrow(g,cx-270,cy,cx-80,cy,hexA(SKC,.8),1,{lw:3});T(g,'참고',cx-175,cy-16,{sz:18,al:'center',c:SKC});arrow(g,cx+80,cy,cx+250,cy,hexA(PWC,.8),1,{lw:3});T(g,'기능 사용',cx+165,cy-16,{sz:18,al:'center',c:PWC});g.restore()}}});
+
+
+/* ================= timing ================= */
+const capDur=c=>{const n=Math.max(c.t.replace(/\s/g,'').length,(c.say||'').replace(/\s/g,'').length);return clamp(1.0+n*.112,3.2,10)};
+let DUR=0;const CAPS=[];
+SC.forEach((s,si)=>{s.start=DUR;s.capT=[];s.capD=[];let acc=0;s.caps.forEach((c,ci)=>{const d=capDur(c)+(si===0?1.2:0);s.capT.push(acc);s.capD.push(d);CAPS.push({si,ci,t:DUR+acc,d,text:c.t,say:c.say||c.t});acc+=d});s.dur=acc+(si===SC.length-1?1.2:.35);DUR+=s.dur});
+function makeP(si,ls){const s=SC[si];let i=0;for(let k=0;k<s.capT.length;k++)if(ls>=s.capT[k])i=k;
+  return{ls,u:ls/s.dur,i,dur:s.dur,dur0:s.capD[0],dur1:s.capD[1]||1,sec:k=>ls-(s.capT[k]??1e9),c:k=>s.capT[k]===undefined?0:clamp((ls-s.capT[k])/s.capD[k]),at:(k,d=0,du=.5)=>s.capT[k]===undefined?0:eO3(clamp((ls-s.capT[k]-d)/du))}}
+function sceneAt(t){let si=0;for(let k=0;k<SC.length;k++)if(t>=SC[k].start)si=k;return si}
+function capAt(t){let k=0;for(let i=0;i<CAPS.length;i++)if(t>=CAPS[i].t)k=i;return k}
+
+/* ================= composite ================= */
+const vig=mk(W,H);{const v=vig.getContext('2d'),gr=v.createRadialGradient(W/2,H/2,W*.34,W/2,H/2,W*.74);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,0.55)');v.fillStyle=gr;v.fillRect(0,0,W,H)}
+function drawScene(g,si,ls){g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;g.fillStyle=C.bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#10141C';for(let x=80;x<W;x+=80)for(let y=180;y<880;y+=80)g.fillRect(x,y,2,2);
+  g.save();SC[si].draw(g,makeP(si,ls));g.restore();g.globalAlpha=1;g.textAlign='left';g.textBaseline='alphabetic'}
+function hud(g,t,si,ls){const s=SC[si],M=56;g.setTransform(1,0,0,1,0,0);g.globalAlpha=1;
+  g.strokeStyle=hexA(C.text,.3);g.lineWidth=1.2;[[34,34],[W-34,34],[34,H-34],[W-34,H-34]].forEach(([x,y])=>{line(g,x-11,y,x+11,y);line(g,x,y-11,x,y+11);g.strokeRect(x-5,y-5,10,10)});
+  if(!s.hideHead){const a=eO3(clamp(ls/.5));g.save();g.globalAlpha=a;g.translate(0,(1-a)*20);g.font=`400 34px ${FD}`;g.fillStyle=C.amber;g.textAlign='left';g.textBaseline='alphabetic';g.fillText(s.code,M,M+44);
+   const cw=g.measureText(s.code).width;T(g,s.group,M+cw+26,M+14,{sz:15,f:FM,c:C.dim});T(g,s.title,M+cw+26,M+48,{sz:30,w:700});g.restore()}
+  T(g,`${pad2(Math.floor(t/60))}:${pad2(Math.floor(t%60))}`,W-M,M+22,{sz:22,f:FM,w:500,al:'right'});T(g,`SCENE ${pad2(si+1)} / ${SC.length}`,W-M,M+46,{sz:14,f:FM,al:'right',c:C.dim});
+  g.fillStyle=hexA(C.text,.1);g.fillRect(0,H-4,W,4);g.fillStyle=C.amber;g.fillRect(0,H-4,W*t/DUR,4);
+  const k=capAt(t),cp=CAPS[k],cs=t-cp.t;if(cs<cp.d+.35){const a=Math.min(eO3(clamp(cs/.3)),1-inv(cp.d+.05,cp.d+.35,cs));g.save();g.globalAlpha=a;g.font=`600 34px ${FK}`;const L=wrapLines(g,cp.text,1560),lw=Math.max(...L.map(l=>g.measureText(l).width));
+   const bh=L.length*50+36,by=1000-bh/2+(1-a)*10;rrect(g,W/2-lw/2-36,by,lw+72,bh,14);g.fillStyle='rgba(7,8,12,0.82)';g.fill();g.fillStyle=C.amber;g.fillRect(W/2-lw/2-36,by+14,3,bh-28);
+   L.forEach((l,i)=>T(g,l,W/2,by+18+36+i*50,{sz:34,w:600,al:'center'}));g.restore()}}
+function render(t){t=clamp(t,0,DUR-1e-4);const si=sceneAt(t),ls=t-SC[si].start,g=ctx;
+  if(si>0&&ls<.45){drawScene(g,si-1,SC[si-1].dur);sctx.setTransform(1,0,0,1,0,0);sctx.drawImage(cv,0,0);drawScene(g,si,ls);g.globalAlpha=1-eIO3(ls/.45);g.drawImage(scratch,0,0);g.globalAlpha=1}
+  else drawScene(g,si,ls);
+  if(si===SC.length-1){const f=inv(SC[si].dur-1,SC[si].dur,ls);if(f>0){g.fillStyle=`rgba(0,0,0,${f})`;g.fillRect(0,0,W,H)}}
+  g.drawImage(vig,0,0);hud(g,t,si,ls)}
+
+/* ================= audio bed ================= */
+const AU={ctx:null,on:false,bus:null,sched:0};
+function auInit(){const c=new(window.AudioContext||window.webkitAudioContext)();AU.ctx=c;const comp=c.createDynamicsCompressor();comp.threshold.value=-18;comp.ratio.value=3;
+  AU.master=c.createGain();AU.master.gain.value=.5;AU.master.connect(comp);comp.connect(c.destination);
+  const len=Math.floor(c.sampleRate*3),ib=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ib.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3)}
+  AU.rev=c.createConvolver();AU.rev.buffer=ib;const rg=c.createGain();rg.gain.value=.5;AU.rev.connect(rg);rg.connect(AU.master)}
+function newBus(){const c=AU.ctx,b={dry:c.createGain(),rev:c.createGain()};b.dry.connect(AU.master);b.rev.connect(AU.rev);AU.bus=b}
+function killBus(){const b=AU.bus;if(!b)return;const n=AU.ctx.currentTime;[b.dry,b.rev].forEach(x=>x.gain.setTargetAtTime(0,n,.02));setTimeout(()=>[b.dry,b.rev].forEach(x=>x.disconnect()),300);AU.bus=null}
+function send(node,dry,rv){const c=AU.ctx,b=AU.bus;[[dry,b.dry],[rv,b.rev]].forEach(([v,d])=>{if(!v)return;const x=c.createGain();x.gain.value=v;node.connect(x);x.connect(d)})}
+function pad(w,ch,dur,a){const c=AU.ctx,lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=900;const g=c.createGain();g.gain.setValueAtTime(0,w);g.gain.linearRampToValueAtTime(a,w+1.2);g.gain.setValueAtTime(a,w+Math.max(1.3,dur-1));g.gain.linearRampToValueAtTime(0,w+dur+.6);
+  ch.forEach(f=>[-7,7].forEach(dt=>{const o=c.createOscillator();o.type='sawtooth';o.frequency.value=f;o.detune.value=dt;o.connect(lp);o.start(w);o.stop(w+dur+.8)}));lp.connect(g);send(g,.5,.6)}
+function blip(w,f,a){const c=AU.ctx,o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,w);g.gain.exponentialRampToValueAtTime(a,w+.005);g.gain.exponentialRampToValueAtTime(.0001,w+.35);o.connect(g);send(g,.6,.5);o.start(w);o.stop(w+.4)}
+const CHORDS=[[146.83,174.61,220],[116.54,146.83,174.61],[174.61,220,261.63],[130.81,164.81,196]];
+const EV=[];SC.forEach((s,i)=>{EV.push({t:s.start,f:w=>pad(w,CHORDS[i%4],s.dur,.045)});EV.push({t:s.start,f:w=>blip(w,[880,988,1175,1319][i%4],.05)})});CAPS.forEach((c,i)=>{if(c.ci>0)EV.push({t:c.t,f:w=>blip(w,[1760,1976,2349][i%3],.025)})});EV.sort((a,b)=>a.t-b.t);
+
+/* ================= narration (Web Speech) ================= */
+const TTS={ok:'speechSynthesis' in window,on:false,voice:null,last:-1};
+function pickVoice(){if(!TTS.ok)return;const vs=speechSynthesis.getVoices().filter(v=>/^ko/i.test(v.lang));TTS.voice=vs.find(v=>/Heami|SunHi|InJoon|Google/i.test(v.name))||vs[0]||null;voiceNote()}
+
+function speak(s){if(!TTS.ok)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='ko-KR';if(TTS.voice)u.voice=TTS.voice;u.rate=1.1;u.pitch=1;speechSynthesis.speak(u)}catch(e){}}
+function hush(){if(TTS.ok)try{speechSynthesis.cancel()}catch(e){}}
+
+/* ================= transport ================= */
+let t=0,tAbs=0,playing=false,anchorT=0,anchorClock=0,lastSrc='',dirty=true,scrubbing=false,started=false;
+const srcKey=()=>AU.on&&AU.ctx&&AU.ctx.state==='running'?'a':'p',clk=()=>srcKey()==='a'?AU.ctx.currentTime:performance.now()/1000;
+function reanchor(){anchorT=tAbs;anchorClock=clk();lastSrc=srcKey();if(AU.on&&AU.ctx){killBus();if(playing)newBus();AU.sched=tAbs}}
+function auTick(){if(!AU.on||!playing||scrubbing||!AU.bus||srcKey()!=='a')return;const c=AU.ctx;if(AU.sched<tAbs-.05)AU.sched=tAbs;const until=tAbs+.25;
+  for(const e of EV)if(e.t>=AU.sched&&e.t<until){const w=anchorClock+(e.t-anchorT);if(w>=c.currentTime-.01)e.f(Math.max(w,c.currentTime+.001))}AU.sched=until}
+function narrTick(){if(!TTS.on||!playing||scrubbing)return;const k=capAt(t);if(k!==TTS.last){TTS.last=k;if(t-CAPS[k].t<1)speak(CAPS[k].say)}}
+function play(){if(t>=DUR-.05){t=0}started=true;playing=true;tAbs=t;reanchor();bigplay.hidden=true;TTS.last=-1;const k=capAt(t);if(TTS.on&&t-CAPS[k].t>=1){TTS.last=k;speak(CAPS[k].say)}dirty=true;syncUI()}
+function pause(){playing=false;if(AU.bus)killBus();hush();dirty=true;syncUI()}
+function seek(nt){t=clamp(nt,0,DUR-1e-3);tAbs=t;hush();TTS.last=-1;if(playing)reanchor();dirty=true}
+async function setMusic(on){if(on){if(!AU.ctx)auInit();try{await AU.ctx.resume()}catch(e){}AU.on=true}else{AU.on=false;if(AU.bus)killBus()}if(playing)reanchor();syncUI()}
+function setVoice(on){if(!TTS.ok)return;TTS.on=on;if(!TTS.on)hush();TTS.last=-1;
+  if(TTS.on&&playing){const k=capAt(t);TTS.last=k;speak(CAPS[k].say)}if(AU.master&&AU.ctx)AU.master.gain.setTargetAtTime(TTS.on?.32:.5,AU.ctx.currentTime,.2);syncUI()}
+function frame(){if(playing){if(srcKey()!==lastSrc)reanchor();tAbs=anchorT+(clk()-anchorClock);t=tAbs;if(t>=DUR){t=DUR-1e-3;playing=false;if(AU.bus)killBus();syncUI()}auTick();narrTick();dirty=true}
+  if(dirty){render(t);ui();dirty=false}requestAnimationFrame(frame)}
+
+/* ================= page UI ================= */
+const $=s=>document.querySelector(s),track=$('#track'),head=$('#head'),bigplay=$('#bigplay'),playBtn=$('#play'),voiceBtn=$('#voice'),musicBtn=$('#music'),tc=$('#tc'),shots=$('#shots');
+const fmt=s=>`${pad2(Math.floor(s/60))}:${pad2(Math.floor(s%60))}`;
+SC.forEach((s,i)=>{const sg=document.createElement('div');sg.className='seg';sg.style.flex=`${s.dur} 1 0`;sg.innerHTML=`<i></i><span>${s.code}</span>`;track.insertBefore(sg,head);
+  const li=document.createElement('li');li.className='shot';li.innerHTML=`<button type="button"><span class="n">${s.code}</span><span class="t"></span><span class="r">${fmt(s.start)}–${fmt(s.start+s.dur)}</span><span class="d"></span></button>`;
+  li.querySelector('.t').textContent=s.title;li.querySelector('.d').textContent=s.caps.map(c=>c.t).join(' ');
+  li.querySelector('button').addEventListener('click',()=>{seek(s.start+.001);bigplay.hidden=true;if(!playing)play()});shots.appendChild(li)});
+track.setAttribute('aria-valuemax',DUR.toFixed(1));$('#meta').textContent=`${SC.length}개 장면 · 자막 ${CAPS.length}개 · ${fmt(DUR)}`;
+const segs=[...track.querySelectorAll('.seg')],shotEls=[...shots.children];let lastSi=-1;
+function ui(){const si=sceneAt(t);head.style.left=(t/DUR*100)+'%';segs.forEach((s,i)=>{const S0=SC[i];s.firstChild.style.width=(t>=S0.start+S0.dur?100:t<S0.start?0:(t-S0.start)/S0.dur*100)+'%'});
+  if(si!==lastSi){segs.forEach((s,i)=>s.classList.toggle('on',i===si));shotEls.forEach((s,i)=>s.classList.toggle('on',i===si));lastSi=si}
+  tc.innerHTML=`<b>${fmt(t)}</b> / ${fmt(DUR)}`;track.setAttribute('aria-valuenow',t.toFixed(1))}
+function voiceNote(){const n=$('#vnote');if(!TTS.ok){n.textContent='이 브라우저는 음성 합성을 지원하지 않아 자막으로만 재생됩니다.';voiceBtn.disabled=true;return}
+  n.textContent=TTS.voice?`음성 해설: ${TTS.voice.name}`:'한국어 음성을 찾는 중입니다. 없으면 기본 음성으로 읽습니다.'}
+function syncUI(){playBtn.setAttribute('aria-label',playing?'일시정지':'재생');$('#playic').innerHTML=playing?'<path d="M3 2h4v12H3zm6 0h4v12H9z"/>':'<path d="M4 2l10 6-10 6z"/>';
+  voiceBtn.setAttribute('aria-pressed',String(TTS.on));voiceBtn.textContent=TTS.on?'음성 해설 켜짐':'음성 해설 꺼짐';musicBtn.setAttribute('aria-pressed',String(AU.on));musicBtn.textContent=AU.on?'배경음 켜짐':'배경음 꺼짐'}
+bigplay.addEventListener('click',async()=>{setVoice(true);await setMusic(true);seek(0);play()});
+playBtn.addEventListener('click',()=>{if(!started)seek(0);playing?pause():play()});
+voiceBtn.addEventListener('click',()=>setVoice(!TTS.on));musicBtn.addEventListener('click',()=>setMusic(!AU.on));
+$('#fs').addEventListener('click',()=>{const el=$('#screen');try{if(document.fullscreenElement)document.exitFullscreen();else el.requestFullscreen&&el.requestFullscreen().catch(()=>{})}catch(e){}});
+const scrubTo=e=>{const r=track.getBoundingClientRect();seek(clamp((e.clientX-r.left)/r.width)*DUR)};
+track.addEventListener('pointerdown',e=>{scrubbing=true;track.setPointerCapture(e.pointerId);started=true;bigplay.hidden=true;scrubTo(e)});
+track.addEventListener('pointermove',e=>{if(scrubbing)scrubTo(e)});
+const endScrub=()=>{if(!scrubbing)return;scrubbing=false;if(playing)reanchor()};track.addEventListener('pointerup',endScrub);track.addEventListener('pointercancel',endScrub);
+const jump=d=>{const k=capAt(t);let n=d>0?k+1:(t-CAPS[k].t<1.2?k-1:k);n=clamp(n,0,CAPS.length-1);seek(CAPS[n].t+.001)};
+track.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();e.stopPropagation();jump(e.key==='ArrowRight'?1:-1)}});
+document.addEventListener('keydown',e=>{if(e.target.closest&&e.target.closest('button')&&(e.key===' '||e.key==='Enter'))return;
+  if(e.key===' '){e.preventDefault();if(!started)seek(0);playing?pause():play()}else if(e.key==='ArrowRight')jump(1);else if(e.key==='ArrowLeft')jump(-1);
+  else if(e.key==='v'||e.key==='V')setVoice(!TTS.on);else if(e.key==='f'||e.key==='F')$('#fs').click()});
+
+{const pp=(typeof POSTER!=='undefined'?POSTER:[SC.length-1,0,.9]),ps=SC[Math.min(pp[0],SC.length-1)],pc=Math.min(pp[1],ps.capT.length-1);t=ps.start+ps.capT[pc]+ps.capD[pc]*pp[2];tAbs=t}
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{dirty=true});
+['400 20px "Michroma"','500 20px "JetBrains Mono"','600 20px "IBM Plex Sans KR"','700 20px "IBM Plex Sans KR"'].forEach(f=>{try{document.fonts.load(f).then(()=>{dirty=true})}catch(e){}});
+voiceNote();if(TTS.ok){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}syncUI();requestAnimationFrame(frame);
+window.Lesson={render,SC,CAPS,DUR,canvas:cv};
+})();
+</script>
+</body>
+</html>
